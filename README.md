@@ -1,9 +1,11 @@
-# tools
+# plane-bridge
 
-Small standalone tools, one per directory under `apps/`, and shared code under `packages/`. A pnpm + moon monorepo on the
-[`@alxwlw/stack`](https://github.com/alxwlw/stack) toolchain canon.
+Self-hosted integrations for [Plane](https://plane.so). Each one is a small service that a team runs next to its
+Plane workspace, from a Docker image.
 
-## Tools
+plane-bridge is a community project. It is not affiliated with, endorsed by or supported by Plane Software, Inc.
+
+## Integrations
 
 - [`apps/plane-hooks`](apps/plane-hooks/README.md) — a multi-tenant Plane App that moves work items along by
   the facts of their pull requests and deploys (GitHub, Vercel, Dokploy) and opens incidents from Grafana
@@ -22,6 +24,8 @@ Small standalone tools, one per directory under `apps/`, and shared code under `
   install redirect and callback (`planeSetupRedirect`, `planeOauthCallback`).
 
 ## Development
+
+A pnpm + moon monorepo on the [`@alxwlw/stack`](https://github.com/alxwlw/stack) toolchain canon.
 
 ```bash
 pnpm install

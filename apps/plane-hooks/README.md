@@ -293,7 +293,7 @@ the real one before you run `/plane/setup`; `appInstallationId` may stay `"place
 ```
 
 Optional keys: `github` (without it no GitHub App is served), `delivery` (no status rules, no deploys),
-`incidents` (no incidents; required when the Grafana token is set), `dokploy` and `silenceHours`. The [full example with every key](https://github.com/alxwlw/tools/blob/main/apps/plane-hooks/tenants.example.json)
+`incidents` (no incidents; required when the Grafana token is set), `dokploy` and `silenceHours`. The [full example with every key](https://github.com/alxwlw/plane-bridge/blob/main/apps/plane-hooks/tenants.example.json)
 is in the repository. The file is read only at start: every change needs a restart. This one is a fuller tenant:
 
 ```json
