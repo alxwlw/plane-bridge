@@ -1,5 +1,3 @@
-// Adapted from apps/plane-discord/src/plane/setup.ts: the scopes, URLs and client id are parameters.
-
 // What Plane puts in app_installation_id (a UUID); anything else is not echoed, not logged.
 const INSTALLATION_ID = /^[A-Za-z0-9_-]{1,64}$/;
 

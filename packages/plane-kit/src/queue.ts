@@ -110,7 +110,7 @@ function describe(err: unknown): string {
 }
 
 /**
- * true: an error with numeric `status` 0 (a transport failure or timeout that rest.ts wrapped), ≥ 500 or 429;
+ * true: an error with numeric `status` 0 (a transport failure or timeout that an app's REST client or `PlaneAuthError` wrapped), ≥ 500 or 429;
  * a fetch TypeError; a TimeoutError/AbortError.
  */
 export function isRetryable(err: unknown): boolean {
