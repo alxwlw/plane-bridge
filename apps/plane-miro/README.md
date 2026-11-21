@@ -1,7 +1,7 @@
 # plane-miro
 
 A [Bun](https://bun.sh) service that links [Plane](https://plane.so) and [Miro](https://miro.com) for one or
-more tenants (a Plane workspace plus a Miro team each). It has no runtime dependencies, keeps its state in one
+more tenants (a Plane workspace plus a Miro team each). It has no third-party runtime dependencies (it uses the workspace packages `@alxwlw/plane-app` and `@alxwlw/plane-kit`, which the image carries as source), keeps its state in one
 SQLite file and serves its own front end: `web/*.ts` is bundled by `Bun.build` at start.
 
 What it does:

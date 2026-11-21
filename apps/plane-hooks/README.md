@@ -3,7 +3,7 @@
 A [Bun](https://bun.sh) service that keeps [Plane](https://plane.so) work items in step with the code: it moves
 a work item along by the facts of its pull requests and deploys (GitHub, Vercel, Dokploy) and opens incidents
 from Grafana alerts and failed deploys, builds and backups. It is a Plane App for one or more tenants (a Plane
-workspace each, with their own GitHub Apps and secrets), has no runtime dependencies and keeps its state in one
+workspace each, with their own GitHub Apps and secrets), has no third-party runtime dependencies (it uses the workspace packages `@alxwlw/plane-app` and `@alxwlw/plane-kit`, which the image carries as source) and keeps its state in one
 SQLite file.
 
 What it does:

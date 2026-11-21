@@ -2,8 +2,7 @@
 
 A [Bun](https://bun.sh) service that keeps a read-only copy of the work items and relations of one or more
 [Plane](https://plane.so) workspaces, draws the order in which the work can be done, and gives an agent the same
-data to put missing relations back into Plane. It has one runtime dependency, `@alxwlw/plane-app` (the workspace
-package with bot-token auth and the install redirect), keeps its state in one SQLite file and serves its own
+data to put missing relations back into Plane. It has no third-party runtime dependencies (it uses the workspace packages `@alxwlw/plane-app`, with bot-token auth and the install redirect, and `@alxwlw/plane-kit`, which the image carries as source), keeps its state in one SQLite file and serves its own
 front end: `web/graph.ts` is bundled by `Bun.build` at start. The graph library (d3) is loaded by the browser
 from a CDN with a pinned version and an integrity hash.
 
@@ -132,7 +131,7 @@ a plain click on a task therefore shows a hint; Ctrl/⌘+click or the middle mou
 this directory or anything under `packages/`; deploy by digest. The workflow smoke-tests the image first (`/healthz`,
 the bundle, the `listening` line, the SQLite file in `/data`).
 
-The build context is the repository root: the image carries `packages/plane-app` as source and installs nothing.
+The build context is the repository root: the image carries `packages/plane-app` and `packages/plane-kit` as source and installs nothing.
 
 ```bash
 docker build -f apps/plane-graph/Dockerfile -t plane-graph:local .

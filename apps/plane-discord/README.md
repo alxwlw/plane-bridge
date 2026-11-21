@@ -1,7 +1,7 @@
 # plane-discord
 
 A [Bun](https://bun.sh) service that bridges [Plane](https://plane.so) and Discord for one or more
-tenants (a Discord server plus a Plane workspace each). It has no runtime dependencies and keeps its
+tenants (a Discord server plus a Plane workspace each). It has no third-party runtime dependencies (it uses the workspace packages `@alxwlw/plane-app` and `@alxwlw/plane-kit`, which the image carries as source) and keeps its
 state in one SQLite file.
 
 Phases 1 to 3 (this version; a bound thread and its work item are synced both ways):
