@@ -129,7 +129,7 @@ a plain click on a task therefore shows a hint; Ctrl/⌘+click or the middle mou
 ## Image
 
 `ghcr.io/alxwlw/plane-graph`, built by `.github/workflows/plane-graph-image.yml` on every push to `main` that touches
-this directory or `packages/plane-app`; deploy by digest. The workflow smoke-tests the image first (`/healthz`,
+this directory or anything under `packages/`; deploy by digest. The workflow smoke-tests the image first (`/healthz`,
 the bundle, the `listening` line, the SQLite file in `/data`).
 
 The build context is the repository root: the image carries `packages/plane-app` as source and installs nothing.

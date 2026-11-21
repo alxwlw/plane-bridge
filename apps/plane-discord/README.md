@@ -147,7 +147,7 @@ docker exec <container> bun scripts/list-channels.ts       # id, type, parent an
 ## Image
 
 `ghcr.io/alxwlw/plane-discord`, built by `.github/workflows/plane-discord-image.yml` on every push to
-`main` that touches this directory; deploy by digest. The workflow smoke-tests the image first (`/healthz`,
+`main` that touches this directory or `packages/`; deploy by digest. The workflow smoke-tests the image first (`/healthz`,
 the `listening` line, the SQLite file in `/data`).
 
 ```bash

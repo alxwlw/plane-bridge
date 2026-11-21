@@ -479,7 +479,7 @@ This version is not compatible with the single-project, API-key one:
 ## Image
 
 `ghcr.io/alxwlw/plane-hooks`, built from the repository root by `.github/workflows/plane-hooks-image.yml` on
-every push to `main` that touches this app or `packages/plane-app`; deploy by digest. Pull requests build it and
+every push to `main` that touches this app or anything under `packages/`; deploy by digest. Pull requests build it and
 run the smoke test without publishing: `tenants.example.json` in `/config`, a fresh RSA key, the `listening` line
 with the tenant, `/healthz`, the SQLite file in `/data`. The image runs as `bun`; `wget` (busybox) serves
 container healthchecks: `wget -q --spider http://localhost:8080/healthz`.
