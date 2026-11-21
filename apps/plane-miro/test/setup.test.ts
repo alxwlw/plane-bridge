@@ -32,6 +32,13 @@ describe('setupRedirect', () => {
 			expect(res.headers.get('location')).toBeNull();
 		}
 	});
+
+	test('setup: the 404 for an unknown tenant is plain text with nosniff', async () => {
+		const res = setupRedirect(configOf(), new URL('http://x/plane/setup?tenant=nobody'));
+		expect(await res.text()).toBe('not found');
+		expect(res.headers.get('content-type')).toBe('text/plain; charset=utf-8');
+		expect(res.headers.get('x-content-type-options')).toBe('nosniff');
+	});
 });
 
 describe('oauthCallback', () => {
