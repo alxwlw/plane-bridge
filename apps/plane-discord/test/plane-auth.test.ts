@@ -1,4 +1,6 @@
+import { isRetryable } from '@alxwlw/plane-kit/queue';
 import { describe, expect, test } from 'bun:test';
+
 import { botTokenAuth, PLANE_SCOPES, PlaneAuthError } from '../src/plane/auth.ts';
 
 type Call = { url: string; headers: Record<string, string>; body: string; signal: unknown };
@@ -167,5 +169,39 @@ describe('botTokenAuth', () => {
 		expect((await auth.headers()).Authorization).toBe('Bearer short-1');
 		expect((await auth.headers()).Authorization).toBe('Bearer short-2');
 		expect(calls).toHaveLength(2);
+	});
+
+	test("token request carries the app's scopes", async () => {
+		const { calls, fetch } = stub();
+		await make(fetch, () => 0).headers();
+		const scope = new URLSearchParams(calls[0]?.body).get('scope');
+		expect(scope?.split(' ')).toEqual([
+			'projects:read',
+			'projects.work_items:read',
+			'projects.work_items:write',
+			'projects.work_items.comments:read',
+			'projects.work_items.comments:write',
+			'projects.states:read',
+			'projects.members:read',
+			'projects.modules:read',
+			'workspaces.members:read',
+			'agents.runs:read',
+			'agents.runs:write',
+			'agents.run_activities:read',
+			'agents.run_activities:write',
+		]);
+	});
+
+	test('a transport failure is a retryable auth error', async () => {
+		const fetch = (): Promise<Response> => Promise.reject(new TypeError('fetch failed'));
+		const err = await make(fetch, () => 0)
+			.headers()
+			.then(
+				() => null,
+				(e: unknown) => e,
+			);
+		expect(err).toBeInstanceOf(PlaneAuthError);
+		expect((err as PlaneAuthError).status).toBe(0);
+		expect(isRetryable(err)).toBe(true);
 	});
 });

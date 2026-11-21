@@ -229,4 +229,22 @@ describe('botTokenAuth', () => {
 		expect((await auth.headers()).Authorization).toBe('Bearer short-2');
 		expect(calls).toHaveLength(2);
 	});
+
+	test("token request carries the app's scopes", async () => {
+		const { calls, fetch } = stub();
+		await make(fetch, () => 0).headers();
+		const scope = new URLSearchParams(calls[0]?.body).get('scope');
+		expect(scope?.split(' ')).toEqual([
+			'projects:read',
+			'projects.work_items:read',
+			'projects.work_items:write',
+			'projects.work_items.comments:read',
+			'projects.work_items.comments:write',
+			'projects.work_items.links:read',
+			'projects.work_items.links:write',
+			'projects.states:read',
+			'projects.members:read',
+			'workspaces.members:read',
+		]);
+	});
 });

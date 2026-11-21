@@ -4,6 +4,7 @@
 	"private": true,
 	"type": "module",
 	"dependencies": {
+		"@alxwlw/plane-app": "workspace:*",
 		"@alxwlw/plane-kit": "workspace:*"
 	},
 	"devDependencies": {

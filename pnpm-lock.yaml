@@ -226,6 +226,9 @@ importers:
 
   apps/plane-discord:
     dependencies:
+      '@alxwlw/plane-app':
+        specifier: workspace:*
+        version: link:../../packages/plane-app
       '@alxwlw/plane-kit':
         specifier: workspace:*
         version: link:../../packages/plane-kit
@@ -280,6 +283,9 @@ importers:
 
   apps/plane-miro:
     dependencies:
+      '@alxwlw/plane-app':
+        specifier: workspace:*
+        version: link:../../packages/plane-app
       '@alxwlw/plane-kit':
         specifier: workspace:*
         version: link:../../packages/plane-kit

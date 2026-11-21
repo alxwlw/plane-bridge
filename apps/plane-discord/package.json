@@ -10,6 +10,7 @@
 		"capture": "bun scripts/capture.ts"
 	},
 	"dependencies": {
+		"@alxwlw/plane-app": "workspace:*",
 		"@alxwlw/plane-kit": "workspace:*"
 	},
 	"devDependencies": {
