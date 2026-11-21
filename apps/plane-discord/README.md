@@ -151,5 +151,5 @@ docker exec <container> bun scripts/list-channels.ts       # id, type, parent an
 the `listening` line, the SQLite file in `/data`).
 
 ```bash
-docker build -t plane-discord:local apps/plane-discord
+docker build -f apps/plane-discord/Dockerfile -t plane-discord:local .
 ```

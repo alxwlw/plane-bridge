@@ -1,0 +1,5 @@
+# Context is the repository root; only what the Dockerfile copies goes in.
+**
+!apps/plane-discord/tsconfig.json
+!apps/plane-discord/src
+!apps/plane-discord/scripts

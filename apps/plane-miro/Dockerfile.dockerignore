@@ -1,0 +1,6 @@
+# Context is the repository root; only what the Dockerfile copies goes in.
+**
+!apps/plane-miro/tsconfig.json
+!apps/plane-miro/src
+!apps/plane-miro/scripts
+!apps/plane-miro/web

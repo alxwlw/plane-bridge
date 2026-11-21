@@ -140,5 +140,5 @@ this directory; deploy by digest. The workflow smoke-tests the image first (`/he
 `/miro/panel`, the `listening` line, the SQLite file in `/data`).
 
 ```bash
-docker build -t plane-miro:local apps/plane-miro
+docker build -f apps/plane-miro/Dockerfile -t plane-miro:local .
 ```

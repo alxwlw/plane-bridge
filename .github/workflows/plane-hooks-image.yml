@@ -3,13 +3,13 @@ on:
   pull_request:
     paths:
       - 'apps/plane-hooks/**'
-      - 'packages/plane-app/**'
+      - 'packages/**'
       - '.github/workflows/plane-hooks-image.yml'
   push:
     branches: [main]
     paths:
       - 'apps/plane-hooks/**'
-      - 'packages/plane-app/**'
+      - 'packages/**'
       - '.github/workflows/plane-hooks-image.yml'
 permissions:
   contents: read
