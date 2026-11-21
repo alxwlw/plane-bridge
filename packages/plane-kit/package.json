@@ -8,7 +8,8 @@
 		"./queue": "./src/queue.ts",
 		"./rate": "./src/rate.ts",
 		"./ttl": "./src/ttl.ts",
-		"./log": "./src/log.ts"
+		"./log": "./src/log.ts",
+		"./capture": "./src/capture.ts"
 	},
 	"devDependencies": {
 		"@alxwlw/tsconfig": "catalog:dev",
