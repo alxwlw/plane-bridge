@@ -3,6 +3,11 @@ $schema: 'https://moonrepo.dev/schemas/project.json'
 language: 'typescript'
 layer: 'application'
 
+# The workspace packages the app imports: a change in them re-runs the app's test and typecheck.
+dependsOn:
+  - 'plane-app'
+  - 'plane-kit'
+
 # Канон смотрит в src/ и tests/; здесь каталог тестов — test/, плюс scripts/ и web/.
 fileGroups:
   tests:
@@ -12,10 +17,17 @@ fileGroups:
     - 'scripts/**/*'
     - 'web/**/*'
 
-# The canon lint targets src only; the appended arg adds scripts/ and web/.
 tasks:
+  test:
+    inputs:
+      - '/packages/plane-app/src/**/*'
+      - '/packages/plane-kit/src/**/*'
+  # The canon lint targets src only; the appended arg adds scripts/ and web/.
   lint:
     args: 'scripts web'
   # The browser code (web/) has its own tsconfig with DOM types, which the root one cannot mix with @types/bun.
   typecheck:
+    inputs:
+      - '/packages/plane-app/src/**/*'
+      - '/packages/plane-kit/src/**/*'
     script: 'bun run --bun $workspaceRoot/node_modules/typescript/bin/tsc --noEmit && bun run --bun $workspaceRoot/node_modules/typescript/bin/tsc --noEmit -p web'
