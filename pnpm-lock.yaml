@@ -280,25 +280,6 @@ importers:
         specifier: catalog:dev
         version: 7.1.0-beta
 
-  apps/wf-sync:
-    dependencies:
-      ccxt:
-        specifier: 4.5.92
-        version: 4.5.92
-      yaml:
-        specifier: 2.9.1
-        version: 2.9.1
-    devDependencies:
-      '@alxwlw/tsconfig':
-        specifier: catalog:dev
-        version: 1.18.0
-      '@types/bun':
-        specifier: catalog:dev
-        version: 1.4.4
-      typescript:
-        specifier: catalog:dev
-        version: 7.1.0-beta
-
   packages/plane-app:
     devDependencies:
       '@alxwlw/tsconfig':
@@ -339,14 +320,6 @@ packages:
 
   '@microsoft/tsdoc@0.17.1':
     resolution: {integrity: sha512-VHyYyyoH63jFoO3shpw9Zfijk5v/9p/VrClW35z0/q6ooK7sSmxpzOkS4iZPxs3vO4XtBW4H38HRAKkAMIK7DA==}
-
-  '@noble/curves@2.2.0':
-    resolution: {integrity: sha512-T/BoHgFXirb0ENSPBquzX0rcjXeM6Lo892a2jlYJkqk83LqZx0l1Of7DzlKJ6jkpvMrkHSnAcgb5JegL8SeIkQ==}
-    engines: {node: '>= 20.19.0'}
-
-  '@noble/hashes@2.2.0':
-    resolution: {integrity: sha512-IYqDGiTXab6FniAgnSdZwgWbomxpy9FtYvLKs7wCUs2a8RkITG+DFGO1DM9cr+E3/RgADRpFjrKVaJ1z6sjtEg==}
-    engines: {node: '>= 20.19.0'}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -634,13 +607,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@scure/base@2.2.0':
-    resolution: {integrity: sha512-b8XEupJibegiXV+tDUseI8oLQc8ei3d/4Jkb2RpbHh3MfE054ov3uIz2dhFkB3FI8iwYkEh0gGCApkrYggkPNg==}
-
-  '@scure/starknet@2.2.0':
-    resolution: {integrity: sha512-FPgUFyEgbEG7ewrj9gWUeXpf2b6klBnqcZOSFz6z4ycVCIAeGhNqKQUPlvl2Ka8gfmrbCcdIrImyi+dINr06Uw==}
-    engines: {node: '>= 20.19.0'}
-
   '@sindresorhus/merge-streams@4.0.0':
     resolution: {integrity: sha512-tlqY9xq5ukxTUZBmoOp+m61cqwQD5pHJtFY3Mn8CA8ps6yghLH/Hw8UPdqg4OLmFW3IFlcXnQNmo/dh8HzXYIQ==}
     engines: {node: '>=18'}
@@ -803,21 +769,8 @@ packages:
     resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
     engines: {node: '>=8'}
 
-  bufferutil@4.1.0:
-    resolution: {integrity: sha512-ZMANVnAixE6AWWnPzlW2KpUrxhm9woycYvPOo67jWHyFowASTEd9s+QN1EIMsSDtwhIxN4sWE1jotpuDUIgyIw==}
-    engines: {node: '>=6.14.2'}
-
   bun-types@1.4.4:
     resolution: {integrity: sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ==}
-
-  ccxt@4.5.92:
-    resolution: {integrity: sha512-YgEQ83nd6RzDHaUIHP6c/chZwnVTMV6iFZ/S9EjDYaqpADW4ErDTfYKkUjQQX9XBxYPBE6WiM3KbAy1M+QTNaQ==}
-    engines: {node: '>=18.0.0'}
-    peerDependencies:
-      protobufjs: ^7.5.3
-    peerDependenciesMeta:
-      protobufjs:
-        optional: true
 
   character-entities-legacy@3.0.0:
     resolution: {integrity: sha512-RpPp0asT/6ufRm//AJVwpViZbGM/MkjQFxJccQRHmISF/22NBtsHqAWmL+/pmkPWoIUJdWyeVleTl1wydHATVQ==}
@@ -871,9 +824,6 @@ packages:
 
   fastq@1.20.3:
     resolution: {integrity: sha512-XKv5nnLs6nLF71NgiKJLIZFLkPyIEuOselLG7ujZnGrRfQK8HpvY+WqKhAJUAdLomwVHErVS4LfxFlPq0/FTAw==}
-
-  fflate@0.8.3:
-    resolution: {integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==}
 
   fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
@@ -1073,10 +1023,6 @@ packages:
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
-  node-gyp-build@4.8.4:
-    resolution: {integrity: sha512-LA4ZjwlnUblHVgq0oBF3Jl/6h/Nvs5fzBLwdEF4nuxnFdsfajde4WfxtJr3CaiH+F6ewcIB/q4jQ4UzPyid+CQ==}
-    hasBin: true
-
   oxfmt@0.79.0:
     resolution: {integrity: sha512-92iLHGxAgtYk6jLp/1ZBnEeABveNduHZgMDQj7tyqO9iafuJG3q+YHJq0R5Aa4YT+E6xswMQXdmPZYMwynS8ig==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -1186,25 +1132,9 @@ packages:
   undici-types@8.9.0:
     resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
 
-  undici@7.29.1:
-    resolution: {integrity: sha512-RYONW2MeafgYlkVOKYKkA/Ag7BmXqgIWCa8t1m0JcxrQg9pI9lEqRhAOruOBCbAohOa/gkCF+iPi9hrgvTzu6Q==}
-    engines: {node: '>=20.18.1'}
-
   unicorn-magic@0.4.1:
     resolution: {integrity: sha512-lzlXPoVB0Uy/FvTaUgX39RbixYiSKoc3JSoSf01+0c2B6FR3qdYIPN7Qjo/AV7n6sqLCk0509cT3LRj1oSZ1+A==}
     engines: {node: '>=20'}
-
-  ws@8.21.0:
-    resolution: {integrity: sha512-Vsp28b7DRcimFQvrqu2Wek3z1iYxDCWqHYB8Qsnk/S4RfaCQzPGPyBNuVjJV3cd6UiKtUtp6sNM77gWvzcCH+g==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
 
   yaml@2.9.1:
     resolution: {integrity: sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==}
@@ -1243,12 +1173,6 @@ snapshots:
       resolve: 1.22.13
 
   '@microsoft/tsdoc@0.17.1': {}
-
-  '@noble/curves@2.2.0':
-    dependencies:
-      '@noble/hashes': 2.2.0
-
-  '@noble/hashes@2.2.0': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -1394,13 +1318,6 @@ snapshots:
   '@oxlint/binding-win32-x64-msvc@1.94.0':
     optional: true
 
-  '@scure/base@2.2.0': {}
-
-  '@scure/starknet@2.2.0':
-    dependencies:
-      '@noble/curves': 2.2.0
-      '@noble/hashes': 2.2.0
-
   '@sindresorhus/merge-streams@4.0.0': {}
 
   '@types/bun@1.4.4':
@@ -1499,29 +1416,10 @@ snapshots:
     dependencies:
       fill-range: 7.1.1
 
-  bufferutil@4.1.0:
-    dependencies:
-      node-gyp-build: 4.8.4
-    optional: true
-
   bun-types@1.4.4:
     dependencies:
       '@types/node': 26.6.5
       undici-types: 8.9.0
-
-  ccxt@4.5.92:
-    dependencies:
-      '@noble/curves': 2.2.0
-      '@noble/hashes': 2.2.0
-      '@scure/base': 2.2.0
-      '@scure/starknet': 2.2.0
-      undici: 7.29.1
-      ws: 8.21.0(bufferutil@4.1.0)
-    optionalDependencies:
-      bufferutil: 4.1.0
-      fflate: 0.8.3
-    transitivePeerDependencies:
-      - utf-8-validate
 
   character-entities-legacy@3.0.0: {}
 
@@ -1564,9 +1462,6 @@ snapshots:
   fastq@1.20.3:
     dependencies:
       reusify: 1.1.0
-
-  fflate@0.8.3:
-    optional: true
 
   fill-range@7.1.1:
     dependencies:
@@ -1874,9 +1769,6 @@ snapshots:
 
   ms@2.1.3: {}
 
-  node-gyp-build@4.8.4:
-    optional: true
-
   oxfmt@0.79.0:
     dependencies:
       tinypool: 2.2.0
@@ -2017,12 +1909,6 @@ snapshots:
 
   undici-types@8.9.0: {}
 
-  undici@7.29.1: {}
-
   unicorn-magic@0.4.1: {}
-
-  ws@8.21.0(bufferutil@4.1.0):
-    optionalDependencies:
-      bufferutil: 4.1.0
 
   yaml@2.9.1: {}

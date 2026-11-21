@@ -21,7 +21,3 @@ minimumReleaseAgeExclude:
   - '@alxwlw/stack@1.7.1 || 1.8.0 || 1.9.0 || 1.9.2 || 1.10.0 || 1.16.0 || 1.16.1 || 1.17.0 || 1.18.0'
   - '@alxwlw/tsconfig@1.7.1 || 1.8.0 || 1.9.0 || 1.9.2 || 1.10.0 || 1.16.0 || 1.16.1 || 1.17.0 || 1.18.0'
   - '@alxwlw/repo-rules@1.17.0 || 1.18.0'
-# wf-sync: ccxt's postinstall only prints a banner; bufferutil is an optional native addon of ws.
-allowBuilds:
-  ccxt: false
-  bufferutil: false
