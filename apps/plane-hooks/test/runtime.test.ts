@@ -1,12 +1,12 @@
+import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
 
 import type { GitHubAppConfig, Tenant } from '../src/config.ts';
 import type { GitHubApp } from '../src/github/app.ts';
 import { eventDeps, githubDeployFact } from '../src/jobs.ts';
-import type { LogEntry } from '../src/log.ts';
 import { CACHE_TTL_MS, createRuntimes, type RuntimeDeps } from '../src/runtime.ts';
 import { Store } from '../src/store.ts';
-import { serviceConfigOf, TEST_KEY_PEM, tenantOf } from './config-fixture.ts';
+import { serviceConfigOf, tenantOf, TEST_KEY_PEM } from './config-fixture.ts';
 import { FakeGitHub } from './fake-github.ts';
 import { FakePlane } from './fake-plane.ts';
 

@@ -1,5 +1,6 @@
 // Adapted from apps/plane-miro/src/plane/client.ts.
 import type { Fetch, PlaneAuth } from '@alxwlw/plane-app';
+import { SlidingWindow } from '@alxwlw/plane-kit/rate';
 
 import type {
 	Edge,
@@ -10,7 +11,6 @@ import type {
 	StateGroup,
 	StateRow,
 } from '../contract.ts';
-import { SlidingWindow } from '../rate.ts';
 
 /** Reading Plane: everything the copy is built from. Implemented by PlaneClient and by test/fake-plane.ts. */
 export interface PlaneReader {

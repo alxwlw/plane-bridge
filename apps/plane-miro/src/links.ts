@@ -1,11 +1,12 @@
+import type { Log } from '@alxwlw/plane-kit/log';
+import { isRetryable } from '@alxwlw/plane-kit/queue';
+
 import { boardLink, cardFor, fieldsHash, linkTitle } from './card.ts';
 import { besidePlace } from './convert.ts';
-import type { Log } from './log.ts';
 import { findMiroLinks, type MiroLink } from './miro/link.ts';
 import { MiroApiError, MiroNotConnected } from './miro/rest.ts';
 import type { WorkItem } from './plane/client.ts';
 import type { PlaneEvent } from './plane/webhook.ts';
-import { isRetryable } from './queue.ts';
 import type { TenantRuntime } from './runtime.ts';
 import type { Store } from './store.ts';
 

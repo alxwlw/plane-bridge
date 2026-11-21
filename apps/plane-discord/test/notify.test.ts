@@ -1,14 +1,14 @@
+import { SerialQueue } from '@alxwlw/plane-kit/queue';
 import { describe, expect, test } from 'bun:test';
 
 import type { ChannelRoute } from '../src/config.ts';
 import {
+	deliveryNonce,
 	DISCORD_ERR,
 	DiscordApiError,
 	type OutMessage,
-	deliveryNonce,
 } from '../src/discord/rest.ts';
 import { type Delivery, routesFor } from '../src/notify.ts';
-import { SerialQueue } from '../src/queue.ts';
 import { FakeDiscord } from './fake-discord.ts';
 import {
 	ALICE,

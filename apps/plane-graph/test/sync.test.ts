@@ -1,10 +1,11 @@
+import type { LogEntry } from '@alxwlw/plane-kit/log';
+import { SerialQueue } from '@alxwlw/plane-kit/queue';
 import { describe, expect, test } from 'bun:test';
+
 import type { AgentRunIn, CopyView } from '../src/contract.ts';
-import type { LogEntry } from '../src/log.ts';
+import { buildGraph } from '../src/graph.ts';
 import { PlaneApiError } from '../src/plane/client.ts';
 import type { PlaneEvent } from '../src/plane/webhook.ts';
-import { buildGraph } from '../src/graph.ts';
-import { SerialQueue } from '../src/queue.ts';
 import { Store } from '../src/store.ts';
 import {
 	acceptRun,
@@ -15,7 +16,7 @@ import {
 	refreshItem,
 	type SyncDeps,
 } from '../src/sync.ts';
-import { copyOf, idOf, type CopySpec } from './copy-builder.ts';
+import { copyOf, type CopySpec, idOf } from './copy-builder.ts';
 import { FakePlane } from './fake-plane.ts';
 
 const TENANT = 'acme';

@@ -1,7 +1,7 @@
 // Adapted from apps/plane-discord/test/setup.test.ts.
+import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
 
-import type { LogEntry } from '../src/log.ts';
 import { PLANE_SCOPES } from '../src/plane/auth.ts';
 import { oauthCallback, setupRedirect } from '../src/plane/setup.ts';
 import { configOf } from './config-fixture.ts';

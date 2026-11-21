@@ -1,5 +1,6 @@
+import type { Log } from '@alxwlw/plane-kit/log';
+
 import type { Config } from '../config.ts';
-import type { Log } from '../log.ts';
 import { PLANE_SCOPES } from './auth.ts';
 
 // What Plane puts in app_installation_id (a UUID); anything else is not echoed, not logged.

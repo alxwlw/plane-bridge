@@ -1,3 +1,5 @@
+import { ttl } from '@alxwlw/plane-kit/ttl';
+
 import type { Tenant } from './config.ts';
 import type { TenantRuntime } from './notify.ts';
 import { botTokenAuth, type Fetch } from './plane/auth.ts';
@@ -8,7 +10,6 @@ import {
 	type StateSummary,
 } from './plane/client.ts';
 import { userMap } from './text.ts';
-import { ttl } from './ttl.ts';
 
 export const CACHE_TTL_MS = 10 * 60_000;
 /** A lookup that misses the cache refreshes it, but not more often than this: unknown ids must not hammer Plane. */

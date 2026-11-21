@@ -1,9 +1,9 @@
+import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
 
 import type { Config, TenantConfig } from '../src/config.ts';
 import type { AgentRunIn } from '../src/contract.ts';
 import { buildGraph, buildSnapshot } from '../src/graph.ts';
-import type { LogEntry } from '../src/log.ts';
 import { createHandler, MAX_RUN_BODY } from '../src/server.ts';
 import { Store } from '../src/store.ts';
 import { copyOf } from './copy-builder.ts';

@@ -1,5 +1,6 @@
+import { esc, link, p, truncate } from '@alxwlw/plane-kit/html';
+
 import { matchRepo, type Tenant } from '../config.ts';
-import { esc, link, p, truncate } from '../html.ts';
 import type { IncidentSignal } from '../incident.ts';
 import type { GitHubEvent } from './webhook.ts';
 

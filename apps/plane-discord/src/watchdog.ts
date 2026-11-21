@@ -1,6 +1,7 @@
+import type { Log } from '@alxwlw/plane-kit/log';
+
 import type { Tenant } from './config.ts';
 import type { DiscordApi } from './discord/rest.ts';
-import type { Log } from './log.ts';
 import type { Store } from './store.ts';
 
 const HOUR_MS = 3_600_000;

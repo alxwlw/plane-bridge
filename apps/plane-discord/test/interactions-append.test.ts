@@ -1,26 +1,26 @@
+import { type LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
 
 import { APPEND_COMMAND } from '../src/discord/commands.ts';
 import { createInteractionHandler } from '../src/discord/interactions.ts';
-import { type LogEntry } from '../src/log.ts';
 import { PlaneApiError } from '../src/plane/client.ts';
 import { createHandler } from '../src/server.ts';
 import { Store } from '../src/store.ts';
 import {
-	GUILD,
-	MAPPED,
-	UNMAPPED,
-	MSG,
-	P_LAB,
-	P_HIDDEN,
-	SECRET_TEXT,
-	LAB,
-	msg,
-	type World,
-	setup,
-	open,
-	submitCreate,
 	field,
+	GUILD,
+	LAB,
+	MAPPED,
+	MSG,
+	msg,
+	open,
+	P_HIDDEN,
+	P_LAB,
+	SECRET_TEXT,
+	setup,
+	submitCreate,
+	UNMAPPED,
+	type World,
 } from './interactions-world.ts';
 
 describe('createInteractionHandler: «добавить в задачу»', () => {

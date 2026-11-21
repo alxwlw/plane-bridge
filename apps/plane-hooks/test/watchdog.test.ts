@@ -1,10 +1,9 @@
-import { describe, expect, test } from 'bun:test';
-
 import { PlaneAuthError } from '@alxwlw/plane-app';
+import type { LogEntry } from '@alxwlw/plane-kit/log';
+import { describe, expect, test } from 'bun:test';
 
 import type { GitHubAppConfig, Tenant } from '../src/config.ts';
 import type { GitHubApp } from '../src/github/app.ts';
-import type { LogEntry } from '../src/log.ts';
 import { PlaneApiError } from '../src/plane.ts';
 import { createRuntimes, type RuntimeDeps } from '../src/runtime.ts';
 import { Store } from '../src/store.ts';

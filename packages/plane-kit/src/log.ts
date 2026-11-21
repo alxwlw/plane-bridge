@@ -1,4 +1,3 @@
-// Adapted from apps/plane-discord/src/log.ts: a startup record may carry string lists, and describeError lives here.
 /** Scalars, plus a list of flat records for the startup summary (`tenants`, whose `inputs` is a list). */
 export type LogValue =
 	| string

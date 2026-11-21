@@ -5,3 +5,5 @@
 !apps/plane-hooks/scripts
 !packages/plane-app/package.json
 !packages/plane-app/src
+!packages/plane-kit/package.json
+!packages/plane-kit/src

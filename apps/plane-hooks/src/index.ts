@@ -3,9 +3,9 @@ import type { EventEmitter } from 'node:events';
 import { readFileSync } from 'node:fs';
 
 import type { Fetch } from '@alxwlw/plane-app';
+import { describeError, jsonLog, type Log } from '@alxwlw/plane-kit/log';
 
 import { INPUT_NAMES, loadServiceConfig, type ServiceConfig } from './config.ts';
-import { describeError, jsonLog, type Log } from './log.ts';
 import { createRuntimes, type RuntimeDeps } from './runtime.ts';
 import { createHandler, MAX_BODY_BYTES, text } from './server.ts';
 import { DEFAULT_DB, Store } from './store.ts';

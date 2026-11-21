@@ -1,10 +1,10 @@
 // Adapted from apps/plane-miro/test/server-plane.test.ts, narrowed to intake.
 import { createHmac } from 'node:crypto';
 
+import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
 
 import { type Config, PLANE_SCOPES, type TenantConfig } from '../src/config.ts';
-import type { LogEntry } from '../src/log.ts';
 import type { PlaneEvent } from '../src/plane/webhook.ts';
 import { createHandler, MAX_PLANE_BODY, readBounded } from '../src/server.ts';
 import { Store } from '../src/store.ts';

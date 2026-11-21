@@ -2,8 +2,9 @@
 // and `/plane-link KEY` (phase 3).
 // Order of every request: signature over the raw bytes, then parse, then claim, then dispatch. A modal must open
 // within 3 s (primary response, cache only); a form submit gets a deferred ephemeral reply and the work runs after it.
-import { esc, truncate } from '../html.ts';
-import type { Log } from '../log.ts';
+import { esc, truncate } from '@alxwlw/plane-kit/html';
+import type { Log } from '@alxwlw/plane-kit/log';
+
 import type { TenantRuntime } from '../notify.ts';
 import { PlaneApiError, type ProjectSummary, type WorkItem } from '../plane/client.ts';
 import { readBounded } from '../server.ts';

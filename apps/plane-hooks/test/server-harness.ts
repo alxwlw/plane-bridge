@@ -2,9 +2,10 @@
 // FakeGitHub behind it, and requests signed the way each real sender signs them.
 import { createHmac } from 'node:crypto';
 
+import type { LogEntry } from '@alxwlw/plane-kit/log';
+
 import type { GitHubAppConfig, Tenant } from '../src/config.ts';
 import type { GitHubApp } from '../src/github/app.ts';
-import type { LogEntry } from '../src/log.ts';
 import { createRuntimes, type Runtimes, type TenantRuntime } from '../src/runtime.ts';
 import { createHandler } from '../src/server.ts';
 import { Store } from '../src/store.ts';

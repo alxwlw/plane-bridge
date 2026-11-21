@@ -1,7 +1,5 @@
-// Adapted from apps/plane-miro/test/server-plane.test.ts (the jsonLog block).
+import { describeError, jsonLog } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
-
-import { jsonLog } from '../src/log.ts';
 
 describe('jsonLog', () => {
 	test('одна JSON-строка на запись: ts первым, поля записи следом, level сохраняется', () => {
@@ -34,5 +32,26 @@ describe('jsonLog', () => {
 		expect(written[0]!.endsWith('\n')).toBe(true);
 		expect(JSON.parse(written[0]!)).toMatchObject({ event: 'x' });
 		expect(Date.now() - Date.parse(JSON.parse(written[0]!).ts)).toBeLessThan(60_000);
+	});
+});
+
+describe('describeError', () => {
+	test('names the error class and message', () => {
+		expect(describeError(new TypeError('x'))).toBe('TypeError: x');
+	});
+
+	test('anything that is not an Error is unknown error', () => {
+		expect(describeError(42)).toBe('unknown error');
+		expect(describeError({ name: 'E', message: 'm' })).toBe('unknown error');
+	});
+
+	test('a throwing getter is unknown error', () => {
+		const err = new Error('x');
+		Object.defineProperty(err, 'message', {
+			get() {
+				throw new Error('boom');
+			},
+		});
+		expect(describeError(err)).toBe('unknown error');
 	});
 });

@@ -1,6 +1,7 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 
 import { type Fetch, planeOauthCallback, planeSetupRedirect } from '@alxwlw/plane-app';
+import { describeError, type Log } from '@alxwlw/plane-kit/log';
 
 import { DEFAULT_PRIORITY, type InputName, type ServiceConfig } from './config.ts';
 import { vercelDeployFact } from './delivery/preview.ts';
@@ -9,7 +10,6 @@ import { githubCallback, githubSetupPage } from './github/setup.ts';
 import { parseGitHubDelivery, verifyGitHubSignature } from './github/webhook.ts';
 import { parseGrafanaWebhook } from './grafana.ts';
 import { deployAnnotation, incidentAnnotation, reportLogged, resolveBestEffort } from './jobs.ts';
-import { describeError, type Log } from './log.ts';
 import { BadPayload } from './payload.ts';
 import { PLANE_HOOKS_SCOPES } from './plane.ts';
 import type { Runtimes, TenantRuntime } from './runtime.ts';

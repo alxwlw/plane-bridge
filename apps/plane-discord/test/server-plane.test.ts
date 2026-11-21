@@ -1,12 +1,14 @@
 import { createHmac } from 'node:crypto';
+
+import { jsonLog, type LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
+
 import type { Tenant } from '../src/config.ts';
-import { jsonLog, type LogEntry } from '../src/log.ts';
 import type { PlaneEvent } from '../src/plane/webhook.ts';
 import { createHandler, MAX_PLANE_BODY } from '../src/server.ts';
 import { Store } from '../src/store.ts';
-import { fixture } from './fixtures.ts';
 import { configOf } from './config-fixture.ts';
+import { fixture } from './fixtures.ts';
 
 const WORKSPACE = '00000000-0000-4000-8000-000000000002';
 const SECRET = 'test-secret';

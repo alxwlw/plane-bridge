@@ -3,3 +3,5 @@
 !apps/plane-discord/tsconfig.json
 !apps/plane-discord/src
 !apps/plane-discord/scripts
+!packages/plane-kit/package.json
+!packages/plane-kit/src

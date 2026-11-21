@@ -1,5 +1,7 @@
 // Adapted from apps/plane-discord/test/plane-client.test.ts.
+import { isRetryable } from '@alxwlw/plane-kit/queue';
 import { describe, expect, test } from 'bun:test';
+
 import type { PlaneAuth } from '../src/plane/auth.ts';
 import {
 	PLANE_RATE_MAX,
@@ -7,7 +9,6 @@ import {
 	PlaneApiError,
 	PlaneClient,
 } from '../src/plane/client.ts';
-import { isRetryable } from '../src/queue.ts';
 import { apiFixture } from './fixtures.ts';
 
 type Reply = { status: number; body?: unknown; raw?: string };

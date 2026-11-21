@@ -1,13 +1,13 @@
+import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
 
 import type { Tenant } from '../src/config.ts';
 import type { GatewayMessage } from '../src/discord/gateway.ts';
-import type { LogEntry } from '../src/log.ts';
 import type { TenantRuntime } from '../src/notify.ts';
-import { Store } from '../src/store.ts';
-import { createThreadSync } from '../src/thread-sync.ts';
-import { userMap } from '../src/text.ts';
 import { PlaneApiError } from '../src/plane/client.ts';
+import { Store } from '../src/store.ts';
+import { userMap } from '../src/text.ts';
+import { createThreadSync } from '../src/thread-sync.ts';
 import { FakePlane } from './fake-plane.ts';
 
 const APP = '999999999999999999';

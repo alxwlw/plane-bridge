@@ -1,6 +1,7 @@
 // Slash commands: `/plane KEY` (phase 2) and `/plane-link KEY` (phase 3). Built on the handler's own deps.
+import type { Log } from '@alxwlw/plane-kit/log';
+
 import { workItemCard } from '../card.ts';
-import type { Log } from '../log.ts';
 import type { TenantRuntime } from '../notify.ts';
 import { workItemUrl } from '../text.ts';
 import { PLANE_KEY_OPTION } from './commands.ts';

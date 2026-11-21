@@ -1,5 +1,6 @@
 // Adapted from apps/plane-discord/src/watchdog.ts (silence rules); the Miro token check is new.
-import type { Log } from './log.ts';
+import type { Log } from '@alxwlw/plane-kit/log';
+
 import { MiroNotConnected } from './miro/rest.ts';
 import type { TenantRuntime } from './runtime.ts';
 import type { Store } from './store.ts';

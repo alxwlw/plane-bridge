@@ -1,7 +1,7 @@
+import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
 
 import type { Tenant } from '../src/config.ts';
-import type { LogEntry } from '../src/log.ts';
 import { MiroApiError, MiroNotConnected } from '../src/miro/rest.ts';
 import { createRuntime } from '../src/runtime.ts';
 import { Store } from '../src/store.ts';

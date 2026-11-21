@@ -225,6 +225,10 @@ importers:
         version: 7.1.0-beta
 
   apps/plane-discord:
+    dependencies:
+      '@alxwlw/plane-kit':
+        specifier: workspace:*
+        version: link:../../packages/plane-kit
     devDependencies:
       '@alxwlw/tsconfig':
         specifier: catalog:dev
@@ -241,6 +245,9 @@ importers:
       '@alxwlw/plane-app':
         specifier: workspace:*
         version: link:../../packages/plane-app
+      '@alxwlw/plane-kit':
+        specifier: workspace:*
+        version: link:../../packages/plane-kit
     devDependencies:
       '@alxwlw/tsconfig':
         specifier: catalog:dev
@@ -257,6 +264,9 @@ importers:
       '@alxwlw/plane-app':
         specifier: workspace:*
         version: link:../../packages/plane-app
+      '@alxwlw/plane-kit':
+        specifier: workspace:*
+        version: link:../../packages/plane-kit
     devDependencies:
       '@alxwlw/tsconfig':
         specifier: catalog:dev
@@ -269,6 +279,10 @@ importers:
         version: 7.1.0-beta
 
   apps/plane-miro:
+    dependencies:
+      '@alxwlw/plane-kit':
+        specifier: workspace:*
+        version: link:../../packages/plane-kit
     devDependencies:
       '@alxwlw/tsconfig':
         specifier: catalog:dev
@@ -281,6 +295,18 @@ importers:
         version: 7.1.0-beta
 
   packages/plane-app:
+    devDependencies:
+      '@alxwlw/tsconfig':
+        specifier: catalog:dev
+        version: 1.18.0
+      '@types/bun':
+        specifier: catalog:dev
+        version: 1.4.4
+      typescript:
+        specifier: catalog:dev
+        version: 7.1.0-beta
+
+  packages/plane-kit:
     devDependencies:
       '@alxwlw/tsconfig':
         specifier: catalog:dev

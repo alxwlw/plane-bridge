@@ -3,6 +3,9 @@
 	"version": "0.0.0",
 	"private": true,
 	"type": "module",
+	"dependencies": {
+		"@alxwlw/plane-kit": "workspace:*"
+	},
 	"devDependencies": {
 		"@alxwlw/tsconfig": "catalog:dev",
 		"@types/bun": "catalog:dev",

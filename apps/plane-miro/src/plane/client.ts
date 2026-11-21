@@ -1,5 +1,6 @@
 // Adapted from apps/plane-discord/src/plane/client.ts.
-import { SlidingWindow } from '../rate.ts';
+import { SlidingWindow } from '@alxwlw/plane-kit/rate';
+
 import type { Fetch, PlaneAuth } from './auth.ts';
 
 /** archived: `archived_at` is set — GET /projects/ under the bot token returns archived projects too (probe 2026-10-26). */

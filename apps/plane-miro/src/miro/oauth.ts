@@ -1,7 +1,8 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
+import type { Log } from '@alxwlw/plane-kit/log';
+
 import type { Config } from '../config.ts';
-import type { Log } from '../log.ts';
 import type { Fetch } from '../plane/auth.ts';
 import type { Store } from '../store.ts';
 import { idOf } from './jwt.ts';

@@ -4,3 +4,5 @@
 !apps/plane-miro/src
 !apps/plane-miro/scripts
 !apps/plane-miro/web
+!packages/plane-kit/package.json
+!packages/plane-kit/src

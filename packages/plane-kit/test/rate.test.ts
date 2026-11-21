@@ -1,7 +1,5 @@
-// Copy of apps/plane-miro/test/rate.test.ts; keep in sync with src/rate.ts.
+import { SlidingWindow } from '@alxwlw/plane-kit/rate';
 import { describe, expect, test } from 'bun:test';
-
-import { SlidingWindow } from '../src/rate.ts';
 
 /** Fake clock: sleep advances time instantly and records how long it was asked to wait. */
 function clock() {

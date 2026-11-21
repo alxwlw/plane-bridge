@@ -1,8 +1,8 @@
+import { esc } from '@alxwlw/plane-kit/html';
 import { describe, expect, test } from 'bun:test';
 
 import { agentKeyOk, parseAgentRun, readKeyOk } from '../src/access.ts';
 import type { TenantConfig } from '../src/config.ts';
-import { esc } from '../src/html.ts';
 import { graphPage, planeBlock } from '../src/page.ts';
 
 const t: TenantConfig = {

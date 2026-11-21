@@ -1,8 +1,8 @@
 // Adapted from apps/plane-miro/src/watchdog.ts: silence per input, Plane access and GitHub App health.
 import { PlaneAuthError } from '@alxwlw/plane-app';
+import type { Log } from '@alxwlw/plane-kit/log';
 
 import { SILENCE_INPUTS } from './config.ts';
-import type { Log } from './log.ts';
 import { PlaneApiError } from './plane.ts';
 import type { Runtimes, TenantRuntime } from './runtime.ts';
 

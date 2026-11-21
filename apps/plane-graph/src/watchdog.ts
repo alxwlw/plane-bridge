@@ -1,5 +1,6 @@
 // Adapted from apps/plane-miro/src/watchdog.ts (silence rules); the stale-sync check is new.
-import type { Log } from './log.ts';
+import type { Log } from '@alxwlw/plane-kit/log';
+
 import type { Store } from './store.ts';
 
 const HOUR_MS = 3_600_000;

@@ -1,0 +1,18 @@
+{
+	"name": "@alxwlw/plane-kit",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		"./html": "./src/html.ts",
+		"./queue": "./src/queue.ts",
+		"./rate": "./src/rate.ts",
+		"./ttl": "./src/ttl.ts",
+		"./log": "./src/log.ts"
+	},
+	"devDependencies": {
+		"@alxwlw/tsconfig": "catalog:dev",
+		"@types/bun": "catalog:dev",
+		"typescript": "catalog:dev"
+	}
+}

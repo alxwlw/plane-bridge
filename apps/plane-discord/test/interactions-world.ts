@@ -1,7 +1,8 @@
+import { type LogEntry } from '@alxwlw/plane-kit/log';
+
 import type { Tenant } from '../src/config.ts';
 import { CREATE_COMMAND } from '../src/discord/commands.ts';
 import { createInteractionHandler } from '../src/discord/interactions.ts';
-import { type LogEntry } from '../src/log.ts';
 import type { TenantRuntime } from '../src/notify.ts';
 import { type PlaneApi, type ProjectSummary } from '../src/plane/client.ts';
 import { Store } from '../src/store.ts';

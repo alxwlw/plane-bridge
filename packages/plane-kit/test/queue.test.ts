@@ -1,6 +1,5 @@
-// Copy of apps/plane-miro/test/queue.test.ts; keep in sync until a shared package exists.
+import { isRetryable, type QueueLog, SerialQueue } from '@alxwlw/plane-kit/queue';
 import { describe, expect, test } from 'bun:test';
-import { isRetryable, SerialQueue, type QueueLog } from '../src/queue.ts';
 
 type Entry = Parameters<QueueLog>[0];
 const statusError = (status: number) => Object.assign(new Error(`HTTP ${status}`), { status });
@@ -283,8 +282,9 @@ describe('SerialQueue: размер и ожидание', () => {
 });
 
 describe('транспортный сбой (status 0)', () => {
-	test('транспортный сбой (status 0) — повторяемая', () => {
+	test('транспортный сбой (status 0) — повторяемая; status 401 — нет', () => {
 		expect(isRetryable(transportError())).toBe(true);
+		expect(isRetryable(statusError(401))).toBe(false);
 	});
 
 	test('задача бросает транспортный сбой (status 0) один раз, затем успех — выполнена дважды, задержка 1000', async () => {

@@ -1,7 +1,8 @@
 // Text translation between Plane (HTML) and Discord (markdown), design §3 «1b» and §6.
 // Truncation to Discord's 2000 characters is DiscordRest's job, not this module's.
+import { esc, truncate } from '@alxwlw/plane-kit/html';
+
 import type { UserLink } from './config.ts';
-import { esc, truncate } from './html.ts';
 
 export type UserMap = {
 	toDiscord(planeUserId: string): string | null;

@@ -1,4 +1,5 @@
-import { SlidingWindow } from '../rate.ts';
+import { SlidingWindow } from '@alxwlw/plane-kit/rate';
+
 import type { Fetch, PlaneAuth } from './auth.ts';
 
 export type ProjectSummary = { id: string; identifier: string; name: string };

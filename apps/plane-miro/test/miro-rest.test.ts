@@ -1,6 +1,7 @@
+import { isRetryable } from '@alxwlw/plane-kit/queue';
 import { describe, expect, test } from 'bun:test';
-import { isRetryable } from '../src/queue.ts';
-import { MiroApiError, MiroClient, MiroNotConnected, type AppCardInput } from '../src/miro/rest.ts';
+
+import { type AppCardInput, MiroApiError, MiroClient, MiroNotConnected } from '../src/miro/rest.ts';
 import { apiFixture } from './fixtures.ts';
 
 const BOARD = 'uXjVb1=';

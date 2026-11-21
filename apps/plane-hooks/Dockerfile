@@ -1,6 +1,6 @@
 # plane-hooks — Plane App hub: GitHub, Vercel, Dokploy and Grafana → Plane work items.
 # Build context: the repository root (docker build -f apps/plane-hooks/Dockerfile .): the image carries
-# packages/plane-app as its only dependency, copied as source. Nothing is installed.
+# packages/plane-app and packages/plane-kit as its only dependencies, copied as source. Nothing is installed.
 FROM oven/bun:1.4.5-alpine
 
 WORKDIR /app
@@ -10,6 +10,8 @@ COPY apps/plane-hooks/src ./src
 COPY apps/plane-hooks/scripts ./scripts
 COPY packages/plane-app/package.json ./node_modules/@alxwlw/plane-app/package.json
 COPY packages/plane-app/src ./node_modules/@alxwlw/plane-app/src
+COPY packages/plane-kit/package.json ./node_modules/@alxwlw/plane-kit/package.json
+COPY packages/plane-kit/src ./node_modules/@alxwlw/plane-kit/src
 # A new named volume copies the owner of this directory from the image; without it SQLite cannot open for writing.
 RUN mkdir -p /data && chown bun:bun /data
 

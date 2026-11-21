@@ -1,7 +1,8 @@
 // Adapted from apps/plane-discord/test/plane-auth.test.ts.
+import { isRetryable } from '@alxwlw/plane-kit/queue';
 import { describe, expect, test } from 'bun:test';
+
 import { botTokenAuth, PLANE_SCOPES, PlaneAuthError } from '../src/plane/auth.ts';
-import { isRetryable } from '../src/queue.ts';
 
 type Call = { url: string; headers: Record<string, string>; body: string; signal: unknown };
 
