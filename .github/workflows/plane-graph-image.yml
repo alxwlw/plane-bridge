@@ -71,7 +71,7 @@ jobs:
           tags: |
             ${{ env.IMAGE }}:${{ github.sha }}
             ${{ env.IMAGE }}:main
-          labels: org.opencontainers.image.source=https://github.com/alxwlw/tools
+          labels: org.opencontainers.image.source=https://github.com/alxwlw/plane-bridge
           cache-from: type=gha
       - name: Digest
         if: github.event_name == 'push'

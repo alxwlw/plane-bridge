@@ -1,9 +1,11 @@
-# tools
+# plane-bridge
 
-Small standalone tools, one per directory under `apps/`, and shared code under `packages/`. A pnpm + moon monorepo on the
-[`@alxwlw/stack`](https://github.com/alxwlw/stack) toolchain canon.
+Self-hosted integrations for [Plane](https://plane.so). Each one is a small service that a team runs next to its
+Plane workspace, from a Docker image.
 
-## Tools
+plane-bridge is a community project. It is not affiliated with, endorsed by or supported by Plane Software, Inc.
+
+## Integrations
 
 - [`apps/plane-hooks`](apps/plane-hooks/README.md) — a multi-tenant Plane App that moves work items along by
   the facts of their pull requests and deploys (GitHub, Vercel, Dokploy) and opens incidents from Grafana
@@ -15,8 +17,6 @@ Small standalone tools, one per directory under `apps/`, and shared code under `
   work items, a work item's status shows on its cards on the board, and a Miro link in a comment puts a card there.
 - [`apps/plane-graph`](apps/plane-graph/README.md) — a Bun service that keeps a read-only copy of Plane work items
   and relations, draws the order the work can be done in, and serves an agent that adds the missing relations.
-- [`apps/wf-sync`](apps/wf-sync/README.md) — a Bun service that syncs crypto exchanges (Binance, OKX, Kraken,
-  WhiteBIT), EVM and Solana wallets and Monobank into a self-hosted Wealthfolio, with plugins for any other source.
 
 ## Packages
 
@@ -24,6 +24,8 @@ Small standalone tools, one per directory under `apps/`, and shared code under `
   install redirect and callback (`planeSetupRedirect`, `planeOauthCallback`).
 
 ## Development
+
+A pnpm + moon monorepo on the [`@alxwlw/stack`](https://github.com/alxwlw/stack) toolchain canon.
 
 ```bash
 pnpm install
