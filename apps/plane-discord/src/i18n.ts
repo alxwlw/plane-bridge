@@ -74,6 +74,20 @@ export const en = {
 	failed: (reason: string) => `Failed: ${reason}.`,
 	planeAnswered: (status: number) => `Plane answered ${status}`,
 	discordAnswered: (status: number) => `Discord answered ${status}`,
+	// `/plane` and `/plane-link`, and the work item card.
+	notThread: 'This command works in a thread.',
+	cannotJoinThread: 'Cannot join the thread: add @Plane to the thread and try again.',
+	threadLinkedElsewhere: 'This thread is already linked to another work item.',
+	threadLinkedTo: (key: string) => `This thread is already linked to ${key}.`,
+	// `targetMd` is built Discord markdown; it is not escaped here.
+	threadLinked: (targetMd: string) => `Thread linked to ${targetMd}.`,
+	stateField: 'State',
+	assigneesField: 'Assignees',
+	priorityField: 'Priority',
+	priorityUrgent: 'Urgent',
+	priorityHigh: 'High',
+	priorityMedium: 'Medium',
+	priorityLow: 'Low',
 };
 
 export type Messages = Catalog<typeof en>;
@@ -138,6 +152,18 @@ export const ru: Messages = {
 	failed: (reason) => `Не получилось: ${reason}.`,
 	planeAnswered: (status) => `Plane ответил ${status}`,
 	discordAnswered: (status) => `Discord ответил ${status}`,
+	notThread: 'Команда работает в треде.',
+	cannotJoinThread: 'Не могу войти в тред: добавь @Plane в тред и повтори.',
+	threadLinkedElsewhere: 'Тред уже привязан к другой задаче.',
+	threadLinkedTo: (key) => `Тред уже привязан к ${key}.`,
+	threadLinked: (targetMd) => `Тред привязан к ${targetMd}.`,
+	stateField: 'Состояние',
+	assigneesField: 'Исполнители',
+	priorityField: 'Приоритет',
+	priorityUrgent: 'Срочный',
+	priorityHigh: 'Высокий',
+	priorityMedium: 'Средний',
+	priorityLow: 'Низкий',
 };
 
 /** One catalog per locale: a new `Locale` without a catalog is a type error here. */

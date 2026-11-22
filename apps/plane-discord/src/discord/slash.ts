@@ -27,14 +27,6 @@ import {
 } from './ix-common.ts';
 import { DISCORD_ERR, DiscordApiError } from './rest.ts';
 
-const UNKNOWN_ASSIGNEE = 'кто-то';
-const TEXT = {
-	broken: 'Не удалось разобрать запрос Discord.',
-	noChannel: 'Не удалось определить канал.',
-	notThread: 'Команда работает в треде.',
-	badKey: 'Нужен ключ вида LAB-40.',
-} as const;
-
 export type SlashEnv = {
 	deps: InteractionDeps;
 	now: () => number;
@@ -59,10 +51,10 @@ export function createSlashCommands(env: SlashEnv): {
 
 	/** `/plane KEY`: the public card, or a private note after the public placeholder is withdrawn. */
 	async function runCard(rt: TenantRuntime, key: string, token: string): Promise<void> {
+		const m = messages(rt.tenant.locale);
 		const item = await rt.plane.getWorkItemByKey(key);
 		// A hidden project answers like a missing one: a public card must not confirm its keys.
-		if (item === null || isHidden(rt, item.projectId))
-			throw new Failure(`Задача ${key} не найдена`);
+		if (item === null || isHidden(rt, item.projectId)) throw new Failure(m.keyNotFound(key));
 		let states = await rt.states(item.projectId);
 		// A state created after the cache was filled: ask again, as notify does.
 		if (!states.some((s) => s.id === item.stateId))
@@ -79,9 +71,9 @@ export function createSlashCommands(env: SlashEnv): {
 			members ??= await rt.members();
 			const name = members.find((m) => m.id === planeId)?.displayName ?? '';
 			// Discord renders markdown and masked links in embed field values.
-			assignees.push(name === '' ? UNKNOWN_ASSIGNEE : mdLabel(name));
+			assignees.push(name === '' ? m.someone : mdLabel(name));
 		}
-		const card = workItemCard({
+		const card = workItemCard(m, {
 			key,
 			url: workItemUrl(deps.planeUrl, rt.tenant.workspace, key),
 			name: item.name,
@@ -116,9 +108,10 @@ export function createSlashCommands(env: SlashEnv): {
 		const raw = own(option ?? null, 'value');
 		const key = (typeof raw === 'string' ? raw : '').trim().toUpperCase();
 		const token = str(ix.token);
+		const m = messages(rt.tenant.locale);
 		if (key.length > KEY_MAX || !KEY_RE.test(key))
-			return refuse(rt.tenant.id, id, 'bad_key', 'Нужен ключ вида LAB-40.');
-		if (token === null) return refuse(rt.tenant.id, id, 'no_token', TEXT.broken);
+			return refuse(rt.tenant.id, id, 'bad_key', m.keyFormat);
+		if (token === null) return refuse(rt.tenant.id, id, 'no_token', m.brokenRequest);
 		const started = now();
 		defer(async () => {
 			const base = { tenant: rt.tenant.id, interaction: id, kind: 'card' };
@@ -130,13 +123,7 @@ export function createSlashCommands(env: SlashEnv): {
 				// Missing and hidden keys share one outcome, as they share one answer.
 				if (missing) log({ event: 'ix.done', ...base, result: 'not_found', ms: now() - started });
 				else log(failedEntry(base, error, now() - started));
-				await withdraw(
-					token,
-					base,
-					missing
-						? `${error.message}.`
-						: `Не получилось: ${describe(messages(rt.tenant.locale), error)}.`,
-				);
+				await withdraw(token, base, missing ? `${error.message}.` : m.failed(describe(m, error)));
 			}
 		});
 		// No ephemeral flag: the card is for the whole channel.
@@ -166,10 +153,11 @@ export function createSlashCommands(env: SlashEnv): {
 		token: string,
 		base: Record<string, string>,
 	): Promise<string> {
+		const m = messages(rt.tenant.locale);
 		const item = await rt.plane.getWorkItemByKey(key);
 		// A hidden project answers like a missing one: its keys are not confirmed from Discord.
 		if (item === null || isHidden(rt, item.projectId)) {
-			await withdraw(token, base, `Задача ${key} не найдена.`);
+			await withdraw(token, base, `${m.keyNotFound(key)}.`);
 			return 'not_found';
 		}
 		// A private thread's messages reach only its members, and a slash command does not make the bot one.
@@ -189,13 +177,7 @@ export function createSlashCommands(env: SlashEnv): {
 				error.status === 403 ||
 				error.code === DISCORD_ERR.MISSING_ACCESS ||
 				error.code === DISCORD_ERR.UNKNOWN_CHANNEL;
-			await withdraw(
-				token,
-				base,
-				noAccess
-					? 'Не могу войти в тред: добавь @Plane в тред и повтори.'
-					: `Не получилось: ${describe(messages(rt.tenant.locale), error)}.`,
-			);
+			await withdraw(token, base, noAccess ? m.cannotJoinThread : m.failed(describe(m, error)));
 			return 'join_failed';
 		}
 		const bound = deps.store.findByThread(thread.id);
@@ -204,14 +186,14 @@ export function createSlashCommands(env: SlashEnv): {
 			await withdraw(
 				token,
 				base,
-				otherKey === null
-					? 'Тред уже привязан к другой задаче.'
-					: `Тред уже привязан к ${otherKey}.`,
+				otherKey === null ? m.threadLinkedElsewhere : m.threadLinkedTo(otherKey),
 			);
 			return 'already_linked';
 		}
 		deps.store.putThread(rt.tenant.id, item.id, thread.parentId, thread.id, item.projectId);
-		const text = `Тред привязан к [\`${key}\` «${mdLabel(item.name)}»](<${workItemUrl(deps.planeUrl, rt.tenant.workspace, key)}>).`;
+		const text = m.threadLinked(
+			`[\`${key}\` ${m.quoted(mdLabel(item.name))}](<${workItemUrl(deps.planeUrl, rt.tenant.workspace, key)}>)`,
+		);
 		try {
 			await deps.discord.editOriginal(token, { content: text });
 		} catch (error) {
@@ -234,17 +216,18 @@ export function createSlashCommands(env: SlashEnv): {
 		const type = channel?.type;
 		const threadId = snowflake(channel?.id) ?? snowflake(ix.channel_id);
 		const parentId = snowflake(channel?.parent_id);
-		if (!isThreadType(type)) return refuse(rt.tenant.id, id, 'not_thread', TEXT.notThread);
+		const m = messages(rt.tenant.locale);
+		if (!isThreadType(type)) return refuse(rt.tenant.id, id, 'not_thread', m.notThread);
 		if (threadId === null || parentId === null)
-			return refuse(rt.tenant.id, id, 'no_channel', TEXT.noChannel);
+			return refuse(rt.tenant.id, id, 'no_channel', m.noChannel);
 		const options = Array.isArray(data.options) ? data.options : [];
 		const option = options.map(rec).find((o) => own(o, 'name') === PLANE_KEY_OPTION);
 		const raw = own(option ?? null, 'value');
 		const key = (typeof raw === 'string' ? raw : '').trim().toUpperCase();
 		const token = str(ix.token);
 		if (key.length > KEY_MAX || !KEY_RE.test(key))
-			return refuse(rt.tenant.id, id, 'bad_key', TEXT.badKey);
-		if (token === null) return refuse(rt.tenant.id, id, 'no_token', TEXT.broken);
+			return refuse(rt.tenant.id, id, 'bad_key', m.keyFormat);
+		if (token === null) return refuse(rt.tenant.id, id, 'no_token', m.brokenRequest);
 		const started = now();
 		defer(async () => {
 			const base = { tenant: rt.tenant.id, interaction: id, kind: 'link' };
@@ -253,11 +236,7 @@ export function createSlashCommands(env: SlashEnv): {
 				log({ event: 'ix.done', ...base, result, ms: now() - started });
 			} catch (error) {
 				log(failedEntry(base, error, now() - started));
-				await withdraw(
-					token,
-					base,
-					`Не получилось: ${describe(messages(rt.tenant.locale), error)}.`,
-				);
+				await withdraw(token, base, m.failed(describe(m, error)));
 			}
 		});
 		// No ephemeral flag: the confirmation is for the whole thread.

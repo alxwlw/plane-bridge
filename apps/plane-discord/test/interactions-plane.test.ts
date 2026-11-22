@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
+
 import { commandDefinitions } from '../src/discord/commands.ts';
 import { DiscordApiError } from '../src/discord/rest.ts';
 import { PlaneApiError } from '../src/plane/client.ts';
@@ -385,6 +387,56 @@ describe('/plane KEY', () => {
 			],
 			contexts: [0],
 			integration_types: [0],
+		});
+	});
+});
+
+describe('/plane KEY in English', () => {
+	test('card command in English', async () => {
+		const w = await setup({ locale: 'en' });
+		seed(w, ['plane-user-2', 'plane-user-3']);
+		w.plane.members = [{ id: 'plane-user-2', displayName: '', avatarUrl: null }];
+		w.plane.items.get('w40')!.name = 'Fix login';
+		w.plane.states.set(P_LAB, [{ id: 's-doing', name: 'Doing', group: 'started' }]);
+		await slash(w, 'LAB-40');
+		await w.settle();
+		const [, payload] = w.discord.callsOf('editOriginal')[0] as [string, { embeds: any[] }];
+		expect(payload.embeds[0].fields).toEqual([
+			{ name: 'State', value: 'Doing', inline: true },
+			{ name: 'Assignees', value: 'someone, someone', inline: true },
+			{ name: 'Priority', value: 'Urgent', inline: true },
+		]);
+		expect(JSON.stringify(payload)).not.toMatch(CYRILLIC);
+	});
+
+	test('card refusals and failures in English', async () => {
+		const w = await setup({ locale: 'en' });
+		const refused = await slash(w, 'abc');
+		expect(refused.body.data.content).toBe('Use a key like LAB-40.');
+		const payload = chatInputPayload({
+			id: w.ids.next(),
+			guildId: GUILD,
+			name: 'plane',
+			options: [{ name: 'key', type: 3, value: 'LAB-40' }],
+		});
+		const noToken = await w.ask({ ...payload, token: undefined });
+		expect(noToken.body.data.content).toBe('Could not read the Discord request.');
+
+		await slash(w, 'LAB-99');
+		await w.settle();
+		expect(w.discord.callsOf('followup').at(-1)?.[1]).toEqual({
+			content: 'Work item LAB-99 not found.',
+			ephemeral: true,
+		});
+
+		w.plane.getWorkItemByKey = async () => {
+			throw new PlaneApiError(500, 'GET', '/x');
+		};
+		await slash(w, 'LAB-40');
+		await w.settle();
+		expect(w.discord.callsOf('followup').at(-1)?.[1]).toEqual({
+			content: 'Failed: Plane answered 500.',
+			ephemeral: true,
 		});
 	});
 });

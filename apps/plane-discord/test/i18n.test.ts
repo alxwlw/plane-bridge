@@ -60,7 +60,24 @@ test('the English plain strings, pinned literally', () => {
 		titleLabel: 'Title',
 		descriptionLabel: 'Description',
 		projectLabel: 'Project',
+		notThread: 'This command works in a thread.',
+		cannotJoinThread: 'Cannot join the thread: add @Plane to the thread and try again.',
+		threadLinkedElsewhere: 'This thread is already linked to another work item.',
+		stateField: 'State',
+		assigneesField: 'Assignees',
+		priorityField: 'Priority',
+		priorityUrgent: 'Urgent',
+		priorityHigh: 'High',
+		priorityMedium: 'Medium',
+		priorityLow: 'Low',
 	});
+});
+
+test('the thread link sentences carry their values, in both locales', () => {
+	expect(en.threadLinkedTo('LAB-1')).toBe('This thread is already linked to LAB-1.');
+	expect(ru.threadLinkedTo('LAB-1')).toBe('Тред уже привязан к LAB-1.');
+	expect(en.threadLinked('[T](<u>)')).toBe('Thread linked to [T](<u>).');
+	expect(ru.threadLinked('[T](<u>)')).toBe('Тред привязан к [T](<u>).');
 });
 
 test('the sentences with values carry them, in both locales', () => {
