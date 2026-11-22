@@ -9,7 +9,7 @@
  * and deletes what it created. Four sections — work items, archive, Plane App
  * (states, links, comment edit), releases — run
  * independently: a section that throws records one ✗ row and the next one still
- * runs. A workspace whose plan has no releases (402) skips the release section.
+ * runs. A workspace whose plan has no releases (402), or an App bot token that cannot write them (403), skips the release section.
  * Exit 0 only when every row matches; 1 on any mismatch; 2 on missing env.
  *
  * Env: PLANE_HOOKS_PLANE_URL, PLANE_HOOKS_WORKSPACE, PLANE_HOOKS_PROJECT_ID and the app's
@@ -21,6 +21,7 @@ import { botTokenAuth } from '@alxwlw/plane-app';
 import { messages } from '../src/i18n.ts';
 import { PLANE_HOOKS_SCOPES } from '../src/plane.ts';
 import { changelogHtml, type ReleaseDraft } from '../src/release.ts';
+import { releaseSectionSkip } from './probe-plane-release.ts';
 
 // A module, so top-level await type-checks.
 export {};
@@ -572,13 +573,14 @@ try {
 			external_id: releaseTag,
 		});
 		releaseId = typeof newRelease.body?.id === 'string' ? newRelease.body.id : null;
-		// 402 Payment Required: the workspace plan has no releases (Free). A fact, not a contract break.
-		if (newRelease.status === 402) {
+		// 402 (a plan without releases) and 403 (an App bot token): a fact, not a contract break.
+		const skipped = releaseSectionSkip(newRelease.status);
+		if (skipped !== null) {
 			row(
 				'10',
 				'POST /releases/ with external_id',
-				'201 {id}; 402 — a plan without releases',
-				'402, the releases section skipped',
+				'201 {id}; 402 — a plan without releases; 403 — an App bot token',
+				skipped,
 				true,
 			);
 			return;
