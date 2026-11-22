@@ -579,6 +579,49 @@ describe('POST /miro/api/bind', () => {
 		...over,
 	});
 
+	test('an empty author is the Miro user in the bind comment, in English', async () => {
+		const w = world({ locale: 'en' });
+		seedItem(w.plane, 'w-ex');
+		await w.call('POST', '/miro/api/bind', { body: body({ author: '   ' }) });
+		expect(w.plane.createdComments[0]?.comment.comment_html).toBe(
+			'<p>From the Miro board (Miro user):</p><p>Первый стикер</p>',
+		);
+	});
+
+	test('bind, two teams, two languages', async () => {
+		const en = world({ id: 'enteam', locale: 'en', miroTeamId: '3458764500000000002' });
+		const ru = world({ id: 'ruteam', locale: 'ru', miroTeamId: '3458764500000000003' });
+		seedItem(en.plane, 'w-ex');
+		seedItem(ru.plane, 'w-ex');
+		const api = createApi({
+			config: { ...en.config, tenants: [en.tenant, ru.tenant] },
+			runtimes: new Map([
+				[en.tenant.id, en.rt],
+				[ru.tenant.id, ru.rt],
+			]),
+			store: en.store,
+			log: en.log,
+			nowSec: () => NOW_SEC,
+		});
+		for (const team of ['3458764500000000002', '3458764500000000003']) {
+			const res = await api(
+				new Request('http://x/miro/api/bind', {
+					method: 'POST',
+					headers: { authorization: `Bearer ${jwt({ team })}` },
+					body: JSON.stringify(body({ author: '   ' })),
+				}),
+				new URL('http://x/miro/api/bind'),
+			);
+			expect(res.status).toBe(200);
+		}
+		expect(en.plane.createdComments[0]?.comment.comment_html).toBe(
+			'<p>From the Miro board (Miro user):</p><p>Первый стикер</p>',
+		);
+		expect(ru.plane.createdComments[0]?.comment.comment_html).toBe(
+			'<p>С доски Miro (участник Miro):</p><p>Первый стикер</p>',
+		);
+	});
+
 	test('привязка: result с ключом и карточкой', async () => {
 		const w = world({ keepSource: false });
 		seedItem(w.plane, 'w-ex');

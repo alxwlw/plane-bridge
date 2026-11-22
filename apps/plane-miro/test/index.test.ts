@@ -123,6 +123,16 @@ describe('startService', () => {
 			expect(w.lines.join('\n')).not.toContain(secret);
 	});
 
+	test('the listening line carries the locale of each tenant', async () => {
+		const w = world();
+		w.options.readFile = read(TENANTS.replace('"locale":"ru"', '"locale":"en"'));
+		const { service } = await start(w);
+		expect(w.entries().find((e) => e.event === 'listening')).toMatchObject({
+			port: service.port,
+			tenants: [{ id: 'acme', locale: 'en' }],
+		});
+	});
+
 	test('сервис: подписанная доставка смены статуса → карточка на доске обновлена', async () => {
 		const w = world();
 		const old = {
