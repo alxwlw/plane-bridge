@@ -12,13 +12,13 @@ Phases 1 to 3 (this version; a bound thread and its work item are synced both wa
   channel gets plain messages. No mapping, no message.
 - **1b, Plane to a DM.** "You were assigned" and "you were mentioned" reach the person through the
   user table. Your own actions are not sent. A closed DM is logged, not retried.
-- **1c, Discord to Plane.** The message commands `Создать задачу в Plane` (opens a modal, creates the
+- **1c, Discord to Plane.** The message commands `Create Plane work item` (opens a modal, creates the
   work item with `external_source=discord`, `external_id=<message id>`, replies in the channel) and
-  `Добавить в задачу` (adds a comment to a work item by key). Attachments go in as links.
+  `Add to work item` (adds a comment to a work item by key). Attachments go in as links.
 - **2, `/plane KEY`.** A slash command that answers in the channel with a public card of the work item
   (title, state, assignees, priority, link). A malformed key, an unknown key and a key of a hidden
   project get a private (ephemeral) reply; the last two look the same.
-- **3, thread binding.** When `Создать задачу в Plane` creates a work item in a text or announcement
+- **3, thread binding.** When `Create Plane work item` creates a work item in a text or announcement
   channel, the bot opens a thread on its public reply and binds it to the item (a forum post from 1a is
   already bound). `/plane-link KEY` binds the thread it is typed in; a thread holds one work item.
   Binding a thread to a hidden project's item is refused like an unknown key.
@@ -59,7 +59,7 @@ workspace, broken JSON, a body over 4 MiB) is logged with `level: "error"` and `
 Plane does not expose a webhook's status to a bot token (the call answers 403), so the service judges
 by silence alone. Every 15 minutes, for each tenant: no delivery for longer than `silenceHours` (counted
 from the start for a tenant that never had one) posts one message to `serviceChannelId` and logs
-`plane.silent` at `error`. The first delivery after that posts "Plane снова на связи" and logs `plane.alive`.
+`plane.silent` at `error`. The first delivery after that posts "Plane is sending events again" and logs `plane.alive`.
 Without a `serviceChannelId` only the log lines are written.
 
 ## Configuration
@@ -84,8 +84,12 @@ listing every problem; the message names variables and JSON paths, never values.
 
 Tenants: [`tenants.example.json`](tenants.example.json) shows every key (tenant id, Discord server,
 Plane workspace and its UUID, the app's client id and installation id, the service channel, the channel
-map with optional module and event set, the user table, hidden projects). The tenant id matches
+map with optional module and event set, the user table, hidden projects, `locale`). The tenant id matches
 `^[a-z][a-z0-9]{0,15}$`.
+
+`locale` is `en` (the default) or `ru`. Every text the bot writes (channel posts, cards, notifications, DMs, replies and command names) is in the tenant's language; logs, startup errors and the operator scripts are English. A request whose tenant is unknown is answered in English. A change takes effect after a restart.
+
+`scripts/register-commands.ts` registers each guild's commands in its tenant's language (`Create Plane work item`, `Add to work item` for `en`; `Создать задачу в Plane`, `Добавить в задачу` for `ru`); run it again after changing `locale`. The service accepts both languages' command names, so commands registered earlier keep working.
 
 ## Plane App
 
@@ -137,7 +141,7 @@ docker exec <container> bun scripts/list-channels.ts       # id, type, parent an
   Discord threads or messages, the ids and tokens of the webhooks the bot created for thread messages, the
   watchdog heartbeat. It is not backed up. Losing it costs the deduplication window (a retried delivery can
   post twice), the thread links of existing posts (new events open new posts) and the links of threads bound
-  by `Создать задачу в Plane` or `/plane-link`: their sync stops until `/plane-link` is run again. The bot
+  by `Create Plane work item` or `/plane-link`: their sync stops until `/plane-link` is run again. The bot
   adopts its own webhook found in a channel, or creates a new one; webhooks created earlier stay in the
   channels (Discord allows 15 per channel, so remove stale ones by hand). Nothing in Plane or Discord is
   lost.

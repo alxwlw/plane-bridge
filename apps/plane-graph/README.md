@@ -13,7 +13,7 @@ What it does:
   leaves the old copy in place, logs `sync.failed` and is retried after 10 minutes. A webhook delivery re-reads
   the one item it names, with its relations; repeats of one item in the queue are folded into one read.
 - **An order graph.** Work items joined by «blocks» are laid out in waves: wave 0 can start now, wave 1 waits for
-  wave 0, and so on. Cycles are reported, not hidden; tasks of one wave that share an area label (`код:<name>`)
+  wave 0, and so on. Cycles are reported, not hidden; tasks of one wave that share an area label (`area:<name>`)
   are flagged as not parallel.
 - **A block for Plane.** `plane-block.html` is a small file to paste into an HTML block of a Plane page; it loads
   the graph from this service.
@@ -85,8 +85,12 @@ Environment:
 every problem; the message names variables and JSON paths, never values. A failed build of `web/` stops it too.
 
 Tenants: [`tenants.example.json`](tenants.example.json) shows every key (tenant id, Plane workspace slug and its
-UUID, the Plane App's client id and installation id). The tenant id matches `^[a-z][a-z0-9]{0,15}$`. UUIDs may be
+UUID, the Plane App's client id and installation id, `locale`, `areaPrefix`). The tenant id matches `^[a-z][a-z0-9]{0,15}$`. UUIDs may be
 written in any case: they are read in lower case, as Plane sends them.
+
+`locale` is `en` (the default) or `ru`. Every text of the page is in the tenant's language; logs and startup errors are English. A request whose tenant is unknown is answered in English. A change takes effect after a restart.
+
+`areaPrefix` is the prefix of the labels that name an area, default `area:`, matched case-sensitively as written. A team whose area labels are `код:<name>` sets `"areaPrefix": "код:"`.
 
 ## Plane App
 

@@ -2,6 +2,7 @@
 	"tenants": [
 		{
 			"id": "acme",
+			"locale": "en",
 			"workspace": "example-ws",
 			"workspaceId": "00000000-0000-4000-8000-000000000001",
 			"plane": {
@@ -16,6 +17,7 @@
 		},
 		{
 			"id": "beta",
+			"locale": "en",
 			"workspace": "example-ws-two",
 			"workspaceId": "00000000-0000-4000-8000-000000000011",
 			"plane": {
