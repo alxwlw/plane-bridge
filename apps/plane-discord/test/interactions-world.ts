@@ -143,7 +143,7 @@ export async function setup(
 		rt,
 		handler,
 		ids,
-		/** Switches the tenant's language in place, as a config reload would. */
+		/** Switches the tenant's language in place. */
 		setLocale: (locale: Locale) => void (rt.tenant = { ...rt.tenant, locale }),
 		advance: (ms: number) => void (clock += ms),
 		async ask(payload: unknown): Promise<{ status: number; body: any; headers: Headers }> {

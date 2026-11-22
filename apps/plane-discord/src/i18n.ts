@@ -1,6 +1,6 @@
 import { type Catalog, type Locale } from '@alxwlw/plane-kit/locale';
 
-/** The English catalog: the keys and shapes every locale must have. Texts move in from the modules that send them. */
+/** The English catalog: the keys and shapes every locale must have. */
 export const en = {
 	// An unknown actor, assignee or mentioned person.
 	someone: 'someone',
@@ -59,15 +59,15 @@ export const en = {
 	keyLabel: 'Work item key',
 	textLabel: 'Text',
 	createModalTitle: 'Plane work item',
+	titleLabel: 'Title',
+	descriptionLabel: 'Description',
+	projectLabel: 'Project',
 	// Commands as registered in a guild: Discord caps a name at 32 characters and a description at 100.
 	createCommand: 'Create Plane work item',
 	appendCommand: 'Add to work item',
 	planeCommandDescription: 'Plane work item card',
 	planeLinkCommandDescription: 'Link this thread to a Plane work item',
 	keyOptionDescription: 'Work item key, e.g. LAB-40',
-	titleLabel: 'Title',
-	descriptionLabel: 'Description',
-	projectLabel: 'Project',
 	// Discord markdown: every `…Md` parameter is built markdown, passed through untouched.
 	quoted: (textMd: string) => `“${textMd}”`,
 	alreadyExists: (targetMd: string) => `Already exists: ${targetMd}`,
@@ -146,14 +146,14 @@ export const ru: Messages = {
 	keyLabel: 'Ключ задачи',
 	textLabel: 'Текст',
 	createModalTitle: 'Задача в Plane',
+	titleLabel: 'Название',
+	descriptionLabel: 'Описание',
+	projectLabel: 'Проект',
 	createCommand: 'Создать задачу в Plane',
 	appendCommand: 'Добавить в задачу',
 	planeCommandDescription: 'Карточка задачи Plane',
 	planeLinkCommandDescription: 'Привязать тред к задаче Plane',
 	keyOptionDescription: 'Ключ задачи, например LAB-40',
-	titleLabel: 'Название',
-	descriptionLabel: 'Описание',
-	projectLabel: 'Проект',
 	quoted: (textMd) => `«${textMd}»`,
 	alreadyExists: (targetMd) => `Уже есть: ${targetMd}`,
 	createdWithProblem: (targetMd, reason) => `Задача создана: ${targetMd} — ${reason}.`,
