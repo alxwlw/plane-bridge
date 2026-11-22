@@ -16,11 +16,6 @@ const ALLOWED: readonly { path: string; line: number; reason: string }[] = [
 		reason:
 			'the replacement name inside sanitized Russian fixtures, pinned by test/sanitize.test.ts',
 	},
-	{
-		path: 'src/config.ts',
-		line: 5,
-		reason: 'DEFAULT_AREA_PREFIX is still the Russian prefix; phase 6 flips it',
-	},
 ];
 
 test('no Cyrillic outside the catalog', () => {

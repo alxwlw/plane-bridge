@@ -22,9 +22,9 @@ const load = (extra: Record<string, unknown>) =>
 	loadConfig(ENV, () => tenantWith(extra)).tenants.get('acme');
 
 describe('tenant locale', () => {
-	test('a tenant without locale gets the default, which is ru', () => {
-		expect(DEFAULT_LOCALE).toBe('ru');
-		expect(load({})?.locale).toBe('ru');
+	test('a tenant without locale gets the default, which is en', () => {
+		expect(DEFAULT_LOCALE).toBe('en');
+		expect(load({})?.locale).toBe('en');
 	});
 
 	test('en and ru are taken', () => {
@@ -38,9 +38,9 @@ describe('tenant locale', () => {
 });
 
 describe('tenant areaPrefix', () => {
-	test('a tenant without areaPrefix gets the default, which is the Russian one', () => {
-		expect(DEFAULT_AREA_PREFIX).toBe('код:');
-		expect(load({})?.areaPrefix).toBe('код:');
+	test('a tenant without areaPrefix gets the default, which is area:', () => {
+		expect(DEFAULT_AREA_PREFIX).toBe('area:');
+		expect(load({})?.areaPrefix).toBe('area:');
 	});
 
 	test.each(['area:', 'Area.', ' x '])('prefix %p is kept as written', (prefix) => {

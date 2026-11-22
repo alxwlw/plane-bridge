@@ -8,6 +8,9 @@ test('isLocale accepts exactly en and ru', () => {
 test('the default locale is one of the locales', () => {
 	expect(LOCALES).toContain(DEFAULT_LOCALE);
 });
+test('the default locale is en', () => {
+	expect(DEFAULT_LOCALE).toBe('en');
+});
 
 // Type-level: `typecheck` fails when Catalog stops rejecting an extra or a missing key,
 // or stops carrying a function entry's parameters.

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import { commandDefinitions } from '../src/discord/commands.ts';
+import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
 import { messages } from '../src/i18n.ts';
 import { createInteractionHandler } from '../src/discord/interactions.ts';
 import { type ProjectSummary } from '../src/plane/client.ts';
@@ -62,7 +63,7 @@ describe('createInteractionHandler: подпись и служебные отв�
 		expect(res.status).toBe(413);
 	});
 
-	test('сервер без тенанта → ephemeral «не настроен»', async () => {
+	test('a guild without a tenant gets the ephemeral notConfigured of the default locale', async () => {
 		const w = await setup();
 		const res = await w.ask(
 			commandPayload({
@@ -75,10 +76,10 @@ describe('createInteractionHandler: подпись и служебные отв�
 		);
 		expect(res.body.type).toBe(4);
 		expect(res.body.data.flags).toBe(64);
-		expect(res.body.data.content).toBe('Этот сервер не настроен.');
+		expect(res.body.data.content).toBe(messages(DEFAULT_LOCALE).notConfigured);
 		expect(res.body.data.allowed_mentions).toEqual({ parse: [] });
 		const dm = await w.ask({ type: 2, id: w.ids.next(), data: { type: 3 } });
-		expect(dm.body.data.content).toBe('Этот сервер не настроен.');
+		expect(dm.body.data.content).toBe(messages(DEFAULT_LOCALE).notConfigured);
 	});
 
 	test('тот же interaction id второй раз → ephemeral «уже обработано», модалки нет', async () => {

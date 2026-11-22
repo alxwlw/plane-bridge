@@ -1,8 +1,8 @@
 // Adapted from apps/plane-miro/src/config.ts.
 import { DEFAULT_LOCALE, isLocale, type Locale, LOCALES } from '@alxwlw/plane-kit/locale';
 
-/** The default prefix of area labels; phase 6 of the locale plan flips it to 'area:'. */
-export const DEFAULT_AREA_PREFIX = 'код:';
+/** The default prefix of area labels. */
+export const DEFAULT_AREA_PREFIX = 'area:';
 
 export type TenantConfig = {
 	id: string;

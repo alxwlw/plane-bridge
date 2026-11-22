@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { generateKeyPairSync } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
 import { loadServiceConfig, matchRepo, type RepoRule } from '../src/config.ts';
 import { TEST_KEY_PEM, tenantOf } from './config-fixture.ts';
 
@@ -74,7 +75,7 @@ describe('loadServiceConfig', () => {
 			port: 8080,
 			planeUrl: 'https://plane.example.com',
 			publicUrl: 'https://hooks.example.com',
-			tenants: [tenantOf()],
+			tenants: [tenantOf({ locale: DEFAULT_LOCALE })],
 		});
 	});
 
@@ -127,6 +128,7 @@ describe('loadServiceConfig', () => {
 		);
 		expect(config.tenants[0]).toEqual(
 			tenantOf({
+				locale: DEFAULT_LOCALE,
 				github: [],
 				delivery: null,
 				dokploy: [],

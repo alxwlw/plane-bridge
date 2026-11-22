@@ -13,6 +13,7 @@ import {
 	type Service,
 	startService,
 } from '../src/index.ts';
+import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
 import { messages as catalog } from '../src/i18n.ts';
 import { commandPayload, submitPayload } from './discord-harness.ts';
 import { Store } from '../src/store.ts';
@@ -375,11 +376,11 @@ describe('startService: Discord interactions', () => {
 		});
 	});
 
-	test('сервер не из конфига → «Этот сервер не настроен»', async () => {
+	test('a guild not in the config gets notConfigured of the default locale', async () => {
 		const { url } = start();
 		const payload = { ...command(CHANNEL, '800000000000000003'), guild_id: '111111111111111199' };
 		const res = await ask(url(''), payload);
-		expect(res.body.data.content).toBe('Этот сервер не настроен.');
+		expect(res.body.data.content).toBe(catalog(DEFAULT_LOCALE).notConfigured);
 	});
 
 	test('отправка формы: сразу type 5, задача создаётся после ответа, в канал уходит reply', async () => {

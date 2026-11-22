@@ -26,8 +26,8 @@ const withLocale = (extra: Record<string, unknown>) => {
 
 describe('tenant locale', () => {
 	test('a tenant without locale gets the default locale', () => {
-		expect(withLocale({}).tenants[0]?.locale).toBe('ru');
-		expect(DEFAULT_LOCALE).toBe('ru');
+		expect(withLocale({}).tenants[0]?.locale).toBe('en');
+		expect(DEFAULT_LOCALE).toBe('en');
 	});
 	test('a tenant takes locale en or ru', () => {
 		expect(withLocale({ locale: 'en' }).tenants[0]?.locale).toBe('en');

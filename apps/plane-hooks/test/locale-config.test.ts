@@ -24,8 +24,8 @@ function load(extra: Record<string, unknown>) {
 }
 
 test('a tenant without locale gets the default locale', () => {
-	expect(load({}).tenants[0]?.locale).toBe('ru');
-	expect(DEFAULT_LOCALE).toBe('ru');
+	expect(load({}).tenants[0]?.locale).toBe('en');
+	expect(DEFAULT_LOCALE).toBe('en');
 });
 test('a tenant takes locale en or ru', () => {
 	expect(load({ locale: 'en' }).tenants[0]?.locale).toBe('en');

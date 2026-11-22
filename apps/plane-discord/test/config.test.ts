@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
+import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
 import { describeTenants, loadConfig } from '../src/config.ts';
 
 const EXAMPLE = readFileSync(new URL('../tenants.example.json', import.meta.url), 'utf8');
@@ -38,7 +39,9 @@ describe('loadConfig', () => {
 		expect(tenant?.channels[0]?.events).toEqual(['created', 'closed', 'mention']);
 		expect(tenant?.channels[0]?.moduleId).toBeNull();
 		expect(tenant?.silenceHours).toBe(72);
-		expect(describeTenants(config)).toEqual([{ id: 'acme', locale: 'ru', channels: 1, users: 1 }]);
+		expect(describeTenants(config)).toEqual([
+			{ id: 'acme', locale: DEFAULT_LOCALE, channels: 1, users: 1 },
+		]);
 	});
 
 	test('без silenceHours, hiddenProjects и serviceChannelId — значения по умолчанию', () => {
@@ -221,7 +224,7 @@ describe('loadConfig', () => {
 					id: 'acme',
 					guildId: '111111111111111111',
 					workspace: 'example-ws',
-					locale: 'ru',
+					locale: DEFAULT_LOCALE,
 					workspaceId: '00000000-0000-4000-8000-000000000001',
 					auth: {
 						clientId: 'example-client-id',

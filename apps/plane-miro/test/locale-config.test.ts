@@ -21,9 +21,9 @@ const load = (extra: Record<string, unknown>) =>
 	loadConfig(env(), read(JSON.stringify(tenantJson(extra)))).tenants[0];
 
 describe('tenant locale', () => {
-	test('a tenant without locale gets the default, which is ru', () => {
-		expect(DEFAULT_LOCALE).toBe('ru');
-		expect(load({})?.locale).toBe('ru');
+	test('a tenant without locale gets the default, which is en', () => {
+		expect(DEFAULT_LOCALE).toBe('en');
+		expect(load({})?.locale).toBe('en');
 	});
 
 	test('en and ru are taken', () => {
