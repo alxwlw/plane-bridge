@@ -5,7 +5,7 @@
  * Authenticates as the "plane-hooks" Plane App bot (client_credentials token of a workspace
  * installation), the way the service does. Creates throwaway work items (one of them archived and unarchived on the
  * way, one for links and a comment edit) and one label in PLANE_HOOKS_PROJECT_ID, one
- * throwaway release in the workspace, exercises every call, prints «вызов — ожидание — факт»
+ * throwaway release in the workspace, exercises every call, prints "call — expected — actual"
  * and deletes what it created. Four sections — work items, archive, Plane App
  * (states, links, comment edit), releases — run
  * independently: a section that throws records one ✗ row and the next one still
@@ -97,14 +97,14 @@ function rowsOf(body: any): any[] {
 }
 
 function shapeOf(body: any): string {
-	return Array.isArray(body) ? 'массив' : Array.isArray(body?.results) ? 'страница' : 'иное';
+	return Array.isArray(body) ? 'array' : Array.isArray(body?.results) ? 'page' : 'other';
 }
 
-const rows: { '№': string; вызов: string; ожидание: string; факт: string; '': string }[] = [];
+const rows: { '#': string; call: string; expected: string; actual: string; '': string }[] = [];
 let failed = 0;
 function row(n: string, what: string, expected: string, actual: string, ok: boolean): void {
 	if (!ok) failed++;
-	rows.push({ '№': n, вызов: what, ожидание: expected, факт: actual, '': ok ? '✓' : '✗' });
+	rows.push({ '#': n, call: what, expected, actual, '': ok ? '✓' : '✗' });
 }
 
 let itemId: string | null = null;
@@ -122,8 +122,8 @@ async function section(name: string, run: () => Promise<void>): Promise<void> {
 	} catch (err) {
 		row(
 			'—',
-			`${name}: сеть / разбор`,
-			'ответ Plane',
+			`${name}: network / parsing`,
+			'a Plane reply',
 			err instanceof Error ? `${err.name}: ${err.message}` : String(err),
 			false,
 		);
@@ -132,7 +132,7 @@ async function section(name: string, run: () => Promise<void>): Promise<void> {
 
 const ARCHIVED_AT = 'archived_at';
 function archivedAtOf(body: any): string {
-	if (body === null || typeof body !== 'object' || !(ARCHIVED_AT in body)) return 'нет поля';
+	if (body === null || typeof body !== 'object' || !(ARCHIVED_AT in body)) return 'no field';
 	return body[ARCHIVED_AT] === null ? 'null' : typeof body[ARCHIVED_AT];
 }
 
@@ -155,7 +155,7 @@ async function archiveSection(doneId: string | undefined): Promise<void> {
 	archivedItemId = typeof create.body?.id === 'string' ? create.body.id : null;
 	row(
 		'14',
-		'POST /work-items/ (для архива)',
+		'POST /work-items/ (for the archive)',
 		'201 {id}',
 		`${create.status}`,
 		create.status === 201 && archivedItemId !== null,
@@ -167,7 +167,7 @@ async function archiveSection(doneId: string | undefined): Promise<void> {
 	const open = await call('GET', detailPath);
 	row(
 		'14',
-		'GET деталь неархивной',
+		'GET detail of a non-archived item',
 		'200, archived_at: null',
 		`${open.status}, archived_at: ${archivedAtOf(open.body)}`,
 		open.status === 200 && archivedAtOf(open.body) === 'null',
@@ -176,8 +176,8 @@ async function archiveSection(doneId: string | undefined): Promise<void> {
 	const openArchiveOpen = await archive(id);
 	row(
 		'14',
-		'POST /archive/ в группе backlog',
-		'400 (архив только для completed/cancelled)',
+		'POST /archive/ in the backlog group',
+		'400 (archive only for completed/cancelled)',
 		`${openArchiveOpen.status}`,
 		openArchiveOpen.status === 400,
 	);
@@ -189,20 +189,20 @@ async function archiveSection(doneId: string | undefined): Promise<void> {
 	row(
 		'14',
 		'POST /work-items/{id}/archive/',
-		'200, archived_at — строка',
+		'200, archived_at is a string',
 		`${archived.status}, archived_at: ${archivedAtOf(archived.body)}`,
 		archived.status === 200 && archivedAtOf(archived.body) === 'string',
 	);
 
 	// The rows below pin what test/fake-plane.ts does with an archived item.
 	const detail = await call('GET', detailPath);
-	row('14', 'архивная: GET деталь', '404', `${detail.status}`, detail.status === 404);
+	row('14', 'archived: GET detail', '404', `${detail.status}`, detail.status === 404);
 
 	const archivedDetail = await call('GET', `${project}/archived-work-items/${id}/`);
 	row(
 		'14',
-		'архивная: GET /archived-work-items/{id}/ (сведения)',
-		'404 — деталью архив не проверить',
+		'archived: GET /archived-work-items/{id}/ (info)',
+		'404 — the archive cannot be checked by the detail',
 		`${archivedDetail.status}`,
 		true,
 	);
@@ -211,18 +211,18 @@ async function archiveSection(doneId: string | undefined): Promise<void> {
 	const inList = rowsOf(archivedList.body).find((w) => w?.id === id);
 	row(
 		'14',
-		'архивная: GET /archived-work-items/',
-		'200, страница, задача есть по id, archived_at — строка',
-		`${archivedList.status}, ${shapeOf(archivedList.body)}, по id: ${inList ? 'есть' : 'нет'}, archived_at: ${archivedAtOf(inList)}`,
+		'archived: GET /archived-work-items/',
+		'200, page, the item is there by id, archived_at is a string',
+		`${archivedList.status}, ${shapeOf(archivedList.body)}, by id: ${inList ? 'present' : 'absent'}, archived_at: ${archivedAtOf(inList)}`,
 		archivedList.status === 200 &&
-			shapeOf(archivedList.body) === 'страница' &&
+			shapeOf(archivedList.body) === 'page' &&
 			archivedAtOf(inList) === 'string',
 	);
 
 	const comments = await call('GET', `${detailPath}comments/`);
 	row(
 		'14',
-		'архивная: GET /comments/',
+		'archived: GET /comments/',
 		'200',
 		`${comments.status}, ${shapeOf(comments.body)}`,
 		comments.status === 200,
@@ -235,7 +235,7 @@ async function archiveSection(doneId: string | undefined): Promise<void> {
 	});
 	row(
 		'14',
-		'архивная: POST /comments/ с external_id',
+		'archived: POST /comments/ with external_id',
 		'201 {id}',
 		`${comment.status}`,
 		comment.status === 201 && typeof comment.body?.id === 'string',
@@ -254,9 +254,9 @@ async function archiveSection(doneId: string | undefined): Promise<void> {
 		strayItemId = duplicate.body.id;
 	row(
 		'14',
-		'архивная: POST /work-items/ повтор external_id',
-		'409, id = id архивной',
-		`${duplicate.status}, id ${duplicate.body?.id === id ? 'совпал' : 'другой'}`,
+		'archived: POST /work-items/ repeated external_id',
+		'409, id = id of the archived item',
+		`${duplicate.status}, id ${duplicate.body?.id === id ? 'matched' : 'different'}`,
 		duplicate.status === 409 && duplicate.body?.id === id,
 	);
 
@@ -266,9 +266,9 @@ async function archiveSection(doneId: string | undefined): Promise<void> {
 	);
 	row(
 		'14',
-		'архивная: GET ?external_id=…',
-		'200, id = id архивной, archived_at — строка',
-		`${byExternal.status}, id ${byExternal.body?.id === id ? 'совпал' : '—'}, archived_at: ${archivedAtOf(byExternal.body)}`,
+		'archived: GET ?external_id=…',
+		'200, id = id of the archived item, archived_at is a string',
+		`${byExternal.status}, id ${byExternal.body?.id === id ? 'matched' : '—'}, archived_at: ${archivedAtOf(byExternal.body)}`,
 		byExternal.status === 200 &&
 			byExternal.body?.id === id &&
 			archivedAtOf(byExternal.body) === 'string',
@@ -279,7 +279,7 @@ async function archiveSection(doneId: string | undefined): Promise<void> {
 		['DELETE /work-items/{id}/unarchive/', `${detailPath}unarchive/`, true],
 		['DELETE /work-items/{id}/unarchive', `${detailPath}unarchive`, true],
 		[
-			'DELETE /archived-work-items/{id}/unarchive/ (сведения)',
+			'DELETE /archived-work-items/{id}/unarchive/ (info)',
 			`${project}/archived-work-items/${id}/unarchive/`,
 			false,
 		],
@@ -289,7 +289,7 @@ async function archiveSection(doneId: string | undefined): Promise<void> {
 		if (state.status === 200) {
 			const again = await archive(id);
 			if (again.status !== 200) {
-				row('14', `${what}: повторный архив`, '200', `${again.status}`, false);
+				row('14', `${what}: archive again`, '200', `${again.status}`, false);
 				continue;
 			}
 		}
@@ -300,8 +300,8 @@ async function archiveSection(doneId: string | undefined): Promise<void> {
 		row(
 			'14',
 			what,
-			required ? '204, затем деталь 200 с archived_at: null' : 'сведения',
-			`${unarchived.status}; деталь ${back.status}, archived_at: ${archivedAtOf(back.body)}`,
+			required ? '204, then detail 200 with archived_at: null' : 'info',
+			`${unarchived.status}; detail ${back.status}, archived_at: ${archivedAtOf(back.body)}`,
 			required ? ok : true,
 		);
 	}
@@ -309,11 +309,11 @@ async function archiveSection(doneId: string | undefined): Promise<void> {
 	// The last variant may have left it archived: the path the client uses brings it back.
 	await call('DELETE', `${detailPath}unarchive/`);
 	const twice = await call('DELETE', `${detailPath}unarchive/`);
-	row('14', 'DELETE /unarchive/ неархивной (сведения)', 'сведения', `${twice.status}`, true);
+	row('14', 'DELETE /unarchive/ of a non-archived item (info)', 'info', `${twice.status}`, true);
 	const finalDetail = await call('GET', detailPath);
 	row(
 		'14',
-		'после unarchive: GET деталь',
+		'after unarchive: GET detail',
 		'200, archived_at: null',
 		`${finalDetail.status}, archived_at: ${archivedAtOf(finalDetail.body)}`,
 		finalDetail.status === 200 && archivedAtOf(finalDetail.body) === 'null',
@@ -331,8 +331,8 @@ async function planeAppSection(): Promise<void> {
 	);
 	row(
 		'15',
-		'GET /states/: name и sequence',
-		'200, у каждого состояния name и числовой sequence',
+		'GET /states/: name and sequence',
+		'200, every state has a name and a numeric sequence',
 		`${states.status}, ${stateRows.map((s) => `${s?.name}:${s?.sequence}`).join(', ')}`,
 		states.status === 200 && stateRows.length > 0 && ordered,
 	);
@@ -345,7 +345,13 @@ async function planeAppSection(): Promise<void> {
 		external_source: SOURCE,
 	});
 	linkItemId = typeof create.body?.id === 'string' ? create.body.id : null;
-	row('15', 'POST /work-items/ (для ссылок)', '201 {id}', `${create.status}`, linkItemId !== null);
+	row(
+		'15',
+		'POST /work-items/ (for the links)',
+		'201 {id}',
+		`${create.status}`,
+		linkItemId !== null,
+	);
 	if (linkItemId === null) return;
 	const itemUrl = `${project}/work-items/${linkItemId}`;
 
@@ -359,14 +365,14 @@ async function planeAppSection(): Promise<void> {
 	const listed = rowsOf((await call('GET', `${itemUrl}/links/?per_page=100`)).body);
 	row(
 		'15',
-		'POST /links/ повтор того же URL',
-		'400, URL есть в GET /links/',
-		`${second.status}, в списке: ${listed.some((l) => l?.url === link.url) ? 'есть' : 'нет'}`,
+		'POST /links/ repeating the same URL',
+		'400, the URL is in GET /links/',
+		`${second.status}, in the list: ${listed.some((l) => l?.url === link.url) ? 'present' : 'absent'}`,
 		second.status === 400 && listed.some((l) => l?.url === link.url),
 	);
 
 	const comment = await call('POST', `${itemUrl}/comments/`, {
-		comment_html: '<p>до</p>',
+		comment_html: '<p>before</p>',
 		external_id: `${linkTag}:c`,
 		external_source: SOURCE,
 	});
@@ -374,29 +380,29 @@ async function planeAppSection(): Promise<void> {
 	row('15', 'POST /comments/', '201 {id}', `${comment.status}`, commentId !== null);
 	if (commentId === null) return;
 	const patched = await call('PATCH', `${itemUrl}/comments/${commentId}/`, {
-		comment_html: '<p>после</p>',
+		comment_html: '<p>after</p>',
 	});
 	const listedComments = rowsOf((await call('GET', `${itemUrl}/comments/?per_page=100`)).body);
 	const mine = listedComments.find((c) => c?.id === commentId);
 	row(
 		'15',
 		'PATCH /comments/{id}/ comment_html',
-		'200, список отдаёт новый текст и external_source',
+		'200, the list returns the new text and external_source',
 		`${patched.status}, external_source: ${mine?.external_source ?? '—'}, html: ${mine?.comment_html ?? '—'}`,
 		patched.status === 200 &&
-			mine?.comment_html === '<p>после</p>' &&
+			mine?.comment_html === '<p>after</p>' &&
 			mine?.external_source === SOURCE,
 	);
 }
 
 try {
-	await section('задачи', async () => {
+	await section('work items', async () => {
 		const projects = await call('GET', `${base}/projects/`);
 		const mine = rowsOf(projects.body).find((p) => p?.id === env.PLANE_HOOKS_PROJECT_ID);
 		row(
 			'8',
 			'GET /projects/',
-			'200, проект с identifier',
+			'200, a project with an identifier',
 			`${projects.status}, ${shapeOf(projects.body)}, identifier=${mine?.identifier ?? '—'}`,
 			projects.status === 200 && typeof mine?.identifier === 'string',
 		);
@@ -408,7 +414,7 @@ try {
 		row(
 			'9',
 			'GET /states/',
-			'200, есть default и группа completed',
+			'200, a default state and a completed group exist',
 			`${states.status}, ${shapeOf(states.body)}, default=${defaultState?.name ?? '—'}, completed=${doneState?.name ?? '—'}`,
 			states.status === 200 && !!defaultState && !!doneState,
 		);
@@ -417,7 +423,7 @@ try {
 		row(
 			'9',
 			'GET /labels/',
-			'200, список',
+			'200, a list',
 			`${labels.status}, ${shapeOf(labels.body)}`,
 			labels.status === 200,
 		);
@@ -441,7 +447,7 @@ try {
 		const sequence = create.body?.sequence_id;
 		row(
 			'1',
-			'POST /work-items/ с external_id',
+			'POST /work-items/ with external_id',
 			'201 {id, sequence_id}',
 			`${create.status}, sequence_id=${sequence ?? '—'}`,
 			create.status === 201 && itemId !== null && typeof sequence === 'number',
@@ -454,9 +460,9 @@ try {
 		});
 		row(
 			'1',
-			'POST /work-items/ повтор',
-			'409, id = id первой',
-			`${duplicate.status}, id ${duplicate.body?.id === itemId ? 'совпал' : 'не совпал'}`,
+			'POST /work-items/ repeated',
+			'409, id = id of the first',
+			`${duplicate.status}, id ${duplicate.body?.id === itemId ? 'matched' : 'did not match'}`,
 			duplicate.status === 409 && duplicate.body?.id === itemId,
 		);
 
@@ -467,7 +473,7 @@ try {
 		row(
 			'2',
 			'GET /work-items/?external_id=…',
-			'200, id = id задачи',
+			'200, id = id of the item',
 			`${byExternal.status}`,
 			byExternal.status === 200 && byExternal.body?.id === itemId,
 		);
@@ -477,7 +483,7 @@ try {
 		);
 		row(
 			'2',
-			'GET ?external_id=несуществующий',
+			'GET ?external_id=nonexistent',
 			'404',
 			`${byExternalMissing.status}`,
 			byExternalMissing.status === 404,
@@ -487,7 +493,7 @@ try {
 		row(
 			'3',
 			'GET /work-items/{id}/',
-			'200, state — строка-uuid',
+			'200, state is a uuid string',
 			`${item.status}, state: ${typeof item.body?.state}`,
 			item.status === 200 && typeof item.body?.state === 'string',
 		);
@@ -507,7 +513,7 @@ try {
 		const c1 = await call('POST', `${project}/work-items/${itemId}/comments/`, comment);
 		row(
 			'5',
-			'POST /comments/ с external_id',
+			'POST /comments/ with external_id',
 			'201 {id}',
 			`${c1.status}`,
 			c1.status === 201 && typeof c1.body?.id === 'string',
@@ -515,9 +521,9 @@ try {
 		const c2 = await call('POST', `${project}/work-items/${itemId}/comments/`, comment);
 		row(
 			'5',
-			'POST /comments/ повтор',
-			'409, id = id первого',
-			`${c2.status}, id ${c2.body?.id === c1.body?.id ? 'совпал' : 'не совпал'}`,
+			'POST /comments/ repeated',
+			'409, id = id of the first',
+			`${c2.status}, id ${c2.body?.id === c1.body?.id ? 'matched' : 'did not match'}`,
 			c2.status === 409 && c2.body?.id === c1.body?.id,
 		);
 
@@ -526,7 +532,7 @@ try {
 		row(
 			'6',
 			'GET /comments/',
-			'200, у комментария external_id и created_at',
+			'200, the comment has external_id and created_at',
 			`${comments.status}, ${shapeOf(comments.body)}, next_cursor: ${typeof comments.body?.next_cursor}`,
 			comments.status === 200 && typeof listed?.created_at === 'string',
 		);
@@ -536,7 +542,7 @@ try {
 		row(
 			'7',
 			'GET /work-items/{KEY}-{N}/',
-			'200, id и project совпали',
+			'200, id and project matched',
 			`${byKey.status}, project: ${typeof byKey.body?.project}`,
 			byKey.status === 200 &&
 				byKey.body?.id === itemId &&
@@ -553,10 +559,10 @@ try {
 		doneStateId = doneState?.id;
 	});
 
-	await section('архив', () => archiveSection(doneStateId));
+	await section('archive', () => archiveSection(doneStateId));
 	await section('Plane App', () => planeAppSection());
 
-	await section('релизы', async () => {
+	await section('releases', async () => {
 		const releaseTag = `${tag}-release`;
 		const newRelease = await call('POST', `${base}/releases/`, {
 			name: `plane-hooks probe ${tag}`,
@@ -570,16 +576,16 @@ try {
 		if (newRelease.status === 402) {
 			row(
 				'10',
-				'POST /releases/ с external_id',
-				'201 {id}; 402 — тариф без релизов',
-				'402, секция релизов пропущена',
+				'POST /releases/ with external_id',
+				'201 {id}; 402 — a plan without releases',
+				'402, the releases section skipped',
 				true,
 			);
 			return;
 		}
 		row(
 			'10',
-			'POST /releases/ с external_id',
+			'POST /releases/ with external_id',
 			'201 {id}',
 			`${newRelease.status}`,
 			newRelease.status === 201 && releaseId !== null,
@@ -595,14 +601,14 @@ try {
 			typeof duplicateRelease.body?.id === 'string' ? duplicateRelease.body.id : null;
 		row(
 			'10',
-			'POST /releases/ повтор (сведения)',
-			'409 — Plane держит уникальность; 201 — нет',
-			`${duplicateRelease.status}, id ${duplicateId === releaseId ? 'совпал' : 'другой'}`,
+			'POST /releases/ repeated (info)',
+			'409 — Plane keeps it unique; 201 — it does not',
+			`${duplicateRelease.status}, id ${duplicateId === releaseId ? 'matched' : 'different'}`,
 			true,
 		);
 		if (duplicateId !== null && duplicateId !== releaseId) {
 			const del = await call('DELETE', `${base}/releases/${duplicateId}/`);
-			row('—', 'DELETE /releases/{dup}/ (уборка)', '204', `${del.status}`, del.status === 204);
+			row('—', 'DELETE /releases/{dup}/ (cleanup)', '204', `${del.status}`, del.status === 204);
 		}
 
 		const releases = await call('GET', `${base}/releases/?per_page=100`);
@@ -610,7 +616,7 @@ try {
 		row(
 			'11',
 			'GET /releases/',
-			'200, у релиза external_source и external_id',
+			'200, the release has external_source and external_id',
 			`${releases.status}, ${shapeOf(releases.body)}, external_id: ${listedRelease?.external_id ?? '—'}`,
 			releases.status === 200 &&
 				listedRelease?.external_source === SOURCE &&
@@ -645,8 +651,8 @@ try {
 		});
 		row(
 			'13',
-			'POST /releases/{id}/work-items/ повтор',
-			'2xx (уже привязана — не ошибка)',
+			'POST /releases/{id}/work-items/ repeated',
+			'2xx (already attached — not an error)',
 			`${attachAgain.status}`,
 			attachAgain.status >= 200 && attachAgain.status < 300,
 		);
@@ -657,7 +663,7 @@ try {
 			status: 0,
 			body: null,
 		}));
-		row('—', 'DELETE /releases/{id}/ (уборка)', '204', `${del.status}`, del.status === 204);
+		row('—', 'DELETE /releases/{id}/ (cleanup)', '204', `${del.status}`, del.status === 204);
 	}
 	if (linkItemId) {
 		const del = await call('DELETE', `${project}/work-items/${linkItemId}/`).catch(() => ({
@@ -666,7 +672,7 @@ try {
 		}));
 		row(
 			'—',
-			'DELETE /work-items/{id}/ (уборка, ссылки)',
+			'DELETE /work-items/{id}/ (cleanup, links)',
 			'204',
 			`${del.status}`,
 			del.status === 204,
@@ -677,14 +683,14 @@ try {
 			status: 0,
 			body: null,
 		}));
-		row('—', 'DELETE /work-items/{id}/ (уборка)', '204', `${del.status}`, del.status === 204);
+		row('—', 'DELETE /work-items/{id}/ (cleanup)', '204', `${del.status}`, del.status === 204);
 	}
 	if (labelId) {
 		const del = await call('DELETE', `${project}/labels/${labelId}/`).catch(() => ({
 			status: 0,
 			body: null,
 		}));
-		row('—', 'DELETE /labels/{id}/ (уборка)', '204', `${del.status}`, del.status === 204);
+		row('—', 'DELETE /labels/{id}/ (cleanup)', '204', `${del.status}`, del.status === 204);
 	}
 	for (const stray of [archivedItemId, strayItemId]) {
 		if (!stray) continue;
@@ -697,7 +703,7 @@ try {
 		}
 		row(
 			'—',
-			'DELETE /work-items/{id}/ (уборка, архив)',
+			'DELETE /work-items/{id}/ (cleanup, archive)',
 			'204',
 			`${del.status}`,
 			del.status === 204,
@@ -706,5 +712,5 @@ try {
 }
 
 console.table(rows);
-console.log(failed === 0 ? 'контракт подтверждён' : `расхождений: ${failed}`);
+console.log(failed === 0 ? 'contract confirmed' : `mismatches: ${failed}`);
 process.exit(failed === 0 ? 0 : 1);

@@ -139,7 +139,7 @@ export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Resp
 				return reported.ok ? text(200, 'ok') : text(502, 'plane failed');
 			}
 			case 'preview': {
-				// The preview comment never waits for «Погас»: queued first, the resolve is best effort.
+				// The preview comment never waits for the "Resolved" update: queued first, the resolve is best effort.
 				runtime.submit('vercel.preview', null, event.preview);
 				await resolveBestEffort(runtime, event.resolve, 'deployment.succeeded', log);
 				return text(200, 'ok');
@@ -203,7 +203,7 @@ export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Resp
 				return reported.ok ? text(200, 'ok') : text(502, 'plane failed');
 			}
 			case 'deployed': {
-				// The Deployment record never waits for «Погас»: queued first, the resolve is best effort.
+				// The Deployment record never waits for the "Resolved" update: queued first, the resolve is best effort.
 				runtime.submit('dokploy.deployed', null, event);
 				await resolveBestEffort(runtime, event.resolve, 'dokploy.deployed', log);
 				return text(200, 'ok');

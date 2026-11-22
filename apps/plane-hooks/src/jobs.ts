@@ -85,7 +85,7 @@ async function githubJob(runtime: TenantRuntime, event: GitHubJob, deps: JobDeps
 		if (!reported.ok) throw reported.error;
 		return;
 	}
-	// «Погас» never holds the deploy back; a transient failure of it becomes its own job.
+	// The "Resolved" update never holds the deploy back; a transient failure of it becomes its own job.
 	if (signal !== null) await resolveBestEffort(runtime, signal, 'deployment.success', deps.log);
 	// A Vercel deploy is marked by the Vercel input when the tenant has one; its GitHub twin only moves work items.
 	const marked = !(
@@ -238,7 +238,7 @@ export async function reportLogged(
 }
 
 /**
- * «Погас» on a deploy path (a GitHub success, a Vercel preview, a Dokploy deploy): it never blocks the delivery and
+ * The "Resolved" update on a deploy path (a GitHub success, a Vercel preview, a Dokploy deploy): it never blocks the delivery and
  * never makes it run twice. Success writes the usual line. A failure that may clear (5xx, 429, network) writes the
  * error line and queues the signal as its own `incident.resolve` job, which the queue retries alone; one that will
  * not (the incident project missing, a 4xx) is a warn line once per cause per process.
@@ -278,7 +278,7 @@ export async function resolveBestEffort(
 	}
 }
 
-/** A deploy path's «Погас» that failed for a transient reason: retried alone, the deploy is not run again. */
+/** A deploy path's "Resolved" update that failed for a transient reason: retried alone, the deploy is not run again. */
 async function resolveJob(
 	runtime: TenantRuntime,
 	signal: IncidentSignal,

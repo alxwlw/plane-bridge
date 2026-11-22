@@ -15,7 +15,7 @@ function head(m: Messages, label: string, fact: DeployFact): string[] {
 	return parts;
 }
 
-/** «Выкачено» on a work item: where, which commit, and the PRs of this task that were in the deploy. */
+/** The "Deployed" note on a work item: where, which commit, and the PRs of this task that were in the deploy. */
 export function deployedHtml(m: Messages, fact: DeployFact, pulls: readonly Pull[]): string {
 	const parts = head(m, m.deployed, fact);
 	// A commit without a PR (number 0) has nothing to link: the sha above already names it.
@@ -27,7 +27,7 @@ export function deployedHtml(m: Messages, fact: DeployFact, pulls: readonly Pull
 	return p(parts.join(' · '));
 }
 
-/** «Откачено» on a work item whose PR left the environment: the environment now stands at `fact.sha`. */
+/** The "Rolled back" note on a work item whose PR left the environment: the environment now stands at `fact.sha`. */
 export function rolledBackHtml(m: Messages, fact: DeployFact): string {
 	return p(head(m, m.rolledBack, fact).join(' · '));
 }

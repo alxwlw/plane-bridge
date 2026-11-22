@@ -124,7 +124,7 @@ async function pullsOfCommits(
 }
 
 /**
- * One GitHub deploy of an environment: «Выкачено» (or «Откачено») on the work items of the PRs it carried, their
+ * One GitHub deploy of an environment: "Deployed" (or "Rolled back") on the work items of the PRs it carried, their
  * statuses by `syncTask`, the release of a production deploy, then the cursor. Any thrown error leaves the cursor
  * where it was, so the queue retries the same range; every write is idempotent.
  */
