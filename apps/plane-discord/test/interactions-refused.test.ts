@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { CREATE_COMMAND } from '../src/discord/commands.ts';
+import { messages } from '../src/i18n.ts';
 import { commandPayload, submitPayload } from './discord-harness.ts';
 import {
 	GUILD,
@@ -19,7 +19,7 @@ describe('createInteractionHandler: ix.refused', () => {
 			id,
 			guildId: GUILD,
 			channel: over.channel ?? { id: UNMAPPED, type: 0 },
-			name: over.name ?? CREATE_COMMAND,
+			name: over.name ?? messages('ru').createCommand,
 			message: msg({ content: SECRET_TEXT }),
 		});
 
@@ -51,7 +51,7 @@ describe('createInteractionHandler: ix.refused', () => {
 		{
 			reason: 'no_message',
 			world: {},
-			payload: (id) => ({ ...command(id), data: { type: 3, name: CREATE_COMMAND } }),
+			payload: (id) => ({ ...command(id), data: { type: 3, name: messages('ru').createCommand } }),
 		},
 		{
 			reason: 'expired_form',
@@ -85,4 +85,53 @@ describe('createInteractionHandler: ix.refused', () => {
 			expect(JSON.stringify(w.logs)).not.toContain(SECRET_TEXT);
 		});
 	}
+});
+
+describe('createInteractionHandler: refusals in English', () => {
+	test('refusals in English', async () => {
+		const answer = async (
+			world: Parameters<typeof setup>[0],
+			payload: (id: string) => Record<string, unknown>,
+		) => {
+			const w = await setup({ ...world, locale: 'en' });
+			const res = await w.ask(payload(w.ids.next()));
+			return res.body.data.content;
+		};
+		const command = (id: string, over: { channel?: Record<string, unknown>; name?: string } = {}) =>
+			commandPayload({
+				id,
+				guildId: GUILD,
+				channel: over.channel ?? { id: UNMAPPED, type: 0 },
+				name: over.name ?? messages('ru').createCommand,
+				message: msg(),
+			});
+		expect(await answer({}, (id) => command(id, { name: 'other' }))).toBe('Unknown command.');
+		expect(
+			await answer({}, (id) => ({
+				...command(id),
+				data: { type: 3, name: messages('ru').createCommand },
+			})),
+		).toBe('Could not read the message.');
+		expect(
+			await answer({}, (id) => ({ ...command(id), channel: undefined, channel_id: undefined })),
+		).toBe('Could not determine the channel.');
+		expect(await answer({ cached: null }, (id) => command(id))).toBe(
+			'Plane is unavailable, try again in a minute.',
+		);
+		expect(await answer({ cached: [HIDDEN] }, (id) => command(id))).toBe(
+			'There is no project to create a work item in.',
+		);
+		const hidden = await setup({ locale: 'en' });
+		hidden.rt.tenant.hiddenProjects = [P_LAB];
+		const res = await hidden.ask(command(hidden.ids.next(), { channel: { id: MAPPED, type: 0 } }));
+		expect(res.body.data.content).toBe(
+			'Creating work items from Discord is turned off for this project.',
+		);
+		expect(await answer({}, (id) => ({ type: 3, id, guild_id: GUILD }))).toBe('Unknown command.');
+		expect(
+			await answer({}, (id) =>
+				submitPayload({ id, guildId: GUILD, customId: 'create:forgotten', texts: { title: 'X' } }),
+			),
+		).toBe('The form has expired, run the command again.');
+	});
 });

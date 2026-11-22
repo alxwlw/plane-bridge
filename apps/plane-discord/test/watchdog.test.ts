@@ -1,4 +1,5 @@
 import type { LogEntry } from '@alxwlw/plane-kit/log';
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { describe, expect, test } from 'bun:test';
 
 import type { Tenant } from '../src/config.ts';
@@ -13,6 +14,7 @@ const tenantOf = (id: string, over: Partial<Tenant> = {}): Tenant => ({
 	id,
 	guildId: '111111111111111111',
 	workspace: 'example-ws',
+	locale: 'ru',
 	workspaceId: '00000000-0000-4000-8000-000000000001',
 	auth: { clientId: 'c', clientSecret: 's', appInstallationId: 'i' },
 	webhookSecret: 'h',
@@ -162,5 +164,33 @@ describe('checkSilence', () => {
 		]);
 		expect(store.silence('a').alertedAt).toBe(81 * HOUR);
 		expect(store.silence('b').alertedAt).toBe(81 * HOUR);
+	});
+
+	test('silence and recovery messages in English', async () => {
+		const { store, check, sentTexts } = setup([tenantOf('initech', { locale: 'en' })]);
+		store.touchEvent('initech', 0);
+		await check(80 * HOUR);
+		store.touchEvent('initech', 81 * HOUR);
+		await check(82 * HOUR);
+		expect(sentTexts()).toEqual([
+			[SERVICE, 'Plane has been silent for 80 h (example-ws): check the webhook'],
+			[SERVICE, 'Plane is sending events again'],
+		]);
+		for (const [, text] of sentTexts()) expect(text).not.toMatch(CYRILLIC);
+	});
+
+	test('each tenant is warned in its own language', async () => {
+		const RU_SERVICE = '333333333333333333';
+		const { store, check, sentTexts } = setup([
+			tenantOf('first', { locale: 'en' }),
+			tenantOf('second', { locale: 'ru', serviceChannelId: RU_SERVICE }),
+		]);
+		store.touchEvent('first', 0);
+		store.touchEvent('second', 0);
+		await check(80 * HOUR);
+		expect(sentTexts()).toEqual([
+			[SERVICE, 'Plane has been silent for 80 h (example-ws): check the webhook'],
+			[RU_SERVICE, 'Plane молчит 80 ч (example-ws): проверь вебхук — runbook plane-discord'],
+		]);
 	});
 });

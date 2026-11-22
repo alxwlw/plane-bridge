@@ -16,6 +16,7 @@ const tenant = (id: string, workspaceId: string, webhookSecret: string): Tenant 
 	id,
 	guildId: '111111111111111111',
 	workspace: 'example-ws',
+	locale: 'ru',
 	workspaceId,
 	auth: { clientId: 'cid', clientSecret: 'csecret', appInstallationId: 'inst' },
 	webhookSecret,

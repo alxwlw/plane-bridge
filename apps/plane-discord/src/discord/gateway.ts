@@ -28,12 +28,12 @@ const NEW_SESSION_CLOSE: ReadonlySet<number> = new Set([4007, 4009]);
 
 /** Close codes after which a reconnect cannot help; the text goes to the log, never the server's reason. */
 const FATAL_CLOSE: ReadonlyMap<number, string> = new Map([
-	[4004, 'токен бота отклонён Discord'],
-	[4010, 'неверный shard'],
-	[4011, 'нужен sharding'],
-	[4012, 'неверная версия Gateway API'],
-	[4013, 'неверные intents'],
-	[4014, 'MESSAGE_CONTENT не включён в Developer Portal'],
+	[4004, 'Discord rejected the bot token'],
+	[4010, 'invalid shard'],
+	[4011, 'sharding required'],
+	[4012, 'invalid Gateway API version'],
+	[4013, 'invalid intents'],
+	[4014, 'MESSAGE_CONTENT is not enabled in the Developer Portal'],
 ]);
 
 type Frame = { op: number; d?: unknown; s?: number | null; t?: string | null };

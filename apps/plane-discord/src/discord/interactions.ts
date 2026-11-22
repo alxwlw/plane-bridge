@@ -3,14 +3,16 @@
 // Order of every request: signature over the raw bytes, then parse, then claim, then dispatch. A modal must open
 // within 3 s (primary response, cache only); a form submit gets a deferred ephemeral reply and the work runs after it.
 import { esc, truncate } from '@alxwlw/plane-kit/html';
+import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
 import type { Log } from '@alxwlw/plane-kit/log';
 
+import { messages } from '../i18n.ts';
 import type { TenantRuntime } from '../notify.ts';
 import { PlaneApiError, type ProjectSummary, type WorkItem } from '../plane/client.ts';
 import { readBounded } from '../server.ts';
 import type { Store } from '../store.ts';
 import { discordToPlaneHtml, planeMentionHtml, titleFrom, workItemUrl } from '../text.ts';
-import { APPEND_COMMAND, CREATE_COMMAND, PLANE_COMMAND, PLANE_LINK_COMMAND } from './commands.ts';
+import { messageCommandKind, PLANE_COMMAND, PLANE_LINK_COMMAND } from './commands.ts';
 import {
 	attachmentsHtml,
 	describe,
@@ -73,21 +75,6 @@ const WALK_DEPTH = 4;
 const HTTP_URL = /^https?:\/\//i;
 const CUSTOM_ID = /^(create|append):(.{1,64})$/;
 const SOURCE = 'discord';
-
-const TEXT = {
-	notConfigured: 'Этот сервер не настроен.',
-	done: 'Уже обработано.',
-	broken: 'Не удалось разобрать запрос Discord.',
-	unknownCommand: 'Неизвестная команда.',
-	noMessage: 'Не удалось прочитать сообщение.',
-	noChannel: 'Не удалось определить канал.',
-	coldCache: 'Plane недоступен, повтори через минуту.',
-	noProjects: 'Нет проектов, в которые можно создать задачу.',
-	hidden: 'Для этого проекта создание задач из Discord отключено.',
-	expired: 'Форма устарела, вызови команду ещё раз.',
-	itemMissing: 'Задача не найдена.',
-	internal: 'Внутренняя ошибка, повтори через минуту.',
-} as const;
 
 type Attachment = { url: string; filename: string };
 type FormContext = {
@@ -214,7 +201,7 @@ export function createInteractionHandler(
 			const planeId = rt.users.toPlane(discordUserId);
 			return planeId !== null
 				? planeMentionHtml(planeId)
-				: esc(ctx.mentionNames.get(discordUserId) ?? 'пользователь');
+				: esc(ctx.mentionNames.get(discordUserId) ?? messages(rt.tenant.locale).user);
 		};
 	}
 
@@ -235,14 +222,14 @@ export function createInteractionHandler(
 		token: string,
 	): Promise<void> {
 		const tenant = rt.tenant;
+		const m = messages(tenant.locale);
 		const title = truncate((fields.text('title') ?? '').replace(/\s+/g, ' ').trim(), TITLE_MAX);
-		if (title === '') return edit(token, 'Название обязательно.');
+		if (title === '') return edit(token, m.titleRequired);
 		let projectId = ctx.projectId;
 		if (projectId === null) {
 			const chosen = fields.chosen('project');
-			if (chosen === undefined) return edit(token, 'Проект не выбран.');
-			if (!ctx.offered.has(chosen) || isHidden(rt, chosen))
-				return edit(token, 'Этого проекта нет в списке, вызови команду ещё раз.');
+			if (chosen === undefined) return edit(token, m.noProjectChosen);
+			if (!ctx.offered.has(chosen) || isHidden(rt, chosen)) return edit(token, m.projectNotOffered);
 			projectId = chosen;
 		}
 
@@ -251,7 +238,7 @@ export function createInteractionHandler(
 		const known = deps.store.getDiscordItem(tenant.id, ctx.messageId);
 		// A project hidden after the item was made answers like a missing item: no key, link or name,
 		// and no second item in another project.
-		if (known && isHidden(rt, known.projectId)) return edit(token, TEXT.itemMissing);
+		if (known && isHidden(rt, known.projectId)) return edit(token, m.itemMissing);
 		if (known) {
 			try {
 				item = await rt.plane.getWorkItem(known.projectId, known.workItemId);
@@ -268,9 +255,9 @@ export function createInteractionHandler(
 			} else {
 				const description = truncate(fields.text('description') ?? '', DESCRIPTION_MAX);
 				const html =
-					discordToPlaneHtml(description, mentionFor(rt, ctx)) +
-					`<p>Из Discord: ${messageLink(ctx, 'сообщение')} · автор: ${authorHtml(rt, ctx)}</p>` +
-					attachmentsHtml(ctx.attachments);
+					discordToPlaneHtml(m, description, mentionFor(rt, ctx)) +
+					`<p>${m.fromDiscordHtml(messageLink(ctx, m.message), authorHtml(rt, ctx))}</p>` +
+					attachmentsHtml(m, ctx.attachments);
 				const made = await rt.plane.createWorkItem(projectId, {
 					name: title,
 					description_html: html,
@@ -285,19 +272,19 @@ export function createInteractionHandler(
 		}
 
 		const key = await keyOf(rt, item.projectId, item.sequenceId);
-		const target = `${itemLink(rt, key)} «${mdLabel(item.name)}»`;
-		if (!created) return edit(token, `Уже есть: ${target}`);
+		const target = `${itemLink(rt, key)} ${m.quoted(mdLabel(item.name))}`;
+		if (!created) return edit(token, m.alreadyExists(target));
 
 		let reply: { id: string };
 		try {
 			reply = await deps.discord.sendMessage(ctx.channelId, {
-				content: `→ [\`${key}\` «${mdLabel(item.name)}»](<${workItemUrl(deps.planeUrl, tenant.workspace, key)}>)`,
+				content: `→ [\`${key}\` ${m.quoted(mdLabel(item.name))}](<${workItemUrl(deps.planeUrl, tenant.workspace, key)}>)`,
 				replyTo: ctx.messageId,
 			});
 		} catch (error) {
 			if (!(error instanceof DiscordApiError)) throw error;
-			const reason = error.status === 403 ? 'нет прав писать в канал' : describe(error);
-			return edit(token, `Задача создана: ${target} — ${reason}.`);
+			const reason = error.status === 403 ? m.noPostPermission : describe(m, error);
+			return edit(token, m.createdWithProblem(target, reason));
 		}
 		if (ctx.channelType === CHANNEL.TEXT || ctx.channelType === CHANNEL.ANNOUNCEMENT) {
 			try {
@@ -332,12 +319,12 @@ export function createInteractionHandler(
 		fields: Fields,
 		token: string,
 	): Promise<void> {
+		const m = messages(rt.tenant.locale);
 		const key = (fields.text('key') ?? '').trim().toUpperCase();
-		if (key.length > KEY_MAX || !KEY_RE.test(key)) return edit(token, 'Нужен ключ вида LAB-40.');
+		if (key.length > KEY_MAX || !KEY_RE.test(key)) return edit(token, m.keyFormat);
 		const item = await rt.plane.getWorkItemByKey(key);
 		// A hidden project answers like a missing one: its keys are not confirmed from Discord.
-		if (item === null || isHidden(rt, item.projectId))
-			return edit(token, `Задача ${key} не найдена.`);
+		if (item === null || isHidden(rt, item.projectId)) return edit(token, `${m.keyNotFound(key)}.`);
 		const where = itemLink(rt, key);
 		const dup = await rt.plane.findCommentByExternalId(
 			item.projectId,
@@ -345,21 +332,21 @@ export function createInteractionHandler(
 			SOURCE,
 			ctx.messageId,
 		);
-		if (dup) return edit(token, `Уже добавлено: ${where}`);
+		if (dup) return edit(token, m.alreadyAdded(where));
 
 		const text = truncate((fields.text('text') ?? '').trim(), DESCRIPTION_MAX);
 		const html =
 			(text === ''
 				? ''
-				: `<blockquote>${discordToPlaneHtml(text, mentionFor(rt, ctx))}</blockquote>`) +
-			`<p>— ${authorHtml(rt, ctx)}, ${messageLink(ctx, 'сообщение в Discord')}</p>` +
-			attachmentsHtml(ctx.attachments);
+				: `<blockquote>${discordToPlaneHtml(m, text, mentionFor(rt, ctx))}</blockquote>`) +
+			`<p>— ${authorHtml(rt, ctx)}, ${messageLink(ctx, m.messageInDiscord)}</p>` +
+			attachmentsHtml(m, ctx.attachments);
 		await rt.plane.createComment(item.projectId, item.id, {
 			comment_html: html,
 			external_id: ctx.messageId,
 			external_source: SOURCE,
 		});
-		await edit(token, `→ комментарий в ${where}`);
+		await edit(token, m.commentAdded(where));
 	}
 
 	function submit(rt: TenantRuntime, ix: Rec, id: string, data: Rec | null): Response {
@@ -374,9 +361,10 @@ export function createInteractionHandler(
 			ctx.tenantId !== rt.tenant.id ||
 			ctx.kind !== match[1]
 		)
-			return refuse(rt.tenant.id, id, 'expired_form', TEXT.expired);
+			return refuse(rt.tenant.id, id, 'expired_form', messages(rt.tenant.locale).formExpired);
 		forms.delete(match[2] as string);
 		const fields = collectFields(own(data, 'components'));
+		const m = messages(rt.tenant.locale);
 		const started = now();
 		defer(async () => {
 			const base = { tenant: rt.tenant.id, interaction: id, kind: ctx.kind };
@@ -386,7 +374,7 @@ export function createInteractionHandler(
 			} catch (error) {
 				log(failedEntry(base, error, now() - started));
 				try {
-					await edit(token, `Не получилось: ${describe(error)}.`);
+					await edit(token, m.failed(describe(m, error)));
 				} catch {
 					log({ event: 'ix.reply_failed', level: 'error', ...base });
 				}
@@ -397,24 +385,25 @@ export function createInteractionHandler(
 
 	function command(rt: TenantRuntime, ix: Rec, id: string, data: Rec | null): Response {
 		const tenant = rt.tenant;
+		const m = messages(tenant.locale);
 		const name = own(data, 'name');
 		if (data !== null && data.type === CHAT_INPUT_COMMAND && name === PLANE_COMMAND)
 			return slash.plane(rt, ix, id, data);
 		if (data !== null && data.type === CHAT_INPUT_COMMAND && name === PLANE_LINK_COMMAND)
 			return slash.link(rt, ix, id, data);
-		const kind = name === CREATE_COMMAND ? 'create' : name === APPEND_COMMAND ? 'append' : null;
+		const kind = messageCommandKind(name);
 		if (data === null || data.type !== MESSAGE_COMMAND || kind === null)
-			return refuse(tenant.id, id, 'unknown_command', TEXT.unknownCommand);
+			return refuse(tenant.id, id, 'unknown_command', m.unknownCommand);
 		const targetId = snowflake(data.target_id);
-		const messages = rec(own(rec(data.resolved), 'messages'));
-		const message = targetId === null ? null : rec(own(messages, targetId));
+		const resolvedMessages = rec(own(rec(data.resolved), 'messages'));
+		const message = targetId === null ? null : rec(own(resolvedMessages, targetId));
 		const messageId = snowflake(message?.id);
 		if (message === null || messageId === null)
-			return refuse(tenant.id, id, 'no_message', TEXT.noMessage);
+			return refuse(tenant.id, id, 'no_message', m.noMessage);
 
 		const channel = rec(ix.channel);
 		const channelId = snowflake(channel?.id) ?? snowflake(ix.channel_id);
-		if (channelId === null) return refuse(tenant.id, id, 'no_channel', TEXT.noChannel);
+		if (channelId === null) return refuse(tenant.id, id, 'no_channel', m.noChannel);
 		const routeId =
 			(isThreadType(channel?.type) ? snowflake(channel?.parent_id) : null) ?? channelId;
 		const mapped = tenant.channels.find((c) => c.channelId === routeId);
@@ -422,15 +411,15 @@ export function createInteractionHandler(
 		let offered: ProjectSummary[] = [];
 		if (mapped) {
 			if (kind === 'create' && isHidden(rt, mapped.projectId))
-				return refuse(tenant.id, id, 'hidden_project', TEXT.hidden);
+				return refuse(tenant.id, id, 'hidden_project', m.creationHidden);
 		} else if (kind === 'create') {
 			const cached = deps.projectsCached(tenant.id);
-			if (cached === null) return refuse(tenant.id, id, 'cold_cache', TEXT.coldCache);
+			if (cached === null) return refuse(tenant.id, id, 'cold_cache', m.coldCache);
 			offered = cached
 				.filter((p) => !isHidden(rt, p.id))
 				.sort((a, b) => a.identifier.localeCompare(b.identifier, 'en'))
 				.slice(0, SELECT_MAX);
-			if (offered.length === 0) return refuse(tenant.id, id, 'no_projects', TEXT.noProjects);
+			if (offered.length === 0) return refuse(tenant.id, id, 'no_projects', m.noProjects);
 		}
 
 		const content = typeof message.content === 'string' ? message.content : '';
@@ -449,7 +438,7 @@ export function createInteractionHandler(
 			const file = rec(raw);
 			const url = str(file?.url);
 			if (url !== null && HTTP_URL.test(url))
-				attachments.push({ url, filename: truncate(str(file?.filename) ?? 'файл', FILENAME_MAX) });
+				attachments.push({ url, filename: truncate(str(file?.filename) ?? m.file, FILENAME_MAX) });
 		}
 
 		const formId = nonce();
@@ -465,7 +454,7 @@ export function createInteractionHandler(
 			author: {
 				id: snowflake(author?.id),
 				name: truncate(
-					str(author?.global_name) ?? str(author?.username) ?? 'неизвестный',
+					str(author?.global_name) ?? str(author?.username) ?? m.unknownAuthor,
 					NAME_MAX,
 				),
 			},
@@ -479,14 +468,14 @@ export function createInteractionHandler(
 				type: REPLY.MODAL,
 				data: {
 					custom_id: `append:${formId}`,
-					title: 'Комментарий в задачу',
+					title: m.appendModalTitle,
 					components: [
 						label(
-							'Ключ задачи',
+							m.keyLabel,
 							textInput('key', 1, KEY_MAX, { required: true, placeholder: 'LAB-40' }),
 						),
 						label(
-							'Текст',
+							m.textLabel,
 							textInput('text', 2, DESCRIPTION_MAX, {
 								required: false,
 								...(content === '' ? {} : { value: fit(content, DESCRIPTION_MAX) }),
@@ -499,14 +488,14 @@ export function createInteractionHandler(
 		const title = fit(titleFrom(content), TITLE_MAX);
 		const components = [
 			label(
-				'Название',
+				m.titleLabel,
 				textInput('title', 1, TITLE_MAX, {
 					required: true,
 					...(title === '' ? {} : { value: title }),
 				}),
 			),
 			label(
-				'Описание',
+				m.descriptionLabel,
 				textInput('description', 2, DESCRIPTION_MAX, {
 					required: false,
 					...(content === '' ? {} : { value: fit(content, DESCRIPTION_MAX) }),
@@ -515,7 +504,7 @@ export function createInteractionHandler(
 		];
 		if (!mapped)
 			components.push(
-				label('Проект', {
+				label(m.projectLabel, {
 					type: COMPONENT.STRING_SELECT,
 					custom_id: 'project',
 					required: true,
@@ -527,7 +516,7 @@ export function createInteractionHandler(
 			);
 		return json({
 			type: REPLY.MODAL,
-			data: { custom_id: `create:${formId}`, title: 'Задача в Plane', components },
+			data: { custom_id: `create:${formId}`, title: m.createModalTitle, components },
 		});
 	}
 
@@ -557,26 +546,26 @@ export function createInteractionHandler(
 		}
 		if (ix.type === TYPE.PING) return json({ type: REPLY.PONG });
 
+		const guildId = snowflake(ix.guild_id);
+		const rt = guildId === null ? undefined : deps.runtimesByGuild.get(guildId);
 		const id = snowflake(ix.id);
-		if (id === null) return ephemeral(TEXT.broken);
+		if (id === null) return ephemeral(messages(rt?.tenant.locale ?? DEFAULT_LOCALE).brokenRequest);
 		try {
 			if (!deps.store.claim(`ix:${id}`, now())) {
 				log({ event: 'ix.duplicate', interaction: id });
-				return ephemeral(TEXT.done);
+				return ephemeral(messages(rt?.tenant.locale ?? DEFAULT_LOCALE).alreadyHandled);
 			}
-			const guildId = snowflake(ix.guild_id);
-			const rt = guildId === null ? undefined : deps.runtimesByGuild.get(guildId);
 			if (!rt) {
 				log({ event: 'ix.unconfigured', interaction: id });
-				return ephemeral(TEXT.notConfigured);
+				return ephemeral(messages(DEFAULT_LOCALE).notConfigured);
 			}
 			const data = rec(ix.data);
 			if (ix.type === TYPE.COMMAND) return command(rt, ix, id, data);
 			if (ix.type === TYPE.MODAL_SUBMIT) return submit(rt, ix, id, data);
-			return refuse(rt.tenant.id, id, 'unknown_command', TEXT.unknownCommand);
+			return refuse(rt.tenant.id, id, 'unknown_command', messages(rt.tenant.locale).unknownCommand);
 		} catch {
 			log({ event: 'ix.failed', level: 'error', interaction: id, error: 'handler' });
-			return ephemeral(TEXT.internal);
+			return ephemeral(messages(rt?.tenant.locale ?? DEFAULT_LOCALE).internal);
 		}
 	};
 }

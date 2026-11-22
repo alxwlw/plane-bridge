@@ -3,6 +3,7 @@
 import { esc, truncate } from '@alxwlw/plane-kit/html';
 
 import type { UserLink } from './config.ts';
+import type { Messages } from './i18n.ts';
 
 export type UserMap = {
 	toDiscord(planeUserId: string): string | null;
@@ -151,7 +152,7 @@ const FENCE = /```(?:[\w+#.-]*\n)?([\s\S]*?)```/g;
 const INLINE =
 	/`([^`\n]+)`|<@!?(\d+)>|<a?:(\w+):\d+>|\[([^\]\n]+)\]\(<?(https?:\/\/[^\s)>]+)>?\)|<@&\d+>|<#\d+>|https?:\/\/[^\s<>]+/gi;
 
-function inline(line: string, mention: (discordUserId: string) => string): string {
+function inline(msgs: Messages, line: string, mention: (discordUserId: string) => string): string {
 	let out = '';
 	let last = 0;
 	for (const m of line.matchAll(INLINE)) {
@@ -161,8 +162,8 @@ function inline(line: string, mention: (discordUserId: string) => string): strin
 		else if (m[2] !== undefined) out += mention(m[2]);
 		else if (m[3] !== undefined) out += esc(`:${m[3]}:`);
 		else if (m[4] !== undefined) out += `<a href="${esc(m[5] as string)}">${esc(m[4])}</a>`;
-		else if (m[0].startsWith('<@&')) out += esc('@роль');
-		else if (m[0].startsWith('<#')) out += esc('#канал');
+		else if (m[0].startsWith('<@&')) out += esc(msgs.role);
+		else if (m[0].startsWith('<#')) out += esc(msgs.channel);
 		else {
 			// Trailing punctuation belongs to the sentence, not the URL.
 			const url = m[0].replace(/[.,;:!?)\]]+$/, '');
@@ -172,7 +173,11 @@ function inline(line: string, mention: (discordUserId: string) => string): strin
 	return out + esc(line.slice(last));
 }
 
-function paragraphs(chunk: string, mention: (discordUserId: string) => string): string {
+function paragraphs(
+	m: Messages,
+	chunk: string,
+	mention: (discordUserId: string) => string,
+): string {
 	return chunk
 		.split(/\n\s*\n/)
 		.map((par) => par.trim())
@@ -181,7 +186,7 @@ function paragraphs(chunk: string, mention: (discordUserId: string) => string): 
 			(par) =>
 				`<p>${par
 					.split('\n')
-					.map((line) => inline(line, mention))
+					.map((line) => inline(m, line, mention))
 					.join('<br>')}</p>`,
 		)
 		.join('');
@@ -189,18 +194,19 @@ function paragraphs(chunk: string, mention: (discordUserId: string) => string): 
 
 /** Discord text → Plane HTML. Everything is escaped; `mention` returns ready HTML for one mentioned Discord user. */
 export function discordToPlaneHtml(
+	m: Messages,
 	text: string,
 	mention: (discordUserId: string) => string,
 ): string {
 	const source = text.replace(/\r\n?/g, '\n');
 	let out = '';
 	let last = 0;
-	for (const m of source.matchAll(FENCE)) {
-		out += paragraphs(source.slice(last, m.index), mention);
-		out += `<pre><code>${esc((m[1] as string).replace(/\n$/, ''))}</code></pre>`;
-		last = m.index + m[0].length;
+	for (const f of source.matchAll(FENCE)) {
+		out += paragraphs(m, source.slice(last, f.index), mention);
+		out += `<pre><code>${esc((f[1] as string).replace(/\n$/, ''))}</code></pre>`;
+		last = f.index + f[0].length;
 	}
-	return out + paragraphs(source.slice(last), mention);
+	return out + paragraphs(m, source.slice(last), mention);
 }
 
 export function workItemKey(identifier: string, sequenceId: number): string {

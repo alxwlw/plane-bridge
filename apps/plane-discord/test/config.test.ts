@@ -38,7 +38,7 @@ describe('loadConfig', () => {
 		expect(tenant?.channels[0]?.events).toEqual(['created', 'closed', 'mention']);
 		expect(tenant?.channels[0]?.moduleId).toBeNull();
 		expect(tenant?.silenceHours).toBe(72);
-		expect(describeTenants(config)).toEqual([{ id: 'acme', channels: 1, users: 1 }]);
+		expect(describeTenants(config)).toEqual([{ id: 'acme', locale: 'ru', channels: 1, users: 1 }]);
 	});
 
 	test('без silenceHours, hiddenProjects и serviceChannelId — значения по умолчанию', () => {
@@ -221,6 +221,7 @@ describe('loadConfig', () => {
 					id: 'acme',
 					guildId: '111111111111111111',
 					workspace: 'example-ws',
+					locale: 'ru',
 					workspaceId: '00000000-0000-4000-8000-000000000001',
 					auth: {
 						clientId: 'example-client-id',

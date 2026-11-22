@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { createInteractionHandler } from '../src/discord/interactions.ts';
 import { DiscordApiError } from '../src/discord/rest.ts';
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { PlaneApiError } from '../src/plane/client.ts';
 import { Store } from '../src/store.ts';
 import { submitPayload } from './discord-harness.ts';
@@ -23,6 +24,7 @@ import {
 	setup,
 	open,
 	submitCreate,
+	type World,
 } from './interactions-world.ts';
 
 describe('createInteractionHandler: отправка формы «создать»', () => {
@@ -50,6 +52,54 @@ describe('createInteractionHandler: отправка формы «создать
 			projectId: P_LAB,
 			workItemId: created.id,
 		});
+	});
+
+	test('created work item description in English', async () => {
+		const w = await setup({ locale: 'en' });
+		const { customId } = await open(w, {
+			message: msg({ author: { id: AUTHOR, username: 'mira' } }),
+		});
+		await submitCreate(w, customId, { title: 'Fix login', description: 'ping <@&1> in <#2>' });
+		await w.settle();
+		const html = w.plane.createdItems[0]!.item.description_html;
+		expect(html).toBe(
+			'<p>ping @role in #channel</p>' +
+				`<p>From Discord: <a href="https://discord.com/channels/${GUILD}/${MAPPED}/${MSG}">message</a> · author: mira</p>`,
+		);
+		expect(html).not.toMatch(CYRILLIC);
+	});
+
+	test('unknown author and nameless file in English', async () => {
+		const w = await setup({ locale: 'en' });
+		const { customId } = await open(w, {
+			message: msg({
+				author: { id: AUTHOR },
+				attachments: [{ url: 'https://cdn.example.com/f.png', filename: '' }],
+			}),
+		});
+		await submitCreate(w, customId, { title: 'T' });
+		await w.settle();
+		const html = w.plane.createdItems[0]!.item.description_html;
+		expect(html).toContain('author: unknown</p>');
+		expect(html).toContain('<ul><li><a href="https://cdn.example.com/f.png">file</a></li></ul>');
+		expect(html).not.toMatch(CYRILLIC);
+	});
+
+	test('a message redelivered after a language change finds its work item', async () => {
+		const w = await setup({ locale: 'ru' });
+		const first = await open(w);
+		await submitCreate(w, first.customId, { title: 'Починить вход' });
+		await w.settle();
+		w.setLocale('en');
+		const again = await open(w);
+		await submitCreate(w, again.customId, { title: 'Fix login' });
+		await w.settle();
+		expect(w.plane.createdItems).toHaveLength(1);
+		expect(w.plane.createdItems[0]!.item.external_id).toBe(MSG);
+		expect(w.discord.callsOf('sendMessage')).toHaveLength(1);
+		expect((w.discord.callsOf('editOriginal').at(-1)?.[1] as { content: string }).content).toBe(
+			'Already exists: [`LAB-1`](<https://plane.example.com/example-ws/browse/LAB-1/>) “Починить вход”',
+		);
 	});
 
 	test('публичный ответ — reply на исходное сообщение «→ `LAB-1` «Название»», ephemeral удалён', async () => {
@@ -459,5 +509,121 @@ describe('createInteractionHandler: отправка формы «создать
 		expect(sent).not.toContain('Секретная');
 		expect(w.discord.callsOf('sendMessage')).toEqual([]);
 		expect(w.plane.createdItems.map((c) => c.projectId)).toEqual([P_HIDDEN]);
+	});
+});
+
+describe('createInteractionHandler: create replies in English', () => {
+	const edited = (w: World) =>
+		w.discord.callsOf('editOriginal').map((c) => (c[1] as { content: string }).content);
+
+	test('create replies in English', async () => {
+		const w = await setup({ locale: 'en' });
+		const empty = await open(w);
+		await submitCreate(w, empty.customId, { title: ' ' });
+		const unmapped = { channel: { id: UNMAPPED, type: 0 } };
+		const none = await open(w, { ...unmapped, message: msg({ id: '444444444444444442' }) });
+		await submitCreate(w, none.customId, { title: 'T' });
+		const foreign = await open(w, { ...unmapped, message: msg({ id: '444444444444444443' }) });
+		await submitCreate(
+			w,
+			foreign.customId,
+			{ title: 'T' },
+			{ project: ['00000000-0000-4000-8000-0000000000ff'] },
+		);
+		await w.settle();
+		expect(edited(w)).toEqual([
+			'A title is required.',
+			'No project selected.',
+			'This project is not in the list, run the command again.',
+		]);
+		expect(w.plane.createdItems).toEqual([]);
+
+		const ok = await open(w, { message: msg({ id: '444444444444444444' }) });
+		await submitCreate(w, ok.customId, { title: 'Fix login' });
+		await w.settle();
+		expect(w.discord.callsOf('sendMessage')[0]?.[1]).toEqual({
+			content: '→ [`LAB-1` “Fix login”](<https://plane.example.com/example-ws/browse/LAB-1/>)',
+			replyTo: '444444444444444444',
+		});
+		const again = await open(w, { message: msg({ id: '444444444444444444' }) });
+		await submitCreate(w, again.customId, { title: 'Fix login' });
+		await w.settle();
+		expect(edited(w).at(-1)).toBe(
+			'Already exists: [`LAB-1`](<https://plane.example.com/example-ws/browse/LAB-1/>) “Fix login”',
+		);
+		w.rt.tenant.hiddenProjects = [P_LAB];
+		const hidden = await open(w, { ...unmapped, message: msg({ id: '444444444444444444' }) });
+		await submitCreate(w, hidden.customId, { title: 'T' }, { project: [P_ENG] });
+		await w.settle();
+		expect(edited(w).at(-1)).toBe('Work item not found.');
+	});
+
+	test('create failures in English', async () => {
+		const denied = await setup({ locale: 'en' });
+		denied.discord.failures.set(
+			'sendMessage',
+			new DiscordApiError(403, 'POST', '/channels/:id/messages', 50013),
+		);
+		const first = await open(denied);
+		await submitCreate(denied, first.customId, { title: 'Fix login' });
+		await denied.settle();
+		expect(denied.discord.callsOf('editOriginal')[0]?.[1]).toEqual({
+			content:
+				'Work item created: [`LAB-1`](<https://plane.example.com/example-ws/browse/LAB-1/>) “Fix login” — no permission to post in the channel.',
+		});
+
+		const down = await setup({ locale: 'en' });
+		down.plane.createWorkItem = async () => {
+			throw new PlaneApiError(500, 'POST', '/x');
+		};
+		const second = await open(down);
+		await submitCreate(down, second.customId, { title: 'Fix login' });
+		await down.settle();
+		expect(edited(down)).toEqual(['Failed: Plane answered 500.']);
+
+		const other = await setup({ locale: 'en' });
+		other.discord.failures.set(
+			'sendMessage',
+			new DiscordApiError(500, 'POST', '/channels/:id/messages'),
+		);
+		const third = await open(other);
+		await submitCreate(other, third.customId, { title: 'Fix login' });
+		await other.settle();
+		expect(edited(other)[0]).toEndWith('— Discord answered 500.');
+
+		const boom = await setup({ locale: 'en' });
+		boom.plane.createWorkItem = async () => {
+			throw new TypeError('boom');
+		};
+		const fourth = await open(boom);
+		await submitCreate(boom, fourth.customId, { title: 'Fix login' });
+		await boom.settle();
+		expect(edited(boom)).toEqual(['Failed: internal error.']);
+
+		const gone = await setup({ locale: 'en' });
+		const fifth = await open(gone);
+		gone.plane.projects = [];
+		await submitCreate(gone, fifth.customId, { title: 'Fix login' });
+		await gone.settle();
+		expect(edited(gone)).toEqual(['Failed: project not found in Plane.']);
+	});
+
+	test('a form that has expired answers in the tenant language', async () => {
+		const w = await setup({ locale: 'en' });
+		const res = await submitCreate(w, 'create:long-forgotten', { title: 'X' });
+		expect(res.body.data.content).toBe('The form has expired, run the command again.');
+	});
+
+	test('a work item name is escaped the same way in both languages', async () => {
+		const sent = async (locale: 'en' | 'ru') => {
+			const w = await setup({ locale });
+			const { customId } = await open(w);
+			await submitCreate(w, customId, { title: 'a]b*c' });
+			await w.settle();
+			return (w.discord.callsOf('sendMessage')[0]?.[1] as { content: string }).content;
+		};
+		const url = '(<https://plane.example.com/example-ws/browse/LAB-1/>)';
+		expect(await sent('ru')).toBe(`→ [\`LAB-1\` «a\\]b\\*c»]${url}`);
+		expect(await sent('en')).toBe(`→ [\`LAB-1\` “a\\]b\\*c”]${url}`);
 	});
 });

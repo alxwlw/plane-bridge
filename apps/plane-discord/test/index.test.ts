@@ -13,7 +13,7 @@ import {
 	type Service,
 	startService,
 } from '../src/index.ts';
-import { CREATE_COMMAND } from '../src/discord/commands.ts';
+import { messages as catalog } from '../src/i18n.ts';
 import { commandPayload, submitPayload } from './discord-harness.ts';
 import { Store } from '../src/store.ts';
 import { fixture } from './fixtures.ts';
@@ -50,7 +50,7 @@ describe('startService', () => {
 		expect(await res.text()).toBe('ok');
 		const listening = w.entries().find((e) => e.event === 'listening');
 		expect(listening).toMatchObject({
-			tenants: [{ id: 'acme', channels: 1, users: 1 }],
+			tenants: [{ id: 'acme', locale: 'ru', channels: 1, users: 1 }],
 		});
 		expect(typeof listening?.port).toBe('number');
 		for (const secret of ['client-secret-value', 'bot-token-value', SECRET])
@@ -344,7 +344,7 @@ const command = (channelId: string, id: string) =>
 		id,
 		guildId: GUILD,
 		channel: { id: channelId, type: 0 },
-		name: CREATE_COMMAND,
+		name: catalog('ru').createCommand,
 		message: {
 			id: '444444444444444441',
 			content: 'Починить вход',

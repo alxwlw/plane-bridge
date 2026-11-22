@@ -49,6 +49,7 @@ export const tenantOf = (channels: ChannelRoute[], id = 'initech'): Tenant => ({
 	id,
 	guildId: GUILD,
 	workspace: 'example-ws',
+	locale: 'ru',
 	workspaceId: ID(900),
 	auth: { clientId: 'client', clientSecret: 'secret', appInstallationId: ID(901) },
 	webhookSecret: 'hook',
@@ -61,6 +62,8 @@ export const tenantOf = (channels: ChannelRoute[], id = 'initech'): Tenant => ({
 		{ plane: BOB, discord: D_BOB },
 	],
 });
+/** The same tenant writing English. */
+export const english = (tenant: Tenant): Tenant => ({ ...tenant, locale: 'en' });
 export const mentionTag = (id: string, node = 'n') =>
 	`<mention-component id="${node}" entity_identifier="${id}" entity_name="user_mention"></mention-component>`;
 export const mentionHtml = (...ids: string[]) =>
@@ -127,20 +130,27 @@ export function setup(
 
 export const clock = { t: Date.now() };
 
-export function build(plane: SpyPlane, discord: FakeDiscord, tenant: Tenant) {
+/** One notifier for every tenant given; `tenant` of the result is the first one. */
+export function build(
+	plane: SpyPlane,
+	discord: FakeDiscord,
+	tenants: Tenant | readonly [Tenant, ...Tenant[]],
+) {
+	const all = Array.isArray(tenants) ? tenants : [tenants as Tenant];
+	const tenant = all[0]!;
 	discord.now = () => clock.t;
 	const store = new Store(':memory:');
 	const logs: LogEntry[] = [];
-	const runtime: TenantRuntime = {
-		tenant,
+	const runtimeOf = (t: Tenant): TenantRuntime => ({
+		tenant: t,
 		plane,
-		users: userMap(tenant.users),
+		users: userMap(t.users),
 		projects: () => plane.listProjects(),
 		states: (projectId) => plane.listStates(projectId),
 		members: () => plane.listMembers(),
-	};
+	});
 	const notify = createNotifier({
-		runtimes: new Map([[tenant.id, runtime]]),
+		runtimes: new Map(all.map((t) => [t.id, runtimeOf(t)])),
 		discord,
 		applicationId: discord.applicationId,
 		store,

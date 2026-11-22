@@ -12,6 +12,7 @@ export const configOf = (): Config => ({
 			id: 'acme',
 			guildId: '111111111111111111',
 			workspace: 'example-ws',
+			locale: 'ru',
 			workspaceId: '00000000-0000-4000-8000-000000000001',
 			auth: { clientId: 'client&id', clientSecret: 'sec', appInstallationId: 'inst' },
 			webhookSecret: 'hook',

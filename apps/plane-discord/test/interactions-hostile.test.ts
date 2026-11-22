@@ -1,6 +1,7 @@
+import { LOCALES } from '@alxwlw/plane-kit/locale';
 import { describe, expect, test } from 'bun:test';
 
-import { CREATE_COMMAND } from '../src/discord/commands.ts';
+import { messages } from '../src/i18n.ts';
 import { createInteractionHandler } from '../src/discord/interactions.ts';
 import { commandPayload, makeSigner, submitPayload } from './discord-harness.ts';
 import {
@@ -9,6 +10,7 @@ import {
 	UNMAPPED,
 	MSG,
 	SECRET_TEXT,
+	AUTHOR,
 	msg,
 	setup,
 	open,
@@ -35,7 +37,7 @@ describe('createInteractionHandler: враждебный ввод', () => {
 		});
 		const target = (over: Record<string, unknown>) => ({
 			type: 3,
-			name: CREATE_COMMAND,
+			name: messages('ru').createCommand,
 			target_id: MSG,
 			resolved: { messages: { [MSG]: { id: MSG } } },
 			...over,
@@ -91,7 +93,7 @@ describe('createInteractionHandler: враждебный ввод', () => {
 			id: w.ids.next(),
 			guildId: GUILD,
 			channel: { id: MAPPED, type: 'x', parent_id: 5 },
-			name: CREATE_COMMAND,
+			name: messages('ru').createCommand,
 			message: msg({
 				content: huge,
 				author: 'nobody',
@@ -178,6 +180,25 @@ describe('createInteractionHandler: враждебный ввод', () => {
 		expect(
 			w.discord.callsOf('editOriginal').map((c) => (c[1] as { content: string }).content),
 		).toEqual(['Проект не выбран.', 'Проект не выбран.', 'Проект не выбран.']);
+	});
+
+	test('author and file names are escaped the same way in both languages', async () => {
+		const name = 'a<b&"c';
+		for (const locale of LOCALES) {
+			const w = await setup({ locale });
+			const { customId } = await open(w, {
+				message: msg({
+					author: { id: AUTHOR, username: name },
+					attachments: [{ url: 'https://cdn.example.com/f.png', filename: name }],
+				}),
+			});
+			await submitCreate(w, customId, { title: 'T' });
+			await w.settle();
+			const html = w.plane.createdItems[0]!.item.description_html;
+			expect(html, locale).toContain('a&lt;b&amp;&quot;c</a>');
+			expect(html, locale).toContain('a&lt;b&amp;&quot;c</p>');
+			expect(html, locale).not.toContain(name);
+		}
 	});
 
 	test('логи не содержат текстов сообщения; падающий sink не ломает ответ', async () => {

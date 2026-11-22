@@ -9,6 +9,7 @@ import {
 	workItemKey,
 	workItemUrl,
 } from '../src/text.ts';
+import { messages } from '../src/i18n.ts';
 import { fixture } from './fixtures.ts';
 
 const UUID_A = '00000000-0000-4000-8000-0000000000aa';
@@ -198,7 +199,17 @@ describe('planeHtmlToDiscord', () => {
 });
 
 describe('discordToPlaneHtml', () => {
-	const toHtml = (text: string) => discordToPlaneHtml(text, (id) => `[M${id}]`);
+	const toHtml = (text: string) => discordToPlaneHtml(messages('ru'), text, (id) => `[M${id}]`);
+
+	test('role and channel mentions in English', () => {
+		const mention = (id: string) => `[M${id}]`;
+		expect(discordToPlaneHtml(messages('en'), 'ping <@&1> in <#2>', mention)).toBe(
+			'<p>ping @role in #channel</p>',
+		);
+		expect(discordToPlaneHtml(messages('ru'), 'ping <@&1> in <#2>', mention)).toBe(
+			'<p>ping @роль in #канал</p>',
+		);
+	});
 
 	test('<script> экранирован; пустая строка → два <p>; перевод строки → <br>', () => {
 		expect(toHtml('<script>alert("x")</script>')).toBe(

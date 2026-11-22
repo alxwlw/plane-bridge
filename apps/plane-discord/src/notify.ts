@@ -1,4 +1,4 @@
-// Plane events → Discord topics and DMs (design §3 «1a», «1b», §5 «Шум»).
+// Plane events → Discord topics and DMs (design §3 1a, 1b, §5 noise).
 // The notifier does not send anything itself: Plane lookups happen in the returned promise (the caller retries
 // the event as a whole when one fails), every Discord send is its own Delivery (the queue retries only that one).
 import { truncate } from '@alxwlw/plane-kit/html';
@@ -14,6 +14,7 @@ import {
 	DiscordApiError,
 	type OutMessage,
 } from './discord/rest.ts';
+import { type Messages, messages } from './i18n.ts';
 import type { MemberSummary, PlaneApi, ProjectSummary, StateSummary } from './plane/client.ts';
 import type { PlaneEvent } from './plane/webhook.ts';
 import type { Store } from './store.ts';
@@ -50,7 +51,6 @@ export type NotifyDeps = {
 
 type Item = { id: string; projectId: string; sequenceId: number; name: string };
 
-const UNKNOWN_ACTOR = 'кто-то';
 const QUOTE_MAX = 1000;
 const WEBHOOK_NAME = 'Plane';
 // Discord refuses a webhook username that holds these (case-insensitive) and caps it at 80 characters.
@@ -65,11 +65,6 @@ const DISCORD_EPOCH_MS = 1420070400000n;
 function snowflakeMs(id: string): number {
 	return /^\d+$/.test(id) ? Number((BigInt(id) >> 22n) + DISCORD_EPOCH_MS) : Number.NaN;
 }
-const IN_THREAD = '→ Discord: в тред задачи';
-const NO_CHANNEL = 'Канал для проекта не настроен';
-const NO_PROJECT = 'Не удалось отправить в Discord: проект не найден в Plane';
-// Neutral on purpose: no channel names, no hint of what the tenant's map holds.
-const HIDDEN = 'Пересылка в Discord для этого проекта отключена';
 
 /** A project missing from the cached list may be new: ask again, past the cache, before giving up. */
 async function findProject(
@@ -160,7 +155,7 @@ export function createNotifier(deps: NotifyDeps): (event: PlaneEvent) => Promise
 	}
 
 	/** Members are fetched at most once per event, and only when somebody is not in the user table. */
-	function actors(rt: TenantRuntime) {
+	function actors(rt: TenantRuntime, m: Messages) {
 		let members: Promise<MemberSummary[]> | null = null;
 		const list = () => (members ??= rt.members());
 		return {
@@ -168,8 +163,8 @@ export function createNotifier(deps: NotifyDeps): (event: PlaneEvent) => Promise
 			async who(planeUserId: string): Promise<string> {
 				const discordId = rt.users.toDiscord(planeUserId);
 				if (discordId !== null) return `<@${discordId}>`;
-				const found = (await list()).find((m) => m.id === planeUserId);
-				return found?.displayName || UNKNOWN_ACTOR;
+				const found = (await list()).find((u) => u.id === planeUserId);
+				return found?.displayName || m.someone;
 			},
 		};
 	}
@@ -296,12 +291,13 @@ export function createNotifier(deps: NotifyDeps): (event: PlaneEvent) => Promise
 		}
 		const key = workItemKey(project.identifier, item.sequenceId);
 		const url = workItemUrl(deps.planeUrl, rt.tenant.workspace, key);
-		const who = await actors(rt).who(actorId);
+		const m = messages(rt.tenant.locale);
+		const who = await actors(rt, m).who(actorId);
 		const text = (action: string): OutMessage => ({
 			content: [
 				`**${key}** ${item.name}`,
 				`${action} · ${who}`,
-				`[Открыть в Plane](<${url}>)`,
+				`[${m.openInPlane}](<${url}>)`,
 			].join('\n'),
 		});
 		const deliveries: Delivery[] = [];
@@ -319,19 +315,20 @@ export function createNotifier(deps: NotifyDeps): (event: PlaneEvent) => Promise
 	): Promise<Delivery[]> {
 		const bot = await rt.plane.botUserId();
 		if (event.actorId === bot) return (skip(event, 'own'), []);
+		const m = messages(rt.tenant.locale);
 		const { item } = event;
 		const exclude = new Set([bot, event.actorId]);
 		const recipients = new Map<string, string>();
-		addRecipients(rt, recipients, exclude, item.assignees, 'Тебя назначили');
+		addRecipients(rt, recipients, exclude, item.assignees, m.assigned);
 		addRecipients(
 			rt,
 			recipients,
 			exclude,
 			planeMentions(item.descriptionHtml ?? ''),
-			'Тебя упомянули в описании',
+			m.mentionedInDescription,
 		);
 		const channels = await channelsFor(rt, item.projectId, item.id, 'created');
-		return assemble(rt, event, item, event.actorId, 'Задача создана', channels, recipients);
+		return assemble(rt, event, item, event.actorId, m.itemCreated, channels, recipients);
 	}
 
 	async function onUpdated(
@@ -340,6 +337,7 @@ export function createNotifier(deps: NotifyDeps): (event: PlaneEvent) => Promise
 	): Promise<Delivery[]> {
 		const bot = await rt.plane.botUserId();
 		if (event.actorId === bot) return (skip(event, 'own'), []);
+		const m = messages(rt.tenant.locale);
 		const { item, previous } = event;
 		const exclude = new Set([bot, event.actorId]);
 		const recipients = new Map<string, string>();
@@ -350,7 +348,7 @@ export function createNotifier(deps: NotifyDeps): (event: PlaneEvent) => Promise
 				recipients,
 				exclude,
 				item.assignees.filter((id) => !before.has(id)),
-				'Тебя назначили',
+				m.assigned,
 			);
 		}
 		if (previous.descriptionHtml !== undefined) {
@@ -360,7 +358,7 @@ export function createNotifier(deps: NotifyDeps): (event: PlaneEvent) => Promise
 				recipients,
 				exclude,
 				planeMentions(item.descriptionHtml ?? '').filter((id) => !before.has(id)),
-				'Тебя упомянули в описании',
+				m.mentionedInDescription,
 			);
 		}
 		let what: string | null = null;
@@ -378,7 +376,7 @@ export function createNotifier(deps: NotifyDeps): (event: PlaneEvent) => Promise
 						? undefined
 						: states.find((s) => s.id === previous.stateId);
 				if (before?.group !== now.group)
-					what = now.group === 'completed' ? 'Задача закрыта' : 'Задача отменена';
+					what = now.group === 'completed' ? m.itemClosed : m.itemCancelled;
 			}
 		}
 		const channels = what === null ? [] : await channelsFor(rt, item.projectId, item.id, 'closed');
@@ -510,14 +508,15 @@ export function createNotifier(deps: NotifyDeps): (event: PlaneEvent) => Promise
 	): Promise<Delivery[]> {
 		const threads = deps.store.threadsOfItem(rt.tenant.id, event.workItemId);
 		if (threads.length === 0) return [];
+		const m = messages(rt.tenant.locale);
 		const members = await rt.members();
 		const content = planeHtmlToDiscord(html, (id) => {
 			const discordId = rt.users.toDiscord(id);
 			if (discordId !== null) return `<@${discordId}>`;
-			return `@${members.find((m) => m.id === id)?.displayName || UNKNOWN_ACTOR}`;
+			return `@${members.find((u) => u.id === id)?.displayName || m.someone}`;
 		}).trim();
 		if (content === '') return [];
-		const author = members.find((m) => m.id === event.actorId);
+		const author = members.find((u) => u.id === event.actorId);
 		const avatarUrl = webhookAvatar(author?.avatarUrl, deps.planeUrl);
 		const message = {
 			content,
@@ -542,7 +541,7 @@ export function createNotifier(deps: NotifyDeps): (event: PlaneEvent) => Promise
 			recipients,
 			new Set([bot, event.actorId]),
 			planeMentions(html),
-			'Тебя упомянули в комментарии',
+			messages(rt.tenant.locale).mentionedInComment,
 		);
 		// Comments never go to channels: a mention of the bot arrives as agent.mention. Bound threads get them.
 		const inThreads = await threadDeliveries(rt, event, html);
@@ -561,6 +560,7 @@ export function createNotifier(deps: NotifyDeps): (event: PlaneEvent) => Promise
 		rt: TenantRuntime,
 		event: Extract<PlaneEvent, { kind: 'agent.mention' }>,
 	): Promise<Delivery[]> {
+		const m = messages(rt.tenant.locale);
 		// The run is answered whatever happens to the channels, or Plane marks it stale after 5 minutes.
 		const answer = (body: string): Delivery => ({
 			label: `${event.eventKey}→run:${event.runId}`,
@@ -568,22 +568,22 @@ export function createNotifier(deps: NotifyDeps): (event: PlaneEvent) => Promise
 		});
 		// A hidden project is hidden entirely: nothing goes to Discord, the run still gets a short neutral answer.
 		if (rt.tenant.hiddenProjects.includes(event.projectId))
-			return (skip(event, 'hidden_project'), [answer(HIDDEN)]);
+			return (skip(event, 'hidden_project'), [answer(m.runHidden)]);
 		// A channel where the item has a bound thread is covered by the thread sync: sending here would duplicate.
 		const threaded = new Set(
 			deps.store.threadsOfItem(rt.tenant.id, event.workItemId).map((t) => t.channelId),
 		);
 		const routed = await channelsFor(rt, event.projectId, event.workItemId, 'mention');
-		if (routed.length === 0) return [answer(NO_CHANNEL)];
+		if (routed.length === 0) return [answer(m.runNoChannel)];
 		const channels = routed.filter((r) => !threaded.has(r.channelId));
-		if (channels.length === 0) return [answer(IN_THREAD)];
+		if (channels.length === 0) return [answer(m.runInThread)];
 		const project = await findProject(rt, event.projectId);
-		if (!project) return (skip(event, 'unknown_project', 'error'), [answer(NO_PROJECT)]);
+		if (!project) return (skip(event, 'unknown_project', 'error'), [answer(m.runNoProject)]);
 		const item = await rt.plane.getWorkItem(event.projectId, event.workItemId);
 		const key = workItemKey(project.identifier, item.sequenceId);
 		const url = workItemUrl(deps.planeUrl, rt.tenant.workspace, key);
-		const people = actors(rt);
-		let who = UNKNOWN_ACTOR;
+		const people = actors(rt, m);
+		let who = m.someone;
 		let quote: string | null = null;
 		if (event.commentId !== null) {
 			const found = await rt.plane.getComment(event.projectId, event.workItemId, event.commentId);
@@ -592,7 +592,7 @@ export function createNotifier(deps: NotifyDeps): (event: PlaneEvent) => Promise
 			const markdown = planeHtmlToDiscord(found.html, (id) => {
 				const discordId = rt.users.toDiscord(id);
 				if (discordId !== null) return `<@${discordId}>`;
-				return `@${members.find((m) => m.id === id)?.displayName || UNKNOWN_ACTOR}`;
+				return `@${members.find((u) => u.id === id)?.displayName || m.someone}`;
 			}).trim();
 			if (markdown !== '')
 				quote = truncate(markdown, QUOTE_MAX)
@@ -604,8 +604,8 @@ export function createNotifier(deps: NotifyDeps): (event: PlaneEvent) => Promise
 		const message: OutMessage = {
 			content: [
 				`**${key}** ${item.name}`,
-				`Упомянули бота · ${who}`,
-				`[Открыть в Plane](<${url}>)`,
+				`${m.botMentioned} · ${who}`,
+				`[${m.openInPlane}](<${url}>)`,
 				...(quote === null ? [] : [quote]),
 			].join('\n'),
 		};

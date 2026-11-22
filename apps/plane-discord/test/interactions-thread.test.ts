@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
+
 import { DiscordApiError } from '../src/discord/rest.ts';
 import { chatInputPayload, commandPayload } from './discord-harness.ts';
 import {
@@ -599,5 +601,113 @@ describe('/plane-link', () => {
 			ms: 0,
 		});
 		expect(w.store.findByThread(THREAD)).toBeNull();
+	});
+});
+
+describe('/plane-link in English', () => {
+	const URL = 'https://plane.example.com/example-ws/browse/LAB-40/';
+	const linked = `Thread linked to [\`LAB-40\` “Fix login”](<${URL}>).`;
+
+	test('link replies in English', async () => {
+		const w = await setup({ locale: 'en' });
+		seed(w, { id: 'w40', seq: 40, name: 'Fix login' });
+		seed(w, { id: 'w41', seq: 41, name: 'Other' });
+		const text = async (res: ReturnType<typeof link>) => (await res).body.data.content;
+		expect(await text(link(w, 'LAB-40', threadChannel(THREAD, 0)))).toBe(
+			'This command works in a thread.',
+		);
+		expect(await text(link(w, 'LAB-40', { id: THREAD, type: 11 }))).toBe(
+			'Could not determine the channel.',
+		);
+		expect(await text(link(w, 'abc'))).toBe('Use a key like LAB-40.');
+		const payload = chatInputPayload({
+			id: w.ids.next(),
+			guildId: GUILD,
+			name: 'plane-link',
+			channel: threadChannel(THREAD),
+			options: [{ name: 'key', type: 3, value: 'LAB-40' }],
+		});
+		expect((await w.ask({ ...payload, token: undefined })).body.data.content).toBe(
+			'Could not read the Discord request.',
+		);
+
+		await link(w, 'LAB-99');
+		await w.settle();
+		expect(w.discord.callsOf('followup').at(-1)?.[1]).toEqual({
+			content: 'Work item LAB-99 not found.',
+			ephemeral: true,
+		});
+
+		await link(w, 'LAB-40');
+		await w.settle();
+		expect(w.discord.callsOf('editOriginal')).toEqual([
+			['tok-900000000000000006', { content: linked }],
+		]);
+		await link(w, 'LAB-41');
+		await w.settle();
+		expect(w.discord.callsOf('followup').at(-1)?.[1]).toEqual({
+			content: 'This thread is already linked to LAB-40.',
+			ephemeral: true,
+		});
+		expect(JSON.stringify(w.discord.calls)).not.toMatch(CYRILLIC);
+	});
+
+	test('link replies in English: unknown other item, join refused, failures', async () => {
+		const w = await setup({ locale: 'en' });
+		seed(w, { id: 'w40', seq: 40, name: 'Fix login' });
+		w.store.putThread('initech', 'gone', MAPPED, THREAD, P_LAB);
+		await link(w, 'LAB-40');
+		await w.settle();
+		expect(w.discord.callsOf('followup').at(-1)?.[1]).toEqual({
+			content: 'This thread is already linked to another work item.',
+			ephemeral: true,
+		});
+
+		const j = await setup({ locale: 'en' });
+		seed(j, { id: 'w40', seq: 40, name: 'Fix login' });
+		j.discord.failures.set('joinThread', new DiscordApiError(403, 'PUT', '/channels/:id', 50001));
+		await link(j, 'LAB-40');
+		await j.settle();
+		expect(j.discord.callsOf('followup')).toEqual([
+			[
+				'tok-900000000000000001',
+				{
+					content: 'Cannot join the thread: add @Plane to the thread and try again.',
+					ephemeral: true,
+				},
+			],
+		]);
+
+		const d = await setup({ locale: 'en' });
+		seed(d, { id: 'w40', seq: 40, name: 'Fix login' });
+		d.discord.failures.set('joinThread', new DiscordApiError(500, 'PUT', '/channels/:id'));
+		await link(d, 'LAB-40');
+		await d.settle();
+		expect(d.discord.callsOf('followup')[0]?.[1]).toEqual({
+			content: 'Failed: Discord answered 500.',
+			ephemeral: true,
+		});
+
+		const p = await setup({ locale: 'en' });
+		p.plane.getWorkItemByKey = async () => {
+			throw new Error('boom');
+		};
+		await link(p, 'LAB-40');
+		await p.settle();
+		expect(p.discord.callsOf('followup')[0]?.[1]).toEqual({
+			content: 'Failed: internal error.',
+			ephemeral: true,
+		});
+	});
+
+	test('the private follow-up repeats the English confirmation when the public edit fails', async () => {
+		const w = await setup({ locale: 'en' });
+		seed(w, { id: 'w40', seq: 40, name: 'Fix login' });
+		w.discord.failures.set('editOriginal', new DiscordApiError(500, 'PATCH', '/x'));
+		await link(w, 'LAB-40');
+		await w.settle();
+		expect(w.discord.callsOf('followup')).toEqual([
+			['tok-900000000000000001', { content: linked, ephemeral: true }],
+		]);
 	});
 });

@@ -1,6 +1,7 @@
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { describe, expect, test } from 'bun:test';
 
-import type { ChannelRoute } from '../src/config.ts';
+import type { ChannelRoute, Tenant } from '../src/config.ts';
 import {
 	agentMention,
 	ALICE,
@@ -10,6 +11,8 @@ import {
 	comment,
 	created,
 	D_ALICE,
+	D_BOB,
+	english,
 	FORUM,
 	ID,
 	ITEM,
@@ -228,5 +231,80 @@ describe('логи', () => {
 		await notify({ ...updated({ stateId: S_STARTED }, { stateId: ID(77) }), tenant: 'initech' });
 		expect(logs.length).toBeGreaterThan(0);
 		expect(JSON.stringify(logs)).not.toContain('СЕКРЕТНОЕ');
+	});
+});
+
+describe('createNotifier: English tenant, agent.mention', () => {
+	const EN_LINK = '[Open in Plane](<https://plane.example.com/example-ws/browse/LAB-41/>)';
+	const world = (channels: ChannelRoute[], over: Partial<Tenant> = {}) => {
+		const ctx = setup(channels, { ...english(tenantOf(channels)), ...over });
+		ctx.plane.comments.push({
+			id: ID(200),
+			html: `<p>Привет, ${mentionTag(ALICE)} ${mentionTag(ID(99))}</p>`,
+			actorId: ALICE,
+			externalSource: null,
+			externalId: null,
+			projectId: PROJECT,
+			workItemId: ITEM,
+		});
+		return ctx;
+	};
+
+	test('bot mention post in English', async () => {
+		const { notify, discord, plane } = world([route(TEXT)]);
+		await runAll(await notify(agentMention()));
+		expect(sent(discord)).toEqual([
+			[
+				TEXT,
+				{
+					content: `**LAB-41** Название\nBot mentioned · <@${D_ALICE}>\n${EN_LINK}\n> Привет, <@${D_ALICE}> @someone`,
+				},
+			],
+		]);
+		expect(plane.activities).toEqual([{ runId: ID(300), body: `→ Discord: ${TEXT}` }]);
+	});
+
+	test('a bot mention without a comment names someone in English', async () => {
+		const { notify, discord } = world([route(TEXT)]);
+		await runAll(await notify(agentMention(null)));
+		expect(sent(discord)[0]?.[1].content).toBe(
+			`**LAB-41** Название\nBot mentioned · someone\n${EN_LINK}`,
+		);
+	});
+
+	test('run answers in English', async () => {
+		const hidden = world([route(TEXT)], { hiddenProjects: [PROJECT] });
+		await runAll(await hidden.notify(agentMention()));
+		const noChannel = world([route(TEXT, { events: ['created'] })]);
+		await runAll(await noChannel.notify(agentMention()));
+		const inThread = world([route(FORUM)]);
+		inThread.store.putThread('initech', ITEM, FORUM, '140000000000000001', PROJECT);
+		await runAll(await inThread.notify(agentMention()));
+		const noProject = world([route(TEXT)]);
+		noProject.plane.projects = [];
+		await runAll(await noProject.notify(agentMention()));
+		const bodies = [hidden, noChannel, inThread, noProject].map((w) =>
+			w.plane.activities.map((a) => a.body),
+		);
+		expect(bodies).toEqual([
+			['Forwarding to Discord is turned off for this project'],
+			['No channel is set up for this project'],
+			['→ Discord: to the work item thread'],
+			['Could not send to Discord: project not found in Plane'],
+		]);
+		for (const b of bodies.flat()) expect(b).not.toMatch(CYRILLIC);
+	});
+
+	test('comment mention DM in English', async () => {
+		const { notify, discord } = world([route(TEXT)]);
+		await runAll(await notify(comment(mentionHtml(BOB), ALICE)));
+		expect(sent(discord)).toEqual([
+			[
+				`dm-${D_BOB}`,
+				{
+					content: `**LAB-41** Название\nYou were mentioned in a comment · <@${D_ALICE}>\n${EN_LINK}`,
+				},
+			],
+		]);
 	});
 });

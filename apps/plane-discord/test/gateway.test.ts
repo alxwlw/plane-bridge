@@ -284,7 +284,7 @@ describe('Gateway', () => {
 				event: 'gateway.fatal',
 				level: 'error',
 				code: 4014,
-				error: 'MESSAGE_CONTENT не включён в Developer Portal',
+				error: 'MESSAGE_CONTENT is not enabled in the Developer Portal',
 			},
 		]);
 		expect(constructed()).toBe(1);

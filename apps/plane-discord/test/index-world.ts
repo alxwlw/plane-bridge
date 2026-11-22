@@ -23,6 +23,7 @@ export const TENANTS = JSON.stringify({
 			id: 'acme',
 			guildId: GUILD,
 			workspace: 'example-ws',
+			locale: 'ru',
 			workspaceId: WORKSPACE,
 			plane: { clientId: 'example-client-id', appInstallationId: 'inst-1' },
 			serviceChannelId: SERVICE,

@@ -16,6 +16,7 @@ import {
 	comment,
 	D_ALICE,
 	D_BOB,
+	english,
 	FORUM,
 	FORUM_2,
 	ID,
@@ -28,6 +29,7 @@ import {
 	runAll,
 	sent,
 	setup,
+	tenantOf,
 	TEXT,
 } from './notify-world.ts';
 
@@ -82,6 +84,14 @@ describe('createNotifier: comment.created → тред', () => {
 		w.plane.members = [{ id: ID(98), displayName: '', avatarUrl: null }];
 		await runAll(await w.notify(comment(`<p>${mentionTag(ID(98))}</p>`, BOB)));
 		expect((webhookCalls(w)[0]![3] as { content: string }).content).toBe('@кто-то');
+	});
+
+	test('an unmapped mention in a relayed comment is @someone in English', async () => {
+		const w = setup([route(FORUM)], english(tenantOf([route(FORUM)])));
+		w.store.putThread('initech', ITEM, FORUM, THREAD, PROJECT);
+		w.plane.members = [{ id: ID(98), displayName: '', avatarUrl: null }];
+		await runAll(await w.notify(comment(`<p>${mentionTag(ID(98))}</p>`, BOB)));
+		expect((webhookCalls(w)[0]![3] as { content: string }).content).toBe('@someone');
 	});
 
 	test('webhook канала создаётся один раз, дальше берётся из store', async () => {

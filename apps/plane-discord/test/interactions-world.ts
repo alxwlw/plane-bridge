@@ -1,7 +1,8 @@
+import type { Locale } from '@alxwlw/plane-kit/locale';
 import { type LogEntry } from '@alxwlw/plane-kit/log';
 
 import type { Tenant } from '../src/config.ts';
-import { CREATE_COMMAND } from '../src/discord/commands.ts';
+import { messages } from '../src/i18n.ts';
 import { createInteractionHandler } from '../src/discord/interactions.ts';
 import type { TenantRuntime } from '../src/notify.ts';
 import { type PlaneApi, type ProjectSummary } from '../src/plane/client.ts';
@@ -40,6 +41,7 @@ export const tenant = (): Tenant => ({
 	id: 'initech',
 	guildId: GUILD,
 	workspace: 'example-ws',
+	locale: 'ru',
 	workspaceId: '00000000-0000-4000-8000-000000000002',
 	auth: { clientId: 'cid', clientSecret: 'csecret', appInstallationId: 'inst' },
 	webhookSecret: 'whsec',
@@ -72,6 +74,8 @@ export async function setup(
 		/** Leave `now` and `nonce` to the handler's own defaults. */
 		realClockAndNonce?: boolean;
 		throwingLog?: boolean;
+		/** The tenant's language; `ru` when left out. */
+		locale?: Locale;
 	} = {},
 ) {
 	const signer = await makeSigner();
@@ -92,7 +96,7 @@ export async function setup(
 	const discord = new FakeDiscord();
 	const store = opts.store ?? new Store(':memory:');
 	const logs: LogEntry[] = [];
-	const t = tenant();
+	const t = { ...tenant(), locale: opts.locale ?? 'ru' };
 	const rt: TenantRuntime = {
 		tenant: t,
 		plane: countedPlane,
@@ -139,6 +143,8 @@ export async function setup(
 		rt,
 		handler,
 		ids,
+		/** Switches the tenant's language in place. */
+		setLocale: (locale: Locale) => void (rt.tenant = { ...rt.tenant, locale }),
 		advance: (ms: number) => void (clock += ms),
 		async ask(payload: unknown): Promise<{ status: number; body: any; headers: Headers }> {
 			const res = await handler(await signer.request(JSON.stringify(payload)));
@@ -165,7 +171,7 @@ export async function open(
 			id: w.ids.next(),
 			guildId: GUILD,
 			channel: opts.channel ?? { id: MAPPED, type: 0 },
-			name: opts.name ?? CREATE_COMMAND,
+			name: opts.name ?? messages('ru').createCommand,
 			message: opts.message ?? msg(),
 		}),
 	);
