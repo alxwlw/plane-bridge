@@ -1,4 +1,4 @@
 {
 	"extends": "@alxwlw/tsconfig/bun.json",
-	"include": ["src", "test", "scripts", "web/logic.ts"]
+	"include": ["src", "test", "scripts", "web/logic.ts", "web/apply-texts.ts"]
 }

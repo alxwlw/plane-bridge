@@ -15,6 +15,8 @@ const t: TenantConfig = {
 	webhookSecret: 'w',
 	readKey: 'read-aaaa',
 	agentKey: 'agent-bbbb',
+	locale: 'ru',
+	areaPrefix: 'код:',
 };
 const url = (q: string) => new URL(`http://localhost/t/acme/graph.json${q}`);
 const req = (authorization?: string) =>
@@ -104,7 +106,7 @@ describe('страница', () => {
 	const evil = '"><script>alert(1)</script>&';
 	test('адреса проходят через esc', () => {
 		for (const html of [
-			graphPage({ scriptUrl: evil, dataUrl: evil }),
+			graphPage({ scriptUrl: evil, dataUrl: evil, locale: 'ru' }),
 			planeBlock({ scriptUrl: evil, dataUrl: evil }),
 		]) {
 			expect(html).not.toContain('<script>alert');
@@ -115,7 +117,7 @@ describe('страница', () => {
 
 	test('d3 в оболочку не входит', () => {
 		for (const html of [
-			graphPage({ scriptUrl: '/a.js', dataUrl: '/d' }),
+			graphPage({ scriptUrl: '/a.js', dataUrl: '/d', locale: 'ru' }),
 			planeBlock({ scriptUrl: '/a.js', dataUrl: '/d' }),
 		]) {
 			expect(html).not.toContain('d3.min.js');

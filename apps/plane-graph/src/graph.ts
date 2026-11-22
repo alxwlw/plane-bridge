@@ -1,4 +1,6 @@
 // Pure builders of the task-order graph and the agent snapshot from the local copy.
+import type { Locale } from '@alxwlw/plane-kit/locale';
+
 import type {
 	CopyView,
 	Edge,
@@ -8,8 +10,6 @@ import type {
 	SnapshotJson,
 	StateGroup,
 } from './contract.ts';
-
-const AREA_PREFIX = 'код:';
 
 type Node = {
 	row: ItemRow;
@@ -199,7 +199,14 @@ function computeWaves(copy: CopyView, nodes: Map<string, Node>): Waves {
 
 export function buildGraph(
 	copy: CopyView,
-	o: { planeUrl: string; workspaceSlug: string; lastRun: RunSummary | null; now: Date },
+	o: {
+		planeUrl: string;
+		workspaceSlug: string;
+		areaPrefix: string;
+		locale: Locale;
+		lastRun: RunSummary | null;
+		now: Date;
+	},
 ): GraphJson {
 	const nodes = indexItems(copy);
 	const { wave, cycles } = computeWaves(copy, nodes);
@@ -240,7 +247,7 @@ export function buildGraph(
 		projectId: n.row.projectId,
 		stateGroup: n.group,
 		closed: n.closed,
-		areas: n.labels.filter((l) => l.startsWith(AREA_PREFIX)),
+		areas: n.labels.filter((l) => l.startsWith(o.areaPrefix)),
 		url: `${base}/${o.workspaceSlug}/browse/${n.key}/`,
 		wave: wave.get(n.row.id) ?? null,
 		inCycle: cycleIds.has(n.row.id),
@@ -251,7 +258,7 @@ export function buildGraph(
 	for (const n of shown) {
 		const w = wave.get(n.row.id);
 		if (w === undefined) continue;
-		const areas = n.labels.filter((l) => l.startsWith(AREA_PREFIX));
+		const areas = n.labels.filter((l) => l.startsWith(o.areaPrefix));
 		for (const area of areas.length > 0 ? areas : [null]) {
 			const id = `${w}\u0000${area}`;
 			const group = groups.get(id) ?? { wave: w, area, nodes: [] };
@@ -271,6 +278,7 @@ export function buildGraph(
 
 	return {
 		generatedAt: o.now.toISOString(),
+		locale: o.locale,
 		syncedAt: copy.syncedAt,
 		lastAgentRun: o.lastRun,
 		projects: copy.projects.toSorted((a, b) => compareText(a.identifier, b.identifier)),

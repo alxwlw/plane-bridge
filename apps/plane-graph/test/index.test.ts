@@ -35,6 +35,8 @@ const TENANTS = JSON.stringify({
 			workspaceId: WORKSPACE,
 			clientId: 'example-client-id',
 			installationId: 'inst-1',
+			locale: 'ru',
+			areaPrefix: 'код:',
 		},
 	],
 });
@@ -160,10 +162,22 @@ describe('startService', () => {
 			ts: expect.any(String),
 			event: 'listening',
 			port: service.port,
-			tenants: [{ id: 'acme' }],
+			tenants: [{ id: 'acme', locale: 'ru', areaPrefix: 'код:' }],
 		});
 		for (const secret of [WEBHOOK_SECRET, PLANE_SECRET, READ_KEY, AGENT_KEY, WORKSPACE])
 			expect(w.lines.join('\n')).not.toContain(secret);
+	});
+
+	test('the listening line carries the locale and area prefix of an en tenant', async () => {
+		const w = world();
+		const en = JSON.stringify({
+			tenants: [{ ...JSON.parse(TENANTS).tenants[0], locale: 'en', areaPrefix: 'area:' }],
+		});
+		const { service } = await start({ ...w, options: { ...w.options, readFile: () => en } });
+		expect(w.entries().find((e) => e.event === 'listening')).toMatchObject({
+			port: service.port,
+			tenants: [{ id: 'acme', locale: 'en', areaPrefix: 'area:' }],
+		});
 	});
 
 	test('старт сверяет копию и отдаёт граф', async () => {

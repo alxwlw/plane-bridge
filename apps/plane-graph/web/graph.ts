@@ -1,13 +1,16 @@
 /// <reference lib="dom" />
 // The order graph (view B): wave columns, a d3 force layout, hover/tap to highlight neighbours.
 import type { Edge, EdgeType, GraphJson, RunSummary } from '../src/contract.ts';
+import type { Messages } from '../src/i18n.ts';
 import {
+	catalogFor,
 	clickAction,
 	columnX,
 	type Filters,
 	fitBox,
 	projectColor,
 	startGroups,
+	tipText,
 	visible,
 } from './logic.ts';
 
@@ -91,16 +94,17 @@ function clock(iso: string | null, seconds: boolean): string {
 }
 const dataTime = (g: GraphJson) => clock(g.syncedAt ?? g.generatedAt, true);
 
-function agentText(run: RunSummary | null): string {
-	if (run === null) return 'агент ещё не работал';
-	return `агент: ${clock(run.at, false)}, +${run.relationsAdded} связей, +${run.labelsAdded} меток`;
+/** The catalog of this render: the answer's locale, before the first answer the page's `lang`. */
+const texts = (): Messages => catalogFor(data, document.documentElement.lang);
+
+function agentText(m: Messages, run: RunSummary | null): string {
+	if (run === null) return m.agentNotRun;
+	return m.agentRun(clock(run.at, false), run.relationsAdded, run.labelsAdded);
 }
 
 const isHttp = (url: string) => /^https?:\/\//i.test(url);
 // Plane sandboxes its HTML block (opaque origin): a popup opened by a script or a plain click there inherits
 // the sandbox, only the browser's own new-tab gestures (Ctrl/Cmd+click, middle button) escape it.
-const HINT_MOUSE = 'Ctrl/⌘+клик или колёсико мыши — открыть в новой вкладке';
-const HINT_TOUCH = 'долгое нажатие — открыть в новой вкладке';
 const sandboxed = window.origin === 'null';
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -167,15 +171,16 @@ function renderBar(): void {
 	barEl.replaceChildren();
 	if (data === null) return;
 	const g = data;
-	barEl.append(el('b', 'Граф задач'), el('span', `данные на ${dataTime(g)}`));
-	barEl.append(el('span', agentText(g.lastAgentRun)));
+	const m = texts();
+	barEl.append(el('b', m.title), el('span', m.dataAsOf(dataTime(g))));
+	barEl.append(el('span', agentText(m, g.lastAgentRun)));
 	const areas = [...new Set(g.items.flatMap((i) => i.areas))].sort();
 	if (filters.project !== null && !g.projects.some((p) => p.id === filters.project))
 		filters.project = null;
 	if (filters.area !== null && !areas.includes(filters.area)) filters.area = null;
 	barEl.append(
 		select(
-			'Все проекты',
+			m.allProjects,
 			g.projects.map((p) => ({ value: p.id, text: `${p.identifier} · ${p.name}` })),
 			filters.project,
 			(v) => {
@@ -185,7 +190,7 @@ function renderBar(): void {
 			},
 		),
 		select(
-			'Все области',
+			m.allAreas,
 			areas.map((a) => ({ value: a, text: a })),
 			filters.area,
 			(v) => {
@@ -204,8 +209,8 @@ function renderBar(): void {
 		userView = null;
 		refresh();
 	};
-	label.append(box, 'Показать закрытые');
-	const fitBtn = el('button', 'Вписать');
+	label.append(box, m.showClosed);
+	const fitBtn = el('button', m.fit);
 	fitBtn.type = 'button';
 	fitBtn.onclick = () => {
 		userView = null;
@@ -218,6 +223,7 @@ function renderPanels(): void {
 	panelsEl.replaceChildren();
 	if (data === null) return;
 	const g = data;
+	const m = texts();
 	const shown = visible(g, filters);
 	const ids = new Set(shown.items.map((i) => i.id));
 	const byId = new Map(g.items.map((i) => [i.id, i]));
@@ -225,7 +231,7 @@ function renderPanels(): void {
 
 	if (g.cycles.length > 0) {
 		const box = el('div', undefined, 'cycles');
-		box.append(el('div', 'Цикл в «блокирует», порядок не определён:'));
+		box.append(el('div', m.cycle));
 		for (const cycle of g.cycles) box.append(el('div', cycle.map(keyOf).join(', ')));
 		panelsEl.append(box);
 	}
@@ -233,12 +239,12 @@ function renderPanels(): void {
 	const groups = startGroups(g.canStart, ids);
 	if (groups.length > 0) {
 		const box = el('div');
-		box.append(el('h3', 'Можно сейчас'));
+		box.append(el('h3', m.canStart));
 		for (const grp of groups) {
 			const row = el('div', undefined, 'grp');
 			const head = el('div');
-			head.append(el('span', grp.area ?? 'без области', 'area'));
-			if (grp.notParallel) head.append(el('span', 'не параллельно', 'par'));
+			head.append(el('span', grp.area ?? m.noArea, 'area'));
+			if (grp.notParallel) head.append(el('span', m.notParallel, 'par'));
 			const list = el('ul');
 			for (const id of grp.items) {
 				const item = byId.get(id);
@@ -259,17 +265,14 @@ function renderPanels(): void {
 		panelsEl.append(box);
 	}
 
-	if (g.hiddenOpen > 0)
-		panelsEl.append(el('div', `ещё ${g.hiddenOpen} открытых задач без связей`, 'more'));
+	if (g.hiddenOpen > 0) panelsEl.append(el('div', m.hiddenOpen(g.hiddenOpen), 'more'));
 }
 
 function renderOffline(failed: boolean): void {
 	offlineEl.classList.toggle('on', failed);
 	if (!failed) return;
-	offlineEl.textContent =
-		data === null
-			? 'Нет связи с plane-graph'
-			: `Нет связи с plane-graph, данные на ${dataTime(data)}`;
+	const m = texts();
+	offlineEl.textContent = data === null ? m.offline : m.offlineSince(dataTime(data));
 }
 
 function drawGraph(): void {
@@ -277,15 +280,16 @@ function drawGraph(): void {
 	simulation = null;
 	fit = () => {};
 	stageEl.replaceChildren();
+	const m = texts();
 	if (d3State === 'failed') {
-		stageEl.append(el('div', 'Не загрузилась библиотека графа (cdnjs)', 'msg'));
+		stageEl.append(el('div', m.d3Failed, 'msg'));
 		return;
 	}
 	if (data === null || d3State !== 'ready') return;
 	const g = data;
 	const shown = visible(g, filters);
 	if (shown.items.length === 0) {
-		stageEl.append(el('div', 'Нет задач под выбранные фильтры', 'msg'));
+		stageEl.append(el('div', m.noMatches, 'msg'));
 		return;
 	}
 
@@ -369,7 +373,7 @@ function drawGraph(): void {
 			.attr('x', x)
 			.attr('y', 16)
 			.attr('text-anchor', 'middle')
-			.text(r === 0 ? 'МОЖНО СЕЙЧАС' : `ВОЛНА ${r + 1}`);
+			.text(r === 0 ? m.canStartColumn : m.waveColumn(r + 1));
 	}
 
 	const linkSel = layer
@@ -421,8 +425,7 @@ function drawGraph(): void {
 				keep ? (keep.has(n.id) ? null : 'none') : labelled(n) ? null : 'none',
 			);
 		const n = id === null ? undefined : nodes.find((x) => x.id === id);
-		tip.textContent =
-			n === undefined ? '' : `${n.item.key} · ${n.item.name}${n.item.closed ? ' (закрыта)' : ''}`;
+		tip.textContent = tipText(m, n?.item);
 	}
 	nodeSel
 		.on('pointerdown', (e) => {
@@ -435,22 +438,22 @@ function drawGraph(): void {
 			if ((e as PointerEvent).pointerType === 'mouse') focus(null);
 		})
 		.on('click', (e, n) => {
-			const m = e as MouseEvent;
+			const ev = e as MouseEvent;
 			const action = clickAction({
 				sandboxed,
 				pointer,
 				focusedSame: focused === n.id,
-				button: m.button,
-				ctrl: m.ctrlKey,
-				meta: m.metaKey,
-				shift: m.shiftKey,
+				button: ev.button,
+				ctrl: ev.ctrlKey,
+				meta: ev.metaKey,
+				shift: ev.shiftKey,
 			});
 			// 'follow' leaves the event alone: the surrounding <a> opens the task.
 			if (action === 'follow') return;
-			m.preventDefault();
+			ev.preventDefault();
 			focus(n.id);
 			if (action === 'hint') {
-				tip.textContent += ` · ${pointer === 'mouse' ? HINT_MOUSE : HINT_TOUCH}`;
+				tip.textContent += ` · ${pointer === 'mouse' ? m.hintMouse : m.hintTouch}`;
 			}
 		});
 	svg.on('click', (e) => {

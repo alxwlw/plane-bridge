@@ -1,5 +1,6 @@
 import { createHmac } from 'node:crypto';
 
+import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
 import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
 
@@ -10,6 +11,7 @@ import {
 	readState,
 	signState,
 } from '../src/miro/oauth.ts';
+import { messages } from '../src/i18n.ts';
 import { Store } from '../src/store.ts';
 import { configOf } from './config-fixture.ts';
 
@@ -281,5 +283,45 @@ describe('miroOauthHandler', () => {
 			(await handler(new Request(url.toString()), url)).headers.get('location')!,
 		).searchParams.get('state')!;
 		expect(readState(state, SECRET, Date.now())).toBe('acme');
+	});
+});
+
+describe('OAuth replies by locale', () => {
+	const enConfig = { ...config, tenants: [{ ...config.tenants[0]!, locale: 'en' as const }] };
+	const enSetup = (reply?: Reply) => {
+		const s = setup(reply);
+		return { ...s, deps: { ...s.deps, config: enConfig } };
+	};
+
+	test('OAuth replies in English', async () => {
+		const failed = enSetup({ status: 500, text: '' });
+		const res = await miroOauthCallback(cb(`code=c1&state=${good()}`), failed.deps);
+		expect([res.status, await res.text()]).toEqual([502, 'Could not get a Miro token']);
+
+		const other = enSetup(
+			ok({ access_token: 'at-9', team_id: '3458764500000000777', user_id: '42' }),
+		);
+		const wrong = await miroOauthCallback(cb(`code=c1&state=${good()}`), other.deps);
+		expect([wrong.status, await wrong.text()]).toEqual([400, 'This is not the expected Miro team']);
+
+		const missing = await miroOauthCallback(cb(`state=${good()}`), enSetup().deps);
+		expect([missing.status, await missing.text()]).toEqual([400, 'Missing code parameter']);
+	});
+
+	test('replies before the tenant is known', async () => {
+		const res = miroSetupRedirect(enConfig, new URL('https://x/miro/setup?tenant=nope'), NOW);
+		expect([res.status, await res.text()]).toEqual([404, messages(DEFAULT_LOCALE).unknownTenant]);
+		const bare = await miroOauthCallback(cb(''), enSetup().deps);
+		expect([bare.status, await bare.text()]).toEqual([400, messages(DEFAULT_LOCALE).missingCode]);
+	});
+
+	test('a callback without code and with a broken state still answers 400', async () => {
+		const res = await miroOauthCallback(cb('state=junk'), enSetup().deps);
+		expect([res.status, await res.text()]).toEqual([400, messages(DEFAULT_LOCALE).missingCode]);
+	});
+
+	test('the Russian tenant gets the Russian reply for a missing code', async () => {
+		const res = await miroOauthCallback(cb(`state=${good()}`), setup().deps);
+		expect(await res.text()).toBe('Нет параметра code');
 	});
 });

@@ -27,7 +27,7 @@ const ITEM_KEY = /(?<![A-Za-z0-9])[A-Z][A-Z0-9]{1,9}-\d{1,6}(?![A-Za-z0-9-])/g;
 const KEY_PLACEHOLDER = /^ABC-\d+$/;
 // The project identifier on its own (PRJ), not a key.
 const PROJECT_IDENTIFIER_KEY = /^(?:identifier|project_identifier)$/;
-// Text of a work item: its name and descriptions become Задача <n>.
+// Text of a work item: its name and descriptions become a numbered Russian placeholder (see the replacement below).
 const ITEM_TEXT_KEY = /^(?:name|description_html|description_stripped)$/;
 // Free text of any object (labels, modules, states, projects) when the names option is on.
 const ANY_TEXT_KEY = /^(?:name|title|description|description_html|description_stripped)$/;

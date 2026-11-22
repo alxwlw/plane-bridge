@@ -178,6 +178,8 @@ export function createHandler(deps: ServerDeps): (req: Request) => Promise<Respo
 			const body = buildGraph(store.copy(tenant.id), {
 				planeUrl: config.planeUrl,
 				workspaceSlug: tenant.workspaceSlug,
+				areaPrefix: tenant.areaPrefix,
+				locale: tenant.locale,
 				lastRun: store.lastRun(tenant.id),
 				now: nowDate,
 			});
@@ -195,7 +197,9 @@ export function createHandler(deps: ServerDeps): (req: Request) => Promise<Respo
 				},
 			});
 		if (name === 'graph')
-			return html(graphPage({ scriptUrl: '/assets/graph.js', dataUrl: dataPath }));
+			return html(
+				graphPage({ scriptUrl: '/assets/graph.js', dataUrl: dataPath, locale: tenant.locale }),
+			);
 		return html(
 			planeBlock({
 				scriptUrl: `${config.publicUrl}/assets/graph.js`,

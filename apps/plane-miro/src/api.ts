@@ -2,6 +2,7 @@ import type { Log } from '@alxwlw/plane-kit/log';
 
 import type { Config } from './config.ts';
 import { bindItem, convertItems, MAX_ITEMS } from './convert.ts';
+import { type Messages, messages } from './i18n.ts';
 import { verifyIdToken } from './miro/jwt.ts';
 import { MiroApiError, MiroNotConnected } from './miro/rest.ts';
 import { PlaneAuthError } from './plane/auth.ts';
@@ -23,12 +24,12 @@ const BODY_MAX = 64 * 1024;
 const SEARCH_MAX = 20;
 const QUERY_MAX = 100;
 const AUTHOR_MAX = 100;
-const DEFAULT_AUTHOR = 'участник Miro';
 const BOARD_ID = /^[A-Za-z0-9_=-]{1,64}$/;
 const ITEM_ID = /^\d{1,24}$/;
 const WORK_ITEM_ID = /^[A-Za-z0-9_-]{1,64}$/;
 const WORK_ITEM_KEY = /^[A-Za-z][A-Za-z0-9]{0,11}-\d{1,9}$/;
 const METHODS: Record<string, string> = {
+	locale: 'GET',
 	projects: 'GET',
 	search: 'GET',
 	card: 'GET',
@@ -75,11 +76,11 @@ function text(value: unknown, pattern: RegExp): string {
 	return value;
 }
 
-function author(value: unknown): string {
+function author(m: Messages, value: unknown): string {
 	if (typeof value !== 'string') throw badRequest();
 	const trimmed = value.trim();
 	if (Array.from(trimmed).length > AUTHOR_MAX) throw badRequest();
-	return trimmed === '' ? DEFAULT_AUTHOR : trimmed;
+	return trimmed === '' ? m.defaultAuthor : trimmed;
 }
 
 function itemIds(value: unknown): string[] {
@@ -127,7 +128,7 @@ export function createApi(deps: ApiDeps): (req: Request, url: URL) => Promise<Re
 	async function convert(rt: TenantRuntime, req: Request): Promise<Response> {
 		const body = await readJson(req);
 		const boardId = text(body.boardId, BOARD_ID);
-		const who = author(body.author);
+		const who = author(messages(rt.tenant.locale), body.author);
 		const ids = itemIds(body.itemIds);
 		const { projectId, boardName } = await boardAndProject(rt, boardId, body.projectId);
 		const results = await convertItems(
@@ -144,7 +145,7 @@ export function createApi(deps: ApiDeps): (req: Request, url: URL) => Promise<Re
 		const boardId = text(body.boardId, BOARD_ID);
 		const itemId = text(body.itemId, ITEM_ID);
 		const workItemId = text(body.workItemId, WORK_ITEM_ID);
-		const who = author(body.author);
+		const who = author(messages(rt.tenant.locale), body.author);
 		const { projectId, boardName } = await boardAndProject(rt, boardId, body.projectId);
 		const result = await bindItem(
 			rt,
@@ -210,6 +211,8 @@ export function createApi(deps: ApiDeps): (req: Request, url: URL) => Promise<Re
 		}
 		try {
 			switch (route) {
+				case 'locale':
+					return reply(200, { locale: rt.tenant.locale });
 				case 'projects':
 					return await projects(rt);
 				case 'search':

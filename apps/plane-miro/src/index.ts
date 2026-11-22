@@ -201,7 +201,7 @@ export async function startService(
 	log({
 		event: 'listening',
 		port: server.port ?? 0,
-		tenants: config.tenants.map((t) => ({ id: t.id })),
+		tenants: config.tenants.map((t) => ({ id: t.id, locale: t.locale })),
 	});
 
 	return {

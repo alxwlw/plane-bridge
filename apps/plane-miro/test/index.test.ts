@@ -44,6 +44,7 @@ const TENANTS = JSON.stringify({
 			plane: { clientId: 'example-client-id', appInstallationId: 'inst-1' },
 			miro: { teamId: '3458764500000000001' },
 			embed: true,
+			locale: 'ru',
 		},
 	],
 });
@@ -116,10 +117,20 @@ describe('startService', () => {
 			ts: expect.any(String),
 			event: 'listening',
 			port: service.port,
-			tenants: [{ id: 'acme' }],
+			tenants: [{ id: 'acme', locale: 'ru' }],
 		});
 		for (const secret of [WEBHOOK_SECRET, MIRO_SECRET, 'acme-plane-secret', WORKSPACE])
 			expect(w.lines.join('\n')).not.toContain(secret);
+	});
+
+	test('the listening line carries the locale of each tenant', async () => {
+		const w = world();
+		w.options.readFile = read(TENANTS.replace('"locale":"ru"', '"locale":"en"'));
+		const { service } = await start(w);
+		expect(w.entries().find((e) => e.event === 'listening')).toMatchObject({
+			port: service.port,
+			tenants: [{ id: 'acme', locale: 'en' }],
+		});
 	});
 
 	test('сервис: подписанная доставка смены статуса → карточка на доске обновлена', async () => {

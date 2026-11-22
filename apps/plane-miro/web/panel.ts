@@ -1,5 +1,6 @@
 /// <reference lib="dom" />
 import { api } from './api.ts';
+import { DEFAULT_MESSAGES, loadTenantTexts } from './apply-texts.ts';
 import {
 	bindableId,
 	convertibleIds,
@@ -30,6 +31,8 @@ let selection: { id: string; type: string }[] = [];
 let updatedSelection: { id: string; type: string }[] | null = null;
 let hits: Hit[] = [];
 let picked: Hit | null = null;
+// The tenant's catalog; the default until the locale answer arrives.
+let m = DEFAULT_MESSAGES;
 let busy = false;
 let searchSeq = 0;
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
@@ -41,7 +44,7 @@ function say(text: string, isError = false): void {
 
 function refresh(): void {
 	const count = convertibleIds(selection).length;
-	countEl.textContent = `Выделено для Plane: ${count}`;
+	countEl.textContent = m.selected(count);
 	convertEl.disabled = busy || count === 0 || projectEl.value === '';
 	bindEl.disabled = busy || bindableId(selection) === null || picked === null;
 	projectEl.disabled = busy;
@@ -109,10 +112,10 @@ async function search(query: string): Promise<void> {
 	picked = null;
 	if (res.ok) {
 		hits = res.data.items;
-		say(hits.length === 0 ? 'Ничего не найдено.' : '');
+		say(hits.length === 0 ? m.nothingFound : '');
 	} else {
 		hits = [];
-		say(errorText(res.error), true);
+		say(errorText(m, res.error), true);
 	}
 	renderHits();
 	refresh();
@@ -134,11 +137,11 @@ async function convert(): Promise<void> {
 				body: JSON.stringify({ boardId, projectId: projectEl.value, author, itemIds: batch }),
 			}),
 		(done, total) => {
-			say(`Переношу: ${done} из ${total}…`);
+			say(m.converting(done, total));
 		},
 	);
 	say(
-		summary(results),
+		summary(m, results),
 		results.some((r) => !r.ok),
 	);
 }
@@ -163,13 +166,13 @@ async function bind(): Promise<void> {
 		}),
 	});
 	const outcome: Outcome = res.ok ? res.data.result : { ok: false, error: res.error };
-	say(summary([outcome]), !outcome.ok);
+	say(summary(m, [outcome]), !outcome.ok);
 }
 
 /** A failure outside the request (the SDK refusing a call) is shown like any other. */
 const guard = (work: () => Promise<void>) => () =>
 	void exclusive(work).catch(() => {
-		say(errorText('unknown'), true);
+		say(errorText(m, 'unknown'), true);
 	});
 
 convertEl.addEventListener('click', guard(convert));
@@ -189,10 +192,12 @@ miro.board.ui.on('selection:update', ({ items }) => {
 	refresh();
 });
 
-const [projects, current] = await Promise.all([
+const [loaded, projects, current] = await Promise.all([
+	loadTenantTexts(() => api('/miro/api/locale'), document),
 	api<{ projects: Project[] }>('/miro/api/projects'),
 	miro.board.getSelection(),
 ]);
+m = loaded;
 selection = currentSelection(updatedSelection, current);
 if (projects.ok) {
 	projectEl.replaceChildren(
@@ -206,6 +211,6 @@ if (projects.ok) {
 	const last = remembered();
 	if (last !== null && projects.data.projects.some((p) => p.id === last)) projectEl.value = last;
 } else {
-	say(errorText(projects.error), true);
+	say(errorText(m, projects.error), true);
 }
 refresh();

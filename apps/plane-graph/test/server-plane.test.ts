@@ -22,6 +22,8 @@ const tenant = (id: string, workspaceId: string, webhookSecret: string): TenantC
 	webhookSecret,
 	readKey: 'read-key',
 	agentKey: 'agent-key',
+	locale: 'ru',
+	areaPrefix: 'код:',
 });
 const config = (): Config => ({
 	planeUrl: 'https://plane.example.com',

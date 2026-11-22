@@ -1,4 +1,8 @@
 // Adapted from apps/plane-miro/src/config.ts.
+import { DEFAULT_LOCALE, isLocale, type Locale, LOCALES } from '@alxwlw/plane-kit/locale';
+
+/** The default prefix of area labels; phase 6 of the locale plan flips it to 'area:'. */
+export const DEFAULT_AREA_PREFIX = 'код:';
 
 export type TenantConfig = {
 	id: string;
@@ -10,6 +14,9 @@ export type TenantConfig = {
 	webhookSecret: string;
 	readKey: string;
 	agentKey: string;
+	locale: Locale;
+	/** Labels starting with it (case-sensitive) are areas. */
+	areaPrefix: string;
 };
 export type Config = {
 	planeUrl: string;
@@ -32,7 +39,15 @@ export const PLANE_SCOPES: readonly string[] = [
 // A Plane id: a UUID, any case.
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TENANT_ID = /^[a-z][a-z0-9]{0,15}$/;
-const TENANT_KEYS = ['id', 'workspaceSlug', 'workspaceId', 'clientId', 'installationId'] as const;
+const TENANT_KEYS = [
+	'id',
+	'workspaceSlug',
+	'workspaceId',
+	'clientId',
+	'installationId',
+	'locale',
+	'areaPrefix',
+] as const;
 
 type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -139,6 +154,13 @@ function parseTenant(
 	const clientId = str('clientId');
 	const installationId = str('installationId');
 
+	let locale: Locale = DEFAULT_LOCALE;
+	if (raw.locale !== undefined) {
+		if (isLocale(raw.locale)) locale = raw.locale;
+		else fail(`${at}.locale must be one of ${LOCALES.join(', ')}`);
+	}
+	const areaPrefix = raw.areaPrefix === undefined ? DEFAULT_AREA_PREFIX : str('areaPrefix');
+
 	// Secrets live in env only; every one is required, the two keys must differ.
 	const secrets = { planeSecret: '', webhookSecret: '', readKey: '', agentKey: '' };
 	if (TENANT_ID.test(id)) {
@@ -159,7 +181,16 @@ function parseTenant(
 
 	if (failed > 0) return { tenant: null, id, workspaceId };
 	return {
-		tenant: { id, workspaceSlug, workspaceId, clientId, installationId, ...secrets },
+		tenant: {
+			id,
+			workspaceSlug,
+			workspaceId,
+			clientId,
+			installationId,
+			locale,
+			areaPrefix,
+			...secrets,
+		},
 		id,
 		workspaceId,
 	};

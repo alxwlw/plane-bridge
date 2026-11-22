@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html>
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -71,14 +71,14 @@
 		<script type="module" src="/miro/assets/panel.js"></script>
 	</head>
 	<body>
-		<label for="project">Проект</label>
+		<label for="project" data-text="projectLabel"></label>
 		<select id="project"></select>
-		<p id="count">Выделено для Plane: 0</p>
-		<button id="convert" type="button" disabled>В Plane</button>
-		<h2>Привязать к задаче</h2>
-		<input id="query" type="search" placeholder="Ключ или слова из названия" autocomplete="off" />
+		<p id="count"></p>
+		<button id="convert" type="button" data-text="toPlane" disabled></button>
+		<h2 data-text="bindHeading"></h2>
+		<input id="query" type="search" data-placeholder="searchPlaceholder" autocomplete="off" />
 		<ul id="hits"></ul>
-		<button id="bind" type="button" disabled>Привязать</button>
+		<button id="bind" type="button" data-text="bind" disabled></button>
 		<p id="status"></p>
 	</body>
 </html>

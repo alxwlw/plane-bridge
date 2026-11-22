@@ -1,8 +1,10 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
+import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
 import type { Log } from '@alxwlw/plane-kit/log';
 
 import type { Config } from '../config.ts';
+import { messages } from '../i18n.ts';
 import type { Fetch } from '../plane/auth.ts';
 import type { Store } from '../store.ts';
 import { idOf } from './jwt.ts';
@@ -38,7 +40,7 @@ const text = (status: number, body: string): Response =>
 export function miroSetupRedirect(config: Config, url: URL, nowMs: number): Response {
 	const id = url.searchParams.get('tenant');
 	const tenant = config.tenants.find((t) => t.id === id);
-	if (tenant === undefined) return text(404, 'Неизвестный тенант');
+	if (tenant === undefined) return text(404, messages(DEFAULT_LOCALE).unknownTenant);
 	const target = new URL('https://miro.com/oauth/authorize');
 	target.searchParams.set('response_type', 'code');
 	target.searchParams.set('client_id', config.miro.clientId);
@@ -97,6 +99,10 @@ export async function miroOauthCallback(
 	deps: { config: Config; store: Store; fetch: Fetch; log: Log; nowMs: number },
 ): Promise<Response> {
 	const { config, store, log } = deps;
+	const state = url.searchParams.get('state');
+	const tenantId = state === null ? null : readState(state, config.miro.clientSecret, deps.nowMs);
+	const tenant = config.tenants.find((t) => t.id === tenantId);
+	const m = messages(tenant?.locale ?? DEFAULT_LOCALE);
 	const code = url.searchParams.get('code');
 	if (code === null || code === '') {
 		const denied = url.searchParams.get('error');
@@ -107,7 +113,7 @@ export async function miroOauthCallback(
 				level: 'warn',
 				error: /^[a-z_]{1,40}$/.test(denied) ? denied : '',
 			});
-		return text(400, 'Нет параметра code');
+		return text(400, m.missingCode);
 	}
 	const rawTeam = url.searchParams.get('team_id') ?? url.searchParams.get('team');
 	const queryTeam = rawTeam !== null && TEAM_ID.test(rawTeam) ? rawTeam : '';
@@ -118,9 +124,6 @@ export async function miroOauthCallback(
 		return new Response(null, { status: 302, headers: { location: target.toString() } });
 	};
 
-	const state = url.searchParams.get('state');
-	const tenantId = state === null ? null : readState(state, config.miro.clientSecret, deps.nowMs);
-	const tenant = config.tenants.find((t) => t.id === tenantId);
 	if (tenant === undefined) {
 		// Nothing is exchanged or stored. A state that was sent but does not read is an owner setup gone wrong.
 		if (state === null) log({ event: 'miro.installed', team: queryTeam });
@@ -131,11 +134,11 @@ export async function miroOauthCallback(
 	const got = await exchange(code, config, deps.fetch);
 	if (!('token' in got)) {
 		log({ event: 'miro.exchange_failed', level: 'error', tenant: tenant.id, status: got.status });
-		return text(502, 'Не удалось получить токен Miro');
+		return text(502, m.miroTokenFailed);
 	}
 	if (got.teamId !== tenant.miroTeamId) {
 		log({ event: 'miro.wrong_team', level: 'error', tenant: tenant.id, team: got.teamId });
-		return text(400, 'Это не та команда Miro');
+		return text(400, m.wrongMiroTeam);
 	}
 	store.putMiroToken(got.teamId, got.userId, got.token);
 	log({ event: 'miro.service_connected', tenant: tenant.id, user: got.userId });

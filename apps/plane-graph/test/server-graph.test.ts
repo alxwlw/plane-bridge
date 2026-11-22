@@ -2,7 +2,8 @@ import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
 
 import type { Config, TenantConfig } from '../src/config.ts';
-import type { AgentRunIn } from '../src/contract.ts';
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
+import type { AgentRunIn, GraphJson } from '../src/contract.ts';
 import { buildGraph, buildSnapshot } from '../src/graph.ts';
 import { createHandler, MAX_RUN_BODY } from '../src/server.ts';
 import { Store } from '../src/store.ts';
@@ -25,6 +26,8 @@ const tenant = (id: string, readKey: string, agentKey: string): TenantConfig => 
 	webhookSecret: 'hook-secret',
 	readKey,
 	agentKey,
+	locale: 'ru',
+	areaPrefix: 'код:',
 });
 const config = (): Config => ({
 	planeUrl: PLANE_URL,
@@ -100,6 +103,8 @@ describe('graph.json', () => {
 					buildGraph(store.copy('acme'), {
 						planeUrl: PLANE_URL,
 						workspaceSlug: 'acme-ws',
+						areaPrefix: 'код:',
+						locale: 'ru',
 						lastRun: null,
 						now: new Date(NOW),
 					}),
@@ -361,6 +366,59 @@ describe('снимок и проход агента', () => {
 	});
 });
 
+describe('tenant language', () => {
+	function twoTenants() {
+		const store = new Store(':memory:');
+		const copy = copyOf({
+			tasks: [
+				{ key: 'ABC-1', labels: ['area:x', 'код:y'] },
+				{ key: 'ABC-2', labels: ['area:x', 'код:y'] },
+			],
+			edges: [['ABC-1', 'blocks', 'ABC-2']],
+		});
+		const { syncedAt, ...data } = copy;
+		for (const id of ['acme', 'other']) store.replaceCopy(id, data, syncedAt as string);
+		const handler = createHandler({
+			config: {
+				...config(),
+				tenants: new Map([
+					['acme', { ...tenant('acme', READ, AGENT), locale: 'en', areaPrefix: 'area:' }],
+					['other', tenant('other', 'read-key-3333', 'agent-key-5555')],
+				]),
+			},
+			store,
+			log: () => {},
+			now: () => NOW,
+			enqueue: () => {},
+			assets: new Map([['graph', '']]),
+			acceptRun: async () => true,
+		});
+		return handler;
+	}
+
+	test('page in English', async () => {
+		const html = await (await twoTenants()(get(`/t/acme/graph?k=${READ}`))).text();
+		expect(html).toContain('<html lang="en">');
+		expect(html).toContain('<title>Work item graph</title>');
+		expect(html).not.toMatch(CYRILLIC);
+	});
+
+	test('two tenants, two languages and two prefixes', async () => {
+		const handler = twoTenants();
+		const en = (await (await handler(get(`/t/acme/graph.json?k=${READ}`))).json()) as GraphJson;
+		const ru = (await (
+			await handler(get('/t/other/graph.json?k=read-key-3333'))
+		).json()) as GraphJson;
+		expect(en.locale).toBe('en');
+		expect(en.items.map((i) => i.areas)).toEqual([['area:x'], ['area:x']]);
+		expect(ru.locale).toBe('ru');
+		expect(ru.items.map((i) => i.areas)).toEqual([['код:y'], ['код:y']]);
+		const ruPage = await (await handler(get('/t/other/graph?k=read-key-3333'))).text();
+		expect(ruPage).toContain('<html lang="ru">');
+		expect(ruPage).toContain('<title>Граф задач</title>');
+	});
+});
+
 describe('страницы и код графа', () => {
 	test('страница и оболочка', async () => {
 		const { handler } = setup();
@@ -370,6 +428,7 @@ describe('страницы и код графа', () => {
 		expect(page.headers.get('cache-control')).toBe('no-store');
 		expect(page.headers.get('content-disposition')).toBeNull();
 		const html = await page.text();
+		expect(html).toContain('<html lang="ru">');
 		expect(html).toContain('<title>Граф задач</title>');
 		expect(html).toContain('src="/assets/graph.js"');
 		expect(html).toContain(`data-graph="/t/acme/graph.json?k=${READ}"`);

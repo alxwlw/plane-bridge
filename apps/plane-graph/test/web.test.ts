@@ -6,6 +6,8 @@ import { afterAll, describe, expect, test } from 'bun:test';
 
 import { buildWeb, createWeb } from '../src/web.ts';
 
+const WEB_DIR = new URL('../web', import.meta.url).pathname;
+
 const dir = mkdtempSync(join(tmpdir(), 'plane-graph-web-'));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -16,6 +18,14 @@ describe('web', () => {
 		const assets = await buildWeb(dir);
 		expect([...assets.keys()]).toEqual(['graph']);
 		expect(assets.get('graph')).toContain('marker-');
+	});
+
+	test('the client bundle carries the catalog', async () => {
+		const bundle = (await buildWeb(WEB_DIR)).get('graph') ?? '';
+		for (const text of ['Work item graph', 'Граф задач']) expect(bundle).toContain(text);
+		// The whole string literal, so a longer sentence with the same start does not stand in for it.
+		for (const text of ['No connection to plane-graph', 'Нет связи с plane-graph'])
+			expect(bundle).toMatch(new RegExp(`["'\`]${text}["'\`]`));
 	});
 
 	test('buildWeb падает на ошибке сборки', async () => {

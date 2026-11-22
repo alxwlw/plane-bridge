@@ -1,6 +1,8 @@
 // Data contracts of plane-graph. Types only: the browser code imports this file with `import type`,
 // so it must not import runtime modules nor use Bun/node types.
 
+import type { Locale } from '@alxwlw/plane-kit/locale';
+
 export type StateGroup = 'backlog' | 'unstarted' | 'started' | 'completed' | 'cancelled' | 'triage';
 /** blocks: from = blocker, to = blocked; parent: from = parent. */
 export type EdgeType = 'blocks' | 'relates' | 'parent';
@@ -16,6 +18,8 @@ export type RunSummary = {
 // GET /t/<tenant>/graph.json
 export interface GraphJson {
 	generatedAt: string;
+	/** The tenant's locale: the language of the page texts. */
+	locale: Locale;
 	syncedAt: string | null;
 	lastAgentRun: RunSummary | null;
 	projects: { id: string; identifier: string; name: string }[];
