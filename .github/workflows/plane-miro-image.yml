@@ -5,60 +5,31 @@ on:
       - 'apps/plane-miro/**'
       - 'packages/**'
       - '.github/workflows/plane-miro-image.yml'
+      - '.github/workflows/image.yml'
       - '.github/smoke/plane-miro.sh'
+      - '.github/image/**'
   push:
     branches: [main]
     paths:
       - 'apps/plane-miro/**'
       - 'packages/**'
       - '.github/workflows/plane-miro-image.yml'
+      - '.github/workflows/image.yml'
       - '.github/smoke/plane-miro.sh'
+      - '.github/image/**'
 permissions:
   contents: read
   packages: write
-env:
-  IMAGE: ghcr.io/alxwlw/plane-miro
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   image:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
-      - name: Build
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
-        with:
-          context: .
-          file: apps/plane-miro/Dockerfile
-          platforms: linux/amd64
-          load: true
-          tags: plane-miro:smoke
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      - name: Smoke
-        run: .github/smoke/plane-miro.sh plane-miro:smoke
-      - name: Log in to ghcr.io
-        if: github.event_name == 'push'
-        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push
-        id: push
-        if: github.event_name == 'push'
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
-        with:
-          context: .
-          file: apps/plane-miro/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ${{ env.IMAGE }}:${{ github.sha }}
-            ${{ env.IMAGE }}:main
-          labels: org.opencontainers.image.source=https://github.com/alxwlw/plane-bridge
-          cache-from: type=gha
-      - name: Digest
-        if: github.event_name == 'push'
-        run: echo "${IMAGE}@${DIGEST}" >> "$GITHUB_STEP_SUMMARY"
-        env:
-          DIGEST: ${{ steps.push.outputs.digest }}
+    uses: ./.github/workflows/image.yml
+    with:
+      app: plane-miro
+      version: main
+      tags: |
+        main
+        ${{ github.sha }}
+      push: ${{ github.event_name == 'push' }}

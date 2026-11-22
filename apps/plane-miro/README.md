@@ -139,10 +139,12 @@ Until the account is connected the API answers that Miro is not connected and th
 
 ## Image
 
-`ghcr.io/alxwlw/plane-miro`, built by `.github/workflows/plane-miro-image.yml` on every push to `main` that touches
-this directory or `packages/`; deploy by digest. The workflow smoke-tests the image first (`/healthz`, the headers of
-`/miro/panel`, the `listening` line, the SQLite file in `/data`).
+`ghcr.io/alxwlw/plane-miro` for `linux/amd64` and `linux/arm64`, built by `.github/workflows/plane-miro-image.yml`
+(through `.github/workflows/image.yml`) on every push to `main` that touches this directory or `packages/`; deploy by
+digest. Each platform is smoke-tested on its own runner by `.github/smoke/plane-miro.sh` before publishing (`/healthz`,
+the headers of `/miro/panel`, the `listening` line, the SQLite file in `/data`).
 
 ```bash
 docker build -f apps/plane-miro/Dockerfile -t plane-miro:local .
+.github/smoke/plane-miro.sh plane-miro:local
 ```

@@ -482,14 +482,17 @@ This version is not compatible with the single-project, API-key one:
 
 ## Image
 
-`ghcr.io/alxwlw/plane-hooks`, built from the repository root by `.github/workflows/plane-hooks-image.yml` on
-every push to `main` that touches this app or anything under `packages/`; deploy by digest. Pull requests build it and
-run the smoke test without publishing: `tenants.example.json` in `/config`, a fresh RSA key, the `listening` line
-with the tenant, `/healthz`, the SQLite file in `/data`. The image runs as `bun`; `wget` (busybox) serves
+`ghcr.io/alxwlw/plane-hooks` for `linux/amd64` and `linux/arm64`, built from the repository root by
+`.github/workflows/plane-hooks-image.yml` (through `.github/workflows/image.yml`) on every push to `main` that touches
+this app or anything under `packages/`; deploy by digest. Each platform is smoke-tested on its own runner by
+`.github/smoke/plane-hooks.sh` before publishing: `tenants.example.json` in `/config`, a fresh RSA key, the `listening`
+line with the tenant, `/healthz`, the SQLite file in `/data`. Pull requests build both platforms and run the smoke test
+without publishing. The image runs as `bun`; `wget` (busybox) serves
 container healthchecks: `wget -q --spider http://localhost:8080/healthz`.
 
 ```bash
 docker build -f apps/plane-hooks/Dockerfile -t plane-hooks:local .
+.github/smoke/plane-hooks.sh plane-hooks:local
 ```
 
 ## Development
