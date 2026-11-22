@@ -69,8 +69,9 @@ and it does not check its shape). Below, `acme` is the tenant id, `example-ws` t
 7. **Turn on the inputs you use** (each is off until its secret is set; restart after setting it): add `delivery`
    and `incidents` to `tenants.json`, then [Vercel](#vercel), [Grafana](#grafana), [Dokploy](#dokploy). The
    `listening` line lists the inputs that are on (`github`, `grafana`, `vercel`, `dokploy`); `delivery` and
-   `incidents` are not in it, so there is no marker that those rules loaded. State names in `delivery` must match the
-   project's states by name (case-insensitive, otherwise exact: `In Review`, `Done`); a name the project lacks shows
+   `incidents` are not in it, so there is no marker that those rules loaded. `delivery` never moves the work items of
+   the incident project, so `incidents.project` must name a second project in a single-project workspace (see
+   [Inputs](#inputs)). State names in `delivery` must match the project's states by name (case-insensitive, otherwise exact: `In Review`, `Done`); a name the project lacks shows
    only later, as one `warn` line (`event: "warning"`, `reason: "state_missing:<project>:<name>"`) on the first PR
    that needs it.
 8. **Check.** Open a draft PR on `acme/api` whose title has a work item key such as `ENG-1`, and mark it ready for
@@ -348,8 +349,10 @@ This one is a fuller tenant:
   never set in that project (the position falls back to the previous step). A state missing from a project or a
   project Plane does not know logs one `warn` line and the rest works.
 - **`incidents.project`** — the identifier of the incident project (required for the Grafana input); the status
-  rules never touch it. A tenant without `incidents` gets no incidents. **`incidents.priority`** — severity
-  (or `*`) → environment (or `*`) → `urgent`/`high`/`medium`, merged cell by cell over the default:
+  rules never touch it, and `delivery` never moves its work items either. So the incident project must differ from
+  the projects whose work items the PRs should move: a workspace with a single project (Plane Cloud creates one by
+  default) needs a second project for incidents. A tenant without `incidents` gets no incidents.
+  **`incidents.priority`** — severity (or `*`) → environment (or `*`) → `urgent`/`high`/`medium`, merged cell by cell over the default:
 
   | `severity`       | `env` other than `staging` | `env` = `staging` |
   | ---------------- | -------------------------- | ----------------- |
@@ -505,7 +508,8 @@ pnpm exec moon run plane-hooks:test
 Scripts that talk to live systems need real credentials, so they are run by hand:
 
 - **`scripts/probe-plane.ts`** checks the Plane calls the hub relies on as the Plane App bot: it creates and
-  deletes throwaway work items, a label and a release in a project. Env: `PLANE_HOOKS_PLANE_URL`,
+  deletes throwaway work items, a label and a release in a project. The release check is skipped, with the reason
+  printed, when Plane answers 402 or 403 to creating a release (an App bot token gets 403). Env: `PLANE_HOOKS_PLANE_URL`,
   `PLANE_HOOKS_WORKSPACE`, `PLANE_HOOKS_PROJECT_ID` (the project UUID), and the app's
   `PLANE_HOOKS_PROBE_CLIENT_ID`, `PLANE_HOOKS_PROBE_CLIENT_SECRET`, `PLANE_HOOKS_PROBE_INSTALLATION_ID`:
 
