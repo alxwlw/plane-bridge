@@ -1,6 +1,7 @@
 import { esc, link, p, truncate, utc } from '@alxwlw/plane-kit/html';
 
-import { DEFAULT_PRIORITY, type PriorityTable } from './config.ts';
+import type { PriorityTable } from './config.ts';
+import type { Messages } from './i18n.ts';
 import type { IncidentSignal } from './incident.ts';
 import { BadPayload, isRecord, isTimestamp, optString, stringMap } from './payload.ts';
 
@@ -13,14 +14,20 @@ const TITLE_MAX = 200;
  */
 export function parseGrafanaWebhook(
 	body: unknown,
-	table: PriorityTable = DEFAULT_PRIORITY,
+	table: PriorityTable,
+	m: Messages,
 ): IncidentSignal[] {
 	if (!isRecord(body) || !Array.isArray(body.alerts))
 		throw new BadPayload('grafana: body has no alerts[]');
-	return body.alerts.map((alert, index) => toSignal(alert, index, table));
+	return body.alerts.map((alert, index) => toSignal(alert, index, table, m));
 }
 
-function toSignal(alert: unknown, index: number, table: PriorityTable): IncidentSignal {
+function toSignal(
+	alert: unknown,
+	index: number,
+	table: PriorityTable,
+	m: Messages,
+): IncidentSignal {
 	const where = `grafana: alerts[${index}]`;
 	if (!isRecord(alert)) throw new BadPayload(`${where} is not an object`);
 	const fingerprint = optString(alert.fingerprint);
@@ -44,7 +51,7 @@ function toSignal(alert: unknown, index: number, table: PriorityTable): Incident
 			key: fingerprint,
 			occurrence: startsAt,
 			at: alert.endsAt,
-			noteHtml: p(`Погас ${utc(alert.endsAt)} UTC`),
+			noteHtml: p(m.alertResolvedAt(utc(alert.endsAt))),
 			title,
 			env,
 		};
@@ -58,8 +65,8 @@ function toSignal(alert: unknown, index: number, table: PriorityTable): Incident
 		occurrence: startsAt,
 		at: startsAt,
 		title,
-		bodyHtml: describeAlert(alert, labels, annotations),
-		noteHtml: p(`Сработал ${utc(startsAt)} UTC`),
+		bodyHtml: describeAlert(alert, labels, annotations, m),
+		noteHtml: p(m.alertFiredAt(utc(startsAt))),
 		priority: alertPriority(labels, table),
 		label: 'alert',
 		env,
@@ -89,6 +96,7 @@ function describeAlert(
 	alert: Record<string, unknown>,
 	labels: Record<string, string>,
 	annotations: Record<string, string>,
+	m: Messages,
 ): string {
 	const parts: string[] = [];
 	if (annotations.summary) parts.push(p(esc(annotations.summary)));
@@ -96,12 +104,12 @@ function describeAlert(
 	const labelItems = Object.entries(labels)
 		.sort(([a], [b]) => a.localeCompare(b))
 		.map(([labelName, value]) => `<li><code>${esc(labelName)}</code>: ${esc(value)}</li>`);
-	if (labelItems.length > 0) parts.push(`<p>Метки:</p><ul>${labelItems.join('')}</ul>`);
+	if (labelItems.length > 0) parts.push(`<p>${m.labelsLead}</p><ul>${labelItems.join('')}</ul>`);
 	const links = [
-		link(optString(alert.generatorURL), 'Правило'),
-		link(optString(alert.dashboardURL), 'Дашборд'),
-		link(optString(alert.panelURL), 'Панель'),
-		link(optString(alert.silenceURL), 'Заглушить'),
+		link(optString(alert.generatorURL), m.alertRule),
+		link(optString(alert.dashboardURL), m.alertDashboard),
+		link(optString(alert.panelURL), m.alertPanel),
+		link(optString(alert.silenceURL), m.alertSilence),
 		link(annotations.runbook_url, 'Runbook'),
 	].filter((html): html is string => html !== null);
 	if (links.length > 0) parts.push(p(links.join(' · ')));

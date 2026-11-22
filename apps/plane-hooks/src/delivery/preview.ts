@@ -1,6 +1,7 @@
 import { esc, link, p } from '@alxwlw/plane-kit/html';
 
 import type { GitHubApi } from '../github/client.ts';
+import { type Messages, messages } from '../i18n.ts';
 import type { VercelHookEvent, VercelPreview } from '../vercel.ts';
 import type { DeployFact } from './deploy.ts';
 import { ownedKeys } from './keys.ts';
@@ -12,11 +13,14 @@ const VERCEL_BOT = 'vercel[bot]';
 
 export type PreviewResult = { key: string; action: 'created' | 'updated' | 'noop' };
 
-function previewHtml(preview: VercelPreview): string {
+function previewHtml(m: Messages, preview: VercelPreview): string {
 	const parts = [
-		`Превью <code>${esc(preview.project)}</code>: ${link(preview.url, preview.url) ?? `<code>${esc(preview.url)}</code>`}`,
+		m.previewHtml(
+			preview.project,
+			link(preview.url, preview.url) ?? `<code>${esc(preview.url)}</code>`,
+		),
 	];
-	if (preview.branch !== null) parts.push(`ветка <code>${esc(preview.branch)}</code>`);
+	if (preview.branch !== null) parts.push(m.previewBranchHtml(preview.branch));
 	if (preview.sha !== null) parts.push(`<code>${esc(preview.sha.slice(0, 7))}</code>`);
 	return p(parts.join(' · '));
 }
@@ -45,7 +49,7 @@ export async function handlePreview(
 	preview: VercelPreview,
 ): Promise<PreviewResult[]> {
 	if (deps.tenant.delivery === null) return [];
-	const html = previewHtml(preview);
+	const html = previewHtml(messages(deps.tenant.locale), preview);
 	const results: PreviewResult[] = [];
 	for (const key of await keysOf(deps, preview)) {
 		const action = await tolerateGone<PreviewResult['action'] | null>(deps, key, null, async () => {

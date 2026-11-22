@@ -1,12 +1,15 @@
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { beforeEach, describe, expect, test } from 'bun:test';
+
+import { messages } from '../src/i18n.ts';
+import { RELEASE_ITEMS_MAX } from '../src/plane.ts';
 import {
 	changelogHtml,
 	publishRelease,
 	type ReleaseDraft,
-	releaseName,
 	type ReleaseItem,
+	releaseName,
 } from '../src/release.ts';
-import { RELEASE_ITEMS_MAX } from '../src/plane.ts';
 import { FakePlane } from './fake-plane.ts';
 
 const SHA = '89abcdef0123456789abcdef0123456789abcdef';
@@ -65,7 +68,7 @@ describe('changelogHtml', () => {
 	test('коммиты со ссылками и экранированием, затем задачи без повторов', () => {
 		const commit = (sha: string) =>
 			`<a href="https://github.com/example-org/app/commit/${sha}">${sha.slice(0, 7)}</a>`;
-		expect(changelogHtml(draft(), ITEMS)).toBe(
+		expect(changelogHtml(messages('ru'), draft(), ITEMS)).toBe(
 			'<h3>Коммиты</h3><ul>' +
 				`<li>${commit(SHA)} Merge pull request #830 from example-org/staging</li>` +
 				`<li>${commit(ONE)} feat(gateway): [OPS-12] faster fills (#829)</li>` +
@@ -76,20 +79,43 @@ describe('changelogHtml', () => {
 
 	test('заголовок коммита в changelog обрезается до 200 символов', () => {
 		const long = 'я'.repeat(300);
-		const html = changelogHtml(draft({ commits: [{ sha: ONE, message: `${long}\nbody` }] }), []);
+		const html = changelogHtml(
+			messages('ru'),
+			draft({ commits: [{ sha: ONE, message: `${long}\nbody` }] }),
+			[],
+		);
 		expect(html).toContain(` ${'я'.repeat(199)}…</li>`);
 	});
 
 	test('без коммитов и задач — одна строка о повторном деплое', () => {
-		expect(changelogHtml(draft({ commits: [] }), [])).toBe(
+		expect(changelogHtml(messages('ru'), draft({ commits: [] }), [])).toBe(
 			'<h3>Коммиты</h3><p>Новых коммитов нет: повторный деплой того же sha.</p>',
+		);
+	});
+});
+
+describe('changelogHtml by locale', () => {
+	test('changelog in English', () => {
+		const html = changelogHtml(messages('en'), draft(), ITEMS);
+		expect(html).toContain('<h3>Commits</h3>');
+		expect(html).toContain('<h3>Work items</h3>');
+		expect(html).not.toMatch(CYRILLIC);
+	});
+
+	test('changelog without commits in English', () => {
+		expect(changelogHtml(messages('en'), draft({ commits: [] }), [])).toBe(
+			'<h3>Commits</h3><p>No new commits: a redeploy of the same sha.</p>',
 		);
 	});
 });
 
 describe('publishRelease', () => {
 	test('создаёт релиз: имя, статус, дата, external_id, changelog, задачи', async () => {
-		const result = await publishRelease({ plane }, draft({ headline: TITLE }), ITEMS);
+		const result = await publishRelease(
+			{ plane, messages: messages('ru') },
+			draft({ headline: TITLE }),
+			ITEMS,
+		);
 		expect(plane.releases).toHaveLength(1);
 		const [release] = plane.releases;
 		expect(result).toEqual({ action: 'created', releaseId: release?.id as string });
@@ -99,14 +125,18 @@ describe('publishRelease', () => {
 			release_date: '2026-10-06',
 			external_source: 'github-deploy',
 			external_id: `example-org/app@${SHA}`,
-			changelog: changelogHtml(draft(), ITEMS),
+			changelog: changelogHtml(messages('ru'), draft(), ITEMS),
 			workItemIds: ['w12', 'w3'],
 		});
 	});
 
 	test('повтор того же sha — второго релиза нет, action noop', async () => {
-		await publishRelease({ plane }, draft(), ITEMS);
-		const again = await publishRelease({ plane }, draft({ at: '2026-10-07T08:00:00.000Z' }), ITEMS);
+		await publishRelease({ plane, messages: messages('ru') }, draft(), ITEMS);
+		const again = await publishRelease(
+			{ plane, messages: messages('ru') },
+			draft({ at: '2026-10-07T08:00:00.000Z' }),
+			ITEMS,
+		);
 		expect(plane.releases).toHaveLength(1);
 		expect(again).toEqual({ action: 'noop', releaseId: plane.releases[0]?.id as string });
 		expect(plane.releases[0]?.release_date).toBe('2026-10-06');
@@ -114,14 +144,18 @@ describe('publishRelease', () => {
 
 	test('повтор после сбоя changelog достраивает тот же релиз', async () => {
 		plane.failNext('updateReleaseChangelog');
-		await expect(publishRelease({ plane }, draft(), ITEMS)).rejects.toThrow();
+		await expect(
+			publishRelease({ plane, messages: messages('ru') }, draft(), ITEMS),
+		).rejects.toThrow();
 		expect(plane.releases).toHaveLength(1);
 		expect(plane.releases[0]?.changelog).toBe('');
 		expect(plane.releases[0]?.workItemIds).toEqual([]);
 
-		expect(await publishRelease({ plane }, draft(), ITEMS)).toMatchObject({ action: 'noop' });
+		expect(await publishRelease({ plane, messages: messages('ru') }, draft(), ITEMS)).toMatchObject(
+			{ action: 'noop' },
+		);
 		expect(plane.releases).toHaveLength(1);
-		expect(plane.releases[0]?.changelog).toBe(changelogHtml(draft(), ITEMS));
+		expect(plane.releases[0]?.changelog).toBe(changelogHtml(messages('ru'), draft(), ITEMS));
 		expect(plane.releases[0]?.workItemIds).toEqual(['w12', 'w3']);
 	});
 
@@ -130,16 +164,20 @@ describe('publishRelease', () => {
 			key: `OPS-${i}`,
 			workItemId: `w${i}`,
 		}));
-		await publishRelease({ plane }, draft(), many);
+		await publishRelease({ plane, messages: messages('ru') }, draft(), many);
 		expect(plane.releases[0]?.workItemIds).toHaveLength(RELEASE_ITEMS_MAX);
 		expect(plane.releases[0]?.workItemIds.at(-1)).toBe(`w${RELEASE_ITEMS_MAX - 1}`);
 	});
 
 	test('повтор того же sha без коммитов не стирает changelog', async () => {
-		await publishRelease({ plane }, draft(), ITEMS);
+		await publishRelease({ plane, messages: messages('ru') }, draft(), ITEMS);
 		const before = plane.releases[0]?.changelog;
 		expect(before).toContain('faster fills');
-		const again = await publishRelease({ plane }, draft({ commits: [] }), []);
+		const again = await publishRelease(
+			{ plane, messages: messages('ru') },
+			draft({ commits: [] }),
+			[],
+		);
 		expect(again).toMatchObject({ action: 'noop' });
 		expect(plane.releases).toHaveLength(1);
 		expect(plane.releases[0]?.changelog).toBe(before as string);
@@ -147,12 +185,14 @@ describe('publishRelease', () => {
 	});
 
 	test('новый релиз без коммитов получает changelog с пометкой о повторе', async () => {
-		await publishRelease({ plane }, draft({ commits: [] }), []);
-		expect(plane.releases[0]?.changelog).toBe(changelogHtml(draft({ commits: [] }), []));
+		await publishRelease({ plane, messages: messages('ru') }, draft({ commits: [] }), []);
+		expect(plane.releases[0]?.changelog).toBe(
+			changelogHtml(messages('ru'), draft({ commits: [] }), []),
+		);
 	});
 
 	test('без задач — привязка не вызывается', async () => {
-		await publishRelease({ plane }, draft(), []);
+		await publishRelease({ plane, messages: messages('ru') }, draft(), []);
 		expect(plane.calls).not.toContain('addReleaseWorkItems');
 	});
 });

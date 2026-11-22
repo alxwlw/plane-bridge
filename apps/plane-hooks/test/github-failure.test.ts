@@ -1,4 +1,7 @@
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
+import { LOCALES } from '@alxwlw/plane-kit/locale';
 import { describe, expect, test } from 'bun:test';
+
 import { deploymentSignal } from '../src/github/failure.ts';
 import type { GitHubEvent } from '../src/github/webhook.ts';
 import { tenantOf } from './config-fixture.ts';
@@ -136,6 +139,45 @@ describe('deploymentSignal', () => {
 	test('промежуточные состояния — null', () => {
 		for (const state of ['in_progress', 'queued', 'pending', 'inactive'] as const) {
 			expect(deploymentSignal(event(state), tenantOf())).toBeNull();
+		}
+	});
+});
+
+describe('deploymentSignal by locale', () => {
+	test('GitHub deployment failure in English', () => {
+		const signal = deploymentSignal(event('failure'), tenantOf({ locale: 'en' }), NOW);
+		expect(signal).toMatchObject({
+			title: 'Deploy failed: acme/api → production · abcdef0',
+			bodyHtml: `<p>Repository: <code>acme/api</code>, environment: <code>production</code></p><p>Commit: <a href="https://github.com/acme/api/commit/${SHA}">abcdef0</a></p><p><a href="https://example.com/deploys/501">Deploy log</a></p>`,
+			noteHtml:
+				'<p>Deploy failed: <code>abcdef0</code>, <a href="https://example.com/deploys/501">Deploy log</a></p>',
+		});
+		expect(JSON.stringify(signal)).not.toMatch(CYRILLIC);
+	});
+
+	test('GitHub deployment recovery in English', () => {
+		const signal = deploymentSignal(event('success', { id: 503 }), tenantOf({ locale: 'en' }), NOW);
+		expect(signal).toMatchObject({ noteHtml: '<p>Deploy passes again: <code>abcdef0</code></p>' });
+		expect(JSON.stringify(signal)).not.toMatch(CYRILLIC);
+	});
+
+	test('GitHub signal identity does not depend on the locale', () => {
+		for (const state of ['failure', 'success'] as const) {
+			const [en, ru] = LOCALES.map((locale) =>
+				deploymentSignal(event(state), tenantOf({ locale }), NOW),
+			);
+			const pick = (s: typeof en) =>
+				s && {
+					status: s.status,
+					source: s.source,
+					key: s.key,
+					at: s.at,
+					...(s.status === 'firing'
+						? { occurrence: s.occurrence, priority: s.priority, label: s.label, env: s.env }
+						: {}),
+				};
+			expect(pick(en)).toEqual(pick(ru));
+			expect(pick(en)).not.toBeNull();
 		}
 	});
 });

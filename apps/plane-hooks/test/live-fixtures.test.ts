@@ -1,10 +1,11 @@
 // Live deliveries (sanitized) through the hub's real entry points.
 import { describe, expect, test } from 'bun:test';
 
+import { fakeSha } from '../scripts/sanitize-fixture.ts';
 import { parseDokployWebhook } from '../src/dokploy.ts';
 import { parseGitHubDelivery } from '../src/github/webhook.ts';
+import { messages } from '../src/i18n.ts';
 import { parseVercelEvent } from '../src/vercel.ts';
-import { fakeSha } from '../scripts/sanitize-fixture.ts';
 import { fixture } from './fixtures.ts';
 import { dokployRequest, githubRequest, vercelRequest, world } from './server-harness.ts';
 
@@ -43,7 +44,7 @@ describe('pull_request edited (живая доставка)', () => {
 describe('Vercel: живые доставки (API-передеплой превью)', () => {
 	test('deployment.succeeded превью: проект, репозиторий, ветка, ссылка, sha из настоящего meta', async () => {
 		const { body } = await fixture('vercel-preview-succeeded.json');
-		const event = parseVercelEvent(body);
+		const event = parseVercelEvent(body, messages('ru'));
 		expect(event).toMatchObject({
 			kind: 'preview',
 			preview: {
@@ -61,7 +62,10 @@ describe('Vercel: живые доставки (API-передеплой прев
 
 	test('deployment.created — ignored', async () => {
 		const { body } = await fixture('vercel-created.json');
-		expect(parseVercelEvent(body)).toEqual({ kind: 'ignored', type: 'deployment.created' });
+		expect(parseVercelEvent(body, messages('ru'))).toEqual({
+			kind: 'ignored',
+			type: 'deployment.created',
+		});
 	});
 
 	test('сервер: подписанное превью с веткой-ключом — комментарий превью; created — 200 ignored', async () => {
@@ -113,7 +117,7 @@ describe('deployment_status от vercel[bot] (Preview)', () => {
 describe('Dokploy: App Deploy compose-приложения', () => {
 	test('разбор: deployed с именем приложения, временем и ссылкой на деплой', async () => {
 		const { body } = await fixture('dokploy-deploy.json');
-		expect(parseDokployWebhook(body)).toMatchObject({
+		expect(parseDokployWebhook(body, messages('ru'))).toMatchObject({
 			kind: 'deployed',
 			app: 'example-app-1',
 			at: '2026-10-29T02:58:22.912Z',
@@ -198,10 +202,13 @@ describe('Vercel: instant rollback (по документации Vercel: тол
 			['rolled_back', 'no_deploy'],
 			['promoted', 'no_deploy'],
 		]);
-		const parsed = parseVercelEvent({
-			...promoted,
-			payload: { ...promoted.payload, toDeploymentId: 'dpl_stray' },
-		});
+		const parsed = parseVercelEvent(
+			{
+				...promoted,
+				payload: { ...promoted.payload, toDeploymentId: 'dpl_stray' },
+			},
+			messages('ru'),
+		);
 		expect(parsed).not.toHaveProperty('toDeploymentId');
 	});
 });

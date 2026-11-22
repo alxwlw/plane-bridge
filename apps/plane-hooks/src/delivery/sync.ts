@@ -3,6 +3,7 @@ import { esc } from '@alxwlw/plane-kit/html';
 import type { DeliveryConfig, RepoRule, Tenant } from '../config.ts';
 import { matchRepo } from '../config.ts';
 import type { GitHubApi, Pull } from '../github/client.ts';
+import { type Messages, messages } from '../i18n.ts';
 import type { PlaneApi, ProjectSummary, StateSummary } from '../plane.ts';
 import { ownedKeys, PULL_URL, pullUrl } from './keys.ts';
 import { missingSteps, pullPosition, resolveStep } from './position.ts';
@@ -82,18 +83,21 @@ async function pullsOf(
 	return found;
 }
 
-function transitionComment(cause: SyncCause, stateName: string): { reason: string; html: string } {
-	const head = `<p>Статус → <b>${esc(stateName)}</b>: `;
+function transitionComment(
+	m: Messages,
+	cause: SyncCause,
+	stateName: string,
+): { reason: string; html: string } {
 	if (cause.kind === 'pr') {
 		const label = `${cause.pull.repo}#${cause.pull.number}`;
 		return {
 			reason: `pr:${label}:${cause.deliveryId}`,
-			html: `${head}<a href="${esc(pullUrl(cause.pull.repo, cause.pull.number))}">${esc(label)}</a></p>`,
+			html: `<p>${m.transitionPrHtml(stateName, `<a href="${esc(pullUrl(cause.pull.repo, cause.pull.number))}">${esc(label)}</a>`)}</p>`,
 		};
 	}
 	return {
 		reason: `deploy:${cause.repo}:${cause.environment}:${cause.sha}`,
-		html: `${head}деплой <code>${esc(cause.sha.slice(0, 7))}</code> в <code>${esc(cause.environment)}</code></p>`,
+		html: `<p>${m.transitionDeployHtml(stateName, cause.sha.slice(0, 7), cause.environment)}</p>`,
 	};
 }
 
@@ -152,7 +156,7 @@ export async function syncTask(
 	if (compareStates(target, current) <= 0) return noop('not forward');
 
 	// Comment first: its external_id makes a repeat harmless (409), so a failed state write is retried whole.
-	const { reason, html } = transitionComment(cause, target.name);
+	const { reason, html } = transitionComment(messages(deps.tenant.locale), cause, target.name);
 	await deps.plane.createComment(item.project, item.id, {
 		comment_html: html,
 		// Plane's duplicate check spans the project: the work item id keeps two tasks of one PR apart.

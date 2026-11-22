@@ -1,4 +1,7 @@
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { describe, expect, test } from 'bun:test';
+
+import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
 
 import {
 	githubCallback,
@@ -7,6 +10,7 @@ import {
 	setupState,
 	verifySetupState,
 } from '../src/github/setup.ts';
+import { messages } from '../src/i18n.ts';
 import { tenantOf } from './config-fixture.ts';
 
 const NOW = 1_800_000_000;
@@ -70,6 +74,28 @@ describe('страница установки', () => {
 		const long = await page('a'.repeat(20), 'org');
 		expect(long.html).toContain(`plane-hooks-${'a'.repeat(16)}`);
 		expect(long.html).not.toContain(`plane-hooks-${'a'.repeat(17)}`);
+	});
+
+	test('setup page in English', async () => {
+		const en = tenantOf({ locale: 'en' });
+		const res = githubSetupPage({
+			publicUrl: PUBLIC_URL,
+			tenant: en,
+			owner: 'acme-corp',
+			kind: 'org',
+			nowSeconds: NOW,
+		});
+		const html = await res.text();
+		expect(html).toContain('<html lang="en">');
+		expect(html).not.toMatch(CYRILLIC);
+		expect(html).toContain(`<p>${messages('en').setupIntroHtml('acme', 'acme-corp')}</p>`);
+		expect(html).toContain(`<button type="submit">${messages('en').setupButton}</button>`);
+		const ru = (await page('acme-corp', 'org')).html;
+		expect(ru).toContain('<html lang="ru">');
+		expect(ru).toContain(
+			'<p>Тенант acme, владелец acme-corp. Кнопка откроет GitHub с готовым манифестом: там останется нажать «Create GitHub App». Ссылка действует час.</p>',
+		);
+		expect(ru).toContain('<button type="submit">Создать GitHub App</button>');
 	});
 
 	test('владелец с символами вне логина GitHub не попадает в адрес как есть', async () => {
@@ -174,6 +200,60 @@ describe('callback', () => {
 		}
 		expect(h.calls).toEqual([]);
 		expect(h.logs).toEqual([]);
+	});
+
+	test('callback answers in the default language before the tenant is known', async () => {
+		const h = harness(Response.json(conversion, { status: 201 }));
+		h.deps.tenants = [tenantOf({ locale: 'en' })];
+		const forged = 'acme.1.abc';
+		const res = await githubCallback(callbackUrl('abc', forged), h.deps);
+		expect(res.status).toBe(400);
+		expect(await res.text()).toBe(messages(DEFAULT_LOCALE).setupLinkExpired);
+		expect(h.calls).toEqual([]);
+	});
+
+	test("callback answers in the tenant's language once the tenant is known", async () => {
+		const en = tenantOf({ locale: 'en' });
+		const enState = setupState(en, NOW);
+		const EXPIRED = 'GitHub does not know this code: it has expired, start over.\n';
+		const GATEWAY =
+			'GitHub did not return the App data. Start over: the setup page will give a new link.\n';
+		const answer = async (reply: Response | Error, code = 'abc123') => {
+			const h = harness(reply);
+			h.deps.tenants = [en];
+			const res = await githubCallback(callbackUrl(code, enState), h.deps);
+			return { res, body: await res.text() };
+		};
+		const noCode = await answer(Response.json(conversion, { status: 201 }), '');
+		expect([noCode.res.status, noCode.body]).toEqual([
+			400,
+			'The address has no GitHub code. Start over.\n',
+		]);
+		const expired = await answer(new Response('{}', { status: 404 }));
+		expect([expired.res.status, expired.body]).toEqual([400, EXPIRED]);
+		const gateway = await answer(new Response('x', { status: 500 }));
+		expect([gateway.res.status, gateway.body]).toEqual([502, GATEWAY]);
+		// Every other way the exchange can fail answers with the same English text.
+		for (const reply of [
+			new Error('network down'),
+			new Response('not json', { status: 201 }),
+			Response.json([], { status: 201 }),
+			Response.json({ id: 1 }, { status: 201 }),
+		]) {
+			const failed = await answer(reply);
+			expect([failed.res.status, failed.body]).toEqual([502, GATEWAY]);
+			expect(failed.body).not.toMatch(CYRILLIC);
+		}
+		for (const { body } of [noCode, expired, gateway]) expect(body).not.toMatch(CYRILLIC);
+		const ok = await answer(Response.json(conversion, { status: 201 }));
+		expect(ok.res.status).toBe(200);
+		expect(ok.body).toStartWith('GitHub App plane-hooks-acme created for acme-corp.\n');
+		expect(ok.body).not.toMatch(CYRILLIC);
+		// A Russian tenant keeps its texts.
+		const ru = harness(new Response('x', { status: 500 }));
+		expect(await (await githubCallback(callbackUrl('abc123', state), ru.deps)).text()).toBe(
+			'GitHub не вернул данные App. Начните заново: страница установки выдаст новую ссылку.\n',
+		);
 	});
 
 	test('нет code или code с лишними символами — 400 без запроса к GitHub', async () => {

@@ -8,6 +8,7 @@ import { containsVia, type SyncResult } from './delivery/sync.ts';
 import { type DokployEvent, recordDokployDeploy } from './dokploy.ts';
 import { deploymentSignal } from './github/failure.ts';
 import type { GitHubEvent } from './github/webhook.ts';
+import { type Messages } from './i18n.ts';
 import { IncidentProjectMissing, type IncidentSignal } from './incident.ts';
 import type { TenantRuntime } from './runtime.ts';
 import type { InboxJob, Store } from './store.ts';
@@ -84,7 +85,7 @@ async function githubJob(runtime: TenantRuntime, event: GitHubJob, deps: JobDeps
 		if (!reported.ok) throw reported.error;
 		return;
 	}
-	// «Погас» never holds the deploy back; a transient failure of it becomes its own job.
+	// The "Resolved" update never holds the deploy back; a transient failure of it becomes its own job.
 	if (signal !== null) await resolveBestEffort(runtime, signal, 'deployment.success', deps.log);
 	// A Vercel deploy is marked by the Vercel input when the tenant has one; its GitHub twin only moves work items.
 	const marked = !(
@@ -237,7 +238,7 @@ export async function reportLogged(
 }
 
 /**
- * «Погас» on a deploy path (a GitHub success, a Vercel preview, a Dokploy deploy): it never blocks the delivery and
+ * The "Resolved" update on a deploy path (a GitHub success, a Vercel preview, a Dokploy deploy): it never blocks the delivery and
  * never makes it run twice. Success writes the usual line. A failure that may clear (5xx, 429, network) writes the
  * error line and queues the signal as its own `incident.resolve` job, which the queue retries alone; one that will
  * not (the incident project missing, a 4xx) is a warn line once per cause per process.
@@ -277,7 +278,7 @@ export async function resolveBestEffort(
 	}
 }
 
-/** A deploy path's «Погас» that failed for a transient reason: retried alone, the deploy is not run again. */
+/** A deploy path's "Resolved" update that failed for a transient reason: retried alone, the deploy is not run again. */
 async function resolveJob(
 	runtime: TenantRuntime,
 	signal: IncidentSignal,
@@ -290,6 +291,7 @@ async function resolveJob(
 /** Grafana alerts: a new firing or a new resolution is a mark on the dashboards; a replay (noop) or an error is not. */
 export function incidentAnnotation(
 	signal: IncidentSignal,
+	m: Messages,
 ): (action: string) => Annotation | undefined {
 	return (action) => {
 		const fresh =
@@ -297,10 +299,11 @@ export function incidentAnnotation(
 				? action === 'created' || action === 'reopened' || action === 'commented'
 				: action === 'commented';
 		if (!fresh) return undefined;
-		const verb = signal.status === 'firing' ? 'Сработал' : 'Погас';
 		return {
 			annotation: 'incident',
-			title: `${verb}: ${signal.title ?? signal.key}`,
+			title: (signal.status === 'firing' ? m.annotationFiring : m.annotationResolved)(
+				signal.title ?? signal.key,
+			),
 			env: markEnv(signal.env),
 		};
 	};

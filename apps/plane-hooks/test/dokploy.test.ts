@@ -1,3 +1,5 @@
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
+import { LOCALES } from '@alxwlw/plane-kit/locale';
 import { describe, expect, test } from 'bun:test';
 
 import {
@@ -7,10 +9,11 @@ import {
 	verifyDokploy,
 } from '../src/dokploy.ts';
 import type { GitHubApi } from '../src/github/client.ts';
+import { messages } from '../src/i18n.ts';
 import { BadPayload } from '../src/payload.ts';
 import { tenantOf } from './config-fixture.ts';
-import { fixture } from './fixtures.ts';
 import { FakeGitHub } from './fake-github.ts';
+import { fixture } from './fixtures.ts';
 
 const SECRET = 'dokploy-secret';
 const SHA = '0123456789abcdef0123456789abcdef01234567';
@@ -132,13 +135,13 @@ type Deployed = Extract<DokployEvent, { kind: 'deployed' }>;
 type Failed = Extract<DokployEvent, { kind: 'failed' }>;
 
 function deployed(body: unknown = buildSuccess()): Deployed {
-	const event = parseDokployWebhook(body);
+	const event = parseDokployWebhook(body, messages('ru'));
 	if (event.kind !== 'deployed') throw new Error(`expected deployed, got ${event.kind}`);
 	return event;
 }
 
 function failed(body: unknown): Failed {
-	const event = parseDokployWebhook(body);
+	const event = parseDokployWebhook(body, messages('ru'));
 	if (event.kind !== 'failed') throw new Error(`expected failed, got ${event.kind}`);
 	return event;
 }
@@ -287,16 +290,19 @@ describe('parseDokployWebhook', () => {
 	});
 
 	test('другие события (docker-cleanup, dokploy-restart, server-threshold) — ignored', () => {
-		expect(parseDokployWebhook(dockerCleanup)).toEqual({ kind: 'ignored', type: 'docker-cleanup' });
-		expect(parseDokployWebhook(dokployRestart)).toEqual({
+		expect(parseDokployWebhook(dockerCleanup, messages('ru'))).toEqual({
+			kind: 'ignored',
+			type: 'docker-cleanup',
+		});
+		expect(parseDokployWebhook(dokployRestart, messages('ru'))).toEqual({
 			kind: 'ignored',
 			type: 'dokploy-restart',
 		});
-		expect(parseDokployWebhook(dokployBackup)).toEqual({
+		expect(parseDokployWebhook(dokployBackup, messages('ru'))).toEqual({
 			kind: 'ignored',
 			type: 'dokploy-backup',
 		});
-		expect(parseDokployWebhook(serverThreshold)).toEqual({
+		expect(parseDokployWebhook(serverThreshold, messages('ru'))).toEqual({
 			kind: 'ignored',
 			type: 'server-threshold',
 		});
@@ -305,41 +311,45 @@ describe('parseDokployWebhook', () => {
 	test('тело кнопки Test (title, message, timestamp без type) — ignored: test', async () => {
 		const { body } = await fixture('dokploy-test.json');
 		expect(Object.keys(body)).toEqual(['title', 'message', 'timestamp']);
-		expect(parseDokployWebhook(body)).toEqual({ kind: 'ignored', type: 'test' });
+		expect(parseDokployWebhook(body, messages('ru'))).toEqual({ kind: 'ignored', type: 'test' });
 	});
 
 	test('build с другим статусом — ignored', () => {
-		expect(parseDokployWebhook(buildSuccess({ status: 'running' }))).toEqual({
+		expect(parseDokployWebhook(buildSuccess({ status: 'running' }), messages('ru'))).toEqual({
 			kind: 'ignored',
 			type: 'build',
 		});
 	});
 
 	test('тело не от Dokploy — BadPayload', () => {
-		expect(() => parseDokployWebhook('x')).toThrow('body is not an object');
-		expect(() => parseDokployWebhook(buildSuccess({ timestamp: '' }))).toThrow(
+		expect(() => parseDokployWebhook('x', messages('ru'))).toThrow('body is not an object');
+		expect(() => parseDokployWebhook(buildSuccess({ timestamp: '' }), messages('ru'))).toThrow(
 			'without a valid timestamp',
 		);
-		expect(() => parseDokployWebhook([])).toThrow(BadPayload);
-		expect(() => parseDokployWebhook({ status: 'success' })).toThrow('no event type');
-		expect(() => parseDokployWebhook(buildSuccess({ applicationName: '' }))).toThrow(
-			'without applicationName',
+		expect(() => parseDokployWebhook([], messages('ru'))).toThrow(BadPayload);
+		expect(() => parseDokployWebhook({ status: 'success' }, messages('ru'))).toThrow(
+			'no event type',
 		);
-		expect(() => parseDokployWebhook(buildError({ applicationName: '' }))).toThrow(BadPayload);
-		expect(() => parseDokployWebhook(buildSuccess({ timestamp: 'вчера' }))).toThrow(
+		expect(() =>
+			parseDokployWebhook(buildSuccess({ applicationName: '' }), messages('ru')),
+		).toThrow('without applicationName');
+		expect(() => parseDokployWebhook(buildError({ applicationName: '' }), messages('ru'))).toThrow(
+			BadPayload,
+		);
+		expect(() => parseDokployWebhook(buildSuccess({ timestamp: 'вчера' }), messages('ru'))).toThrow(
 			'without a valid timestamp',
 		);
-		expect(() => parseDokployWebhook(databaseBackup('error', { applicationName: '' }))).toThrow(
-			BadPayload,
-		);
-		expect(() => parseDokployWebhook(databaseBackup('error', { status: 'weird' }))).toThrow(
-			BadPayload,
-		);
+		expect(() =>
+			parseDokployWebhook(databaseBackup('error', { applicationName: '' }), messages('ru')),
+		).toThrow(BadPayload);
+		expect(() =>
+			parseDokployWebhook(databaseBackup('error', { status: 'weird' }), messages('ru')),
+		).toThrow(BadPayload);
 	});
 });
 
 function deployedOrResolved(body: unknown) {
-	const event = parseDokployWebhook(body);
+	const event = parseDokployWebhook(body, messages('ru'));
 	if (event.kind !== 'resolved') throw new Error(`expected resolved, got ${event.kind}`);
 	return event.resolve;
 }
@@ -444,5 +454,86 @@ describe('recordDokployDeploy', () => {
 		const result = await recordDokployDeploy(deps, deployed());
 		expect(result).toEqual({ action: 'no_sha' });
 		expect(gh.calls).toEqual(['repoVisibility acme/api', 'branchHead acme/api main']);
+	});
+});
+
+describe('Dokploy incidents by locale', () => {
+	const en = messages('en');
+	const signalOf = (body: unknown, m = en) => {
+		const event = parseDokployWebhook(body, m);
+		if (event.kind === 'failed') return event.signal;
+		if (event.kind === 'resolved' || event.kind === 'deployed') return event.resolve;
+		throw new Error(`unexpected ${event.kind}`);
+	};
+
+	test('Dokploy build failure in English', () => {
+		const signal = signalOf(buildError());
+		if (signal.status !== 'firing') throw new Error('expected firing');
+		expect(signal.title).toBe('Build failed: api');
+		expect(signal.bodyHtml).toContain(
+			'<p>Application: <code>api</code>, project: <code>shop</code></p>',
+		);
+		expect(signal.bodyHtml).toContain('>Dokploy deploys</a>');
+		expect(signal.noteHtml).toBe('<p>Build failed: <code>api</code></p>');
+		expect(JSON.stringify(signal)).not.toMatch(CYRILLIC);
+		expect(signalOf(buildSuccess()).noteHtml).toBe('<p>Build passes again: <code>api</code></p>');
+		const without = signalOf(buildError({ projectName: '' }));
+		if (without.status !== 'firing') throw new Error('expected firing');
+		expect(without.bodyHtml).toContain('<p>Application: <code>api</code></p>');
+	});
+
+	test('Dokploy backup failure in English', () => {
+		const db = signalOf(databaseBackup('error'));
+		if (db.status !== 'firing') throw new Error('expected firing');
+		expect(db.title).toBe('Backup failed: pg/orders');
+		expect(db.bodyHtml).toContain('<p>Database: <code>pg/orders</code></p>');
+		expect(db.noteHtml).toBe('<p>Backup failed: <code>pg/orders</code></p>');
+		const volume = signalOf(volumeBackup('error'));
+		if (volume.status !== 'firing') throw new Error('expected firing');
+		expect(volume.bodyHtml).toContain('<p>Volume: <code>files/uploads</code></p>');
+		expect(JSON.stringify([db, volume])).not.toMatch(CYRILLIC);
+		expect(signalOf(databaseBackup('success')).noteHtml).toBe(
+			'<p>Backup passes again: <code>pg/orders</code></p>',
+		);
+	});
+
+	test('Dokploy signal identity does not depend on the locale', () => {
+		for (const body of [
+			buildError(),
+			buildSuccess(),
+			databaseBackup('error'),
+			volumeBackup('success'),
+		]) {
+			const [a, b] = LOCALES.map((l) => signalOf(body, messages(l)));
+			const pick = (s: typeof a) => ({
+				status: s?.status,
+				source: s?.source,
+				key: s?.key,
+				at: s?.at,
+				...(s?.status === 'firing'
+					? { occurrence: s.occurrence, priority: s.priority, label: s.label }
+					: {}),
+			});
+			expect(pick(a)).toEqual(pick(b));
+		}
+	});
+
+	test('the recorded deployment description follows the tenant locale', async () => {
+		for (const [locale, description] of [
+			['en', 'head of main when Dokploy notified'],
+			['ru', 'голова main в момент уведомления Dokploy'],
+		] as const) {
+			const gh = new FakeGitHub().visibility('acme/api', 'private').branch('acme/api', 'main', SHA);
+			const deps = {
+				tenant: tenantOf({
+					locale,
+					dokploy: [{ name: 'api', repo: 'acme/api', branch: 'main', environment: 'production' }],
+				}),
+				github: async () => gh,
+			};
+			await recordDokployDeploy(deps, deployed());
+			const [record] = await gh.listDeployments('acme/api', 'production', 1);
+			expect(record?.description).toBe(description);
+		}
 	});
 });

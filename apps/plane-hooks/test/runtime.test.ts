@@ -1,6 +1,8 @@
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
 
+import { handleDeploy } from '../src/delivery/deploy.ts';
 import type { GitHubAppConfig, Tenant } from '../src/config.ts';
 import type { GitHubApp } from '../src/github/app.ts';
 import { eventDeps, githubDeployFact } from '../src/jobs.ts';
@@ -210,6 +212,32 @@ describe('runtime: кеши и предупреждения', () => {
 		const count = (method: string) => w.plane.calls.filter((call) => call === method).length;
 		expect([count('listProjects'), count('listLabels')]).toEqual([1, 1]);
 		expect(w.plane.workItems.filter((i) => i.project === 'p-inc')).toHaveLength(2);
+	});
+});
+
+describe('runtime: release changelog locale', () => {
+	test('an English tenant publishes an English changelog', async () => {
+		const w = setup([tenantOf({ locale: 'en' })], { acme: ['acme/api'] });
+		const runtime = w.runtimes.tenants.get('acme');
+		if (runtime === undefined) throw new Error('no runtime');
+		const hub = w.hub('acme') as FakeGitHub;
+		hub.commit('s0', [], 'init');
+		hub.commit('s1', ['s0'], 'ENG-1 change');
+		hub.deploy('acme/api', 'production', 's0', 'success');
+		const id = hub.deploy('acme/api', 'production', 's1', 'success');
+		const result = await handleDeploy(eventDeps(runtime), {
+			repo: 'acme/api',
+			environment: 'production',
+			sha: 's1',
+			deploymentId: id,
+			logUrl: null,
+			at: '2026-10-28T12:00:00.000Z',
+		});
+		expect(result.releaseError).toBeNull();
+		expect(result.release).toMatchObject({ action: 'created' });
+		const changelog = w.plane.releases[0]?.changelog ?? '';
+		expect(changelog).toContain('<h3>Commits</h3>');
+		expect(changelog).not.toMatch(CYRILLIC);
 	});
 });
 

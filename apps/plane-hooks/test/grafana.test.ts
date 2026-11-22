@@ -1,11 +1,22 @@
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
+import { LOCALES } from '@alxwlw/plane-kit/locale';
 import { describe, expect, test } from 'bun:test';
-import { DEFAULT_PRIORITY } from '../src/config.ts';
-import { alertPriority, parseGrafanaWebhook } from '../src/grafana.ts';
+
+import { DEFAULT_PRIORITY, type PriorityTable } from '../src/config.ts';
+import { alertPriority, parseGrafanaWebhook as parse } from '../src/grafana.ts';
+import { type Messages, messages } from '../src/i18n.ts';
 import type { IncidentSignal } from '../src/incident.ts';
 import { BadPayload } from '../src/payload.ts';
 import { fixture } from './fixtures.ts';
 
 const T = '2026-10-06T10:00:00Z';
+
+/** The Russian catalog and the default table unless a test says otherwise. */
+const parseGrafanaWebhook = (
+	body: unknown,
+	table: PriorityTable = DEFAULT_PRIORITY,
+	m: Messages = messages('ru'),
+) => parse(body, table, m);
 type Firing = Extract<IncidentSignal, { status: 'firing' }>;
 
 function single(alert: Record<string, unknown>): IncidentSignal {
@@ -259,5 +270,101 @@ describe('поля для отметки', () => {
 			title: '[prod] ServiceDown: order-gateway is down',
 			env: 'prod',
 		});
+	});
+});
+
+describe('parseGrafanaWebhook by locale', () => {
+	const firing = async (locale: 'en' | 'ru') =>
+		parseGrafanaWebhook(
+			await fixture('grafana-firing.json'),
+			DEFAULT_PRIORITY,
+			messages(locale),
+		) as Firing[];
+
+	test('Grafana firing alert in English', async () => {
+		const [prod] = await firing('en');
+		expect(prod?.noteHtml).toBe('<p>Firing 2026-10-06 10:00 UTC</p>');
+		const body = prod?.bodyHtml ?? '';
+		expect(body).toContain('<p>Labels:</p><ul>');
+		expect(body).toContain(
+			'<a href="https://grafana.example.com/alerting/grafana/abc/view?orgId=1">Rule</a>',
+		);
+		expect(body).toContain('>Runbook</a>');
+		expect(JSON.stringify(prod)).not.toMatch(CYRILLIC);
+	});
+
+	test('Grafana dashboard, panel and silence links in English', () => {
+		const signal = parseGrafanaWebhook(
+			{
+				alerts: [
+					{
+						status: 'firing',
+						fingerprint: 'f',
+						startsAt: T,
+						dashboardURL: 'https://g.example.com/d/1',
+						panelURL: 'https://g.example.com/d/1?viewPanel=2',
+						silenceURL: 'https://g.example.com/silence',
+					},
+				],
+			},
+			DEFAULT_PRIORITY,
+			messages('en'),
+		)[0] as Firing;
+		expect(signal.bodyHtml).toContain('>Dashboard</a>');
+		expect(signal.bodyHtml).toContain('>Panel</a>');
+		expect(signal.bodyHtml).toContain('>Silence</a>');
+		expect(JSON.stringify(signal)).not.toMatch(CYRILLIC);
+	});
+
+	test('Grafana resolved alert in English', async () => {
+		const [signal] = parseGrafanaWebhook(
+			await fixture('grafana-resolved.json'),
+			DEFAULT_PRIORITY,
+			messages('en'),
+		);
+		expect(signal).toMatchObject({ noteHtml: '<p>Resolved 2026-10-06 10:07 UTC</p>' });
+		expect(JSON.stringify(signal)).not.toMatch(CYRILLIC);
+	});
+
+	test('Grafana signal identity does not depend on the locale', async () => {
+		for (const name of ['grafana-firing.json', 'grafana-resolved.json']) {
+			const body = await fixture(name);
+			const [en, ru] = LOCALES.map((l) => parseGrafanaWebhook(body, DEFAULT_PRIORITY, messages(l)));
+			const pick = (signals: IncidentSignal[]) =>
+				signals.map((s) => ({
+					key: s.key,
+					status: s.status,
+					source: s.source,
+					at: s.at,
+					occurrence: s.occurrence,
+					...(s.status === 'firing' ? { priority: s.priority, label: s.label } : {}),
+				}));
+			expect(pick(en as IncidentSignal[])).toEqual(pick(ru as IncidentSignal[]));
+		}
+	});
+
+	test('an alert without links has no empty links paragraph and an alert without labels no list, in either language', () => {
+		for (const l of LOCALES) {
+			const [signal] = parseGrafanaWebhook(
+				{ alerts: [{ status: 'firing', fingerprint: 'f', startsAt: T }] },
+				DEFAULT_PRIORITY,
+				messages(l),
+			) as Firing[];
+			expect(signal?.bodyHtml).not.toContain('<p></p>');
+			expect(signal?.bodyHtml).not.toContain('<ul>');
+		}
+	});
+
+	test('alert labels are escaped the same way in both languages', () => {
+		for (const l of LOCALES) {
+			const [signal] = parseGrafanaWebhook(
+				{
+					alerts: [{ status: 'firing', fingerprint: 'f', startsAt: T, labels: { team: 'a<b&"c' } }],
+				},
+				DEFAULT_PRIORITY,
+				messages(l),
+			) as Firing[];
+			expect(signal?.bodyHtml).toContain('<code>team</code>: a&lt;b&amp;&quot;c');
+		}
 	});
 });

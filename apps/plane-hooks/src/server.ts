@@ -9,6 +9,7 @@ import { parseDokployWebhook, verifyDokploy } from './dokploy.ts';
 import { githubCallback, githubSetupPage } from './github/setup.ts';
 import { parseGitHubDelivery, verifyGitHubSignature } from './github/webhook.ts';
 import { parseGrafanaWebhook } from './grafana.ts';
+import { messages } from './i18n.ts';
 import { deployAnnotation, incidentAnnotation, reportLogged, resolveBestEffort } from './jobs.ts';
 import { BadPayload } from './payload.ts';
 import { PLANE_HOOKS_SCOPES } from './plane.ts';
@@ -101,7 +102,7 @@ export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Resp
 
 	async function grafana(runtime: TenantRuntime, body: unknown): Promise<Response> {
 		const table = runtime.tenant.incidents?.priority ?? DEFAULT_PRIORITY;
-		const signals = parseGrafanaWebhook(body, table);
+		const signals = parseGrafanaWebhook(body, table, messages(runtime.tenant.locale));
 		let failed = 0;
 		for (const signal of signals) {
 			const reported = await reportLogged(
@@ -109,7 +110,7 @@ export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Resp
 				signal,
 				`alert.${signal.status}`,
 				log,
-				incidentAnnotation(signal),
+				incidentAnnotation(signal, messages(runtime.tenant.locale)),
 			);
 			if (!reported.ok) failed++;
 		}
@@ -119,7 +120,7 @@ export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Resp
 	}
 
 	async function vercel(runtime: TenantRuntime, body: unknown): Promise<Response> {
-		const event = parseVercelEvent(body);
+		const event = parseVercelEvent(body, messages(runtime.tenant.locale));
 		const tenant = runtime.tenant.id;
 		switch (event.kind) {
 			case 'ignored':
@@ -138,7 +139,7 @@ export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Resp
 				return reported.ok ? text(200, 'ok') : text(502, 'plane failed');
 			}
 			case 'preview': {
-				// The preview comment never waits for «Погас»: queued first, the resolve is best effort.
+				// The preview comment never waits for the "Resolved" update: queued first, the resolve is best effort.
 				runtime.submit('vercel.preview', null, event.preview);
 				await resolveBestEffort(runtime, event.resolve, 'deployment.succeeded', log);
 				return text(200, 'ok');
@@ -190,7 +191,7 @@ export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Resp
 	}
 
 	async function dokploy(runtime: TenantRuntime, body: unknown): Promise<Response> {
-		const event = parseDokployWebhook(body);
+		const event = parseDokployWebhook(body, messages(runtime.tenant.locale));
 		switch (event.kind) {
 			case 'ignored':
 				log({ event: 'dokploy.ignored', tenant: runtime.tenant.id, type: event.type });
@@ -202,7 +203,7 @@ export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Resp
 				return reported.ok ? text(200, 'ok') : text(502, 'plane failed');
 			}
 			case 'deployed': {
-				// The Deployment record never waits for «Погас»: queued first, the resolve is best effort.
+				// The Deployment record never waits for the "Resolved" update: queued first, the resolve is best effort.
 				runtime.submit('dokploy.deployed', null, event);
 				await resolveBestEffort(runtime, event.resolve, 'dokploy.deployed', log);
 				return text(200, 'ok');
@@ -271,10 +272,7 @@ export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Resp
 				const owner = url.searchParams.get('owner') ?? '';
 				const kind = url.searchParams.get('kind');
 				if (!GITHUB_OWNER.test(owner) || (kind !== 'org' && kind !== 'user')) {
-					return text(
-						400,
-						'Нужны параметры owner (организация или аккаунт GitHub) и kind=org|user: /github/setup?tenant=<id>&owner=<login>&kind=org\n',
-					);
+					return text(400, messages(tenant.locale).setupParamsMissing);
 				}
 				return githubSetupPage({ publicUrl: config.publicUrl, tenant, owner, kind, nowSeconds });
 			}

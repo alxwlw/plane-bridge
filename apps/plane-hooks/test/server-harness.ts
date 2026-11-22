@@ -48,7 +48,14 @@ export type World = ReturnType<typeof world>;
  * the queue never waits between retries.
  */
 export function world(
-	options: { tenants?: Tenant[]; store?: Store; plane?: FakePlane; gh?: FakeGitHub } = {},
+	options: {
+		tenants?: Tenant[];
+		store?: Store;
+		plane?: FakePlane;
+		gh?: FakeGitHub;
+		/** One Plane per tenant id (two tenants must not see each other's work items); the rest use `plane`. */
+		planes?: Record<string, FakePlane>;
+	} = {},
 ) {
 	const plane = options.plane ?? FakePlane.delivery();
 	const gh = options.gh ?? new FakeGitHub();
@@ -68,7 +75,7 @@ export function world(
 		store,
 		log,
 		now,
-		plane: () => plane,
+		plane: (tenant) => options.planes?.[tenant.id] ?? plane,
 		githubApp: (app) => fakeApp(app, gh),
 		sleep: async (ms) => {
 			sleeps.push(ms);
