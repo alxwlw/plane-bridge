@@ -224,7 +224,7 @@ describe('runtime: release changelog locale', () => {
 		hub.commit('s1', ['s0'], 'ENG-1 change');
 		hub.deploy('acme/api', 'production', 's0', 'success');
 		const id = hub.deploy('acme/api', 'production', 's1', 'success');
-		const result = await handleDeploy(runtime.sync, {
+		const result = await handleDeploy(eventDeps(runtime), {
 			repo: 'acme/api',
 			environment: 'production',
 			sha: 's1',
