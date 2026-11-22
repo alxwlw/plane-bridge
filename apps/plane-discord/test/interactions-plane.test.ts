@@ -44,7 +44,7 @@ function seed(w: World, assignees: string[] = []) {
 }
 
 describe('/plane KEY: two hosts', () => {
-	test('the card links to the web address while the API call goes to PLANE_URL', async () => {
+	test('the card links to the web address', async () => {
 		const w = await setup({ planeWebUrl: 'https://app.example.com' });
 		seed(w);
 		await slash(w, 'lab-40');

@@ -34,8 +34,11 @@ import {
 } from './notify-world.ts';
 
 describe('createNotifier: agent.mention', () => {
-	const setupMention = (channels: ChannelRoute[]) => {
-		const ctx = setup(channels);
+	const setupMention = (
+		channels: ChannelRoute[],
+		urls?: { planeUrl?: string; planeWebUrl?: string },
+	) => {
+		const ctx = setup(channels, undefined, urls);
 		ctx.plane.comments.push({
 			id: ID(200),
 			html: `<p>Привет, ${mentionTag(ALICE)} ${mentionTag(CAROL)} привет</p>`,
@@ -73,6 +76,17 @@ describe('createNotifier: agent.mention', () => {
 		expect(none.plane.activities).toEqual([
 			{ runId: ID(300), body: 'Канал для проекта не настроен' },
 		]);
+	});
+
+	test('the mention post links to the web address, not the API address', async () => {
+		const { notify, discord } = setupMention([route(TEXT)], {
+			planeUrl: 'https://api.example.com',
+			planeWebUrl: 'https://app.example.com',
+		});
+		await runAll(await notify(agentMention()));
+		const content = String(sent(discord)[0]?.[1].content);
+		expect(content).toContain('<https://app.example.com/example-ws/browse/LAB-41/>');
+		expect(content).not.toContain('api.example.com');
 	});
 
 	test('ответ run — после доставок в каналы и один на событие; в форум идёт постом', async () => {

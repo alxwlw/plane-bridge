@@ -428,6 +428,32 @@ describe('startService: Discord interactions', () => {
 		});
 		expect(messages(w)[0]?.body?.content).toContain('`LAB-7`');
 	});
+
+	test('a created work item is linked on PLANE_WEB_URL while every Plane request goes to PLANE_URL', async () => {
+		const { w, service, url } = start(world(), {
+			...ENV,
+			PLANE_DISCORD_PLANE_URL: 'https://api.example.com',
+			PLANE_DISCORD_PLANE_WEB_URL: 'https://app.example.com',
+		});
+		const opened = await ask(url(''), command(CHANNEL, '800000000000000014'));
+		expect(opened.body.type).toBe(9);
+		await ask(
+			url(''),
+			submitPayload({
+				id: '800000000000000015',
+				guildId: GUILD,
+				customId: opened.body.data.custom_id as string,
+				texts: { title: 'Fix login', description: 'text' },
+			}),
+		);
+		await w.until(() => w.entries().some((e) => e.event === 'ix.done'));
+		await service.idle();
+		const content = String(messages(w)[0]?.body?.content);
+		expect(content).toContain('(<https://app.example.com/example-ws/browse/');
+		expect(content).not.toContain('api.example.com');
+		expect(w.planeHosts.length).toBeGreaterThan(0);
+		expect(new Set(w.planeHosts)).toEqual(new Set(['api.example.com']));
+	});
 });
 
 describe('startService: Plane и лимиты', () => {

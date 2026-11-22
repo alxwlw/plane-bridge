@@ -613,7 +613,7 @@ describe('GET /miro/api/card', () => {
 		});
 	});
 
-	test('the lookup links to the web address while the API call goes to PLANE_URL', async () => {
+	test('the lookup links to the web address', async () => {
 		const w = setup();
 		w.config.planeUrl = 'https://api.example.com';
 		w.config.planeWebUrl = 'https://app.example.com';
