@@ -124,6 +124,7 @@ describe('createInteractionHandler: refusals in English', () => {
 		expect(res.body.data.content).toBe(
 			'Creating work items from Discord is turned off for this project.',
 		);
+		expect(await answer({}, (id) => ({ type: 5, id, guild_id: GUILD }))).toBe('Unknown command.');
 		expect(
 			await answer({}, (id) =>
 				submitPayload({ id, guildId: GUILD, customId: 'create:forgotten', texts: { title: 'X' } }),
