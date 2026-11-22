@@ -51,6 +51,10 @@ describe('notesFor', () => {
 		expect(notesFor('## [0.1.0]2026-11-30\n\n- a\n', v('0.1.0'))).toBeUndefined();
 	});
 
+	test('the dots of a version match only dots', () => {
+		expect(notesFor('## [0x1x0] - 2026-11-30\n\n- a\n', v('0.1.0'))).toBeUndefined();
+	});
+
 	test('trailing spaces on the heading are allowed', () => {
 		expect(notesFor('## [0.1.0] - 2026-11-30  \n- a\n', v('0.1.0'))).toBe('- a');
 		expect(notesFor('## [Unreleased]  \n- a\n', v('0.1.0-rc.1'))).toBe('- a');

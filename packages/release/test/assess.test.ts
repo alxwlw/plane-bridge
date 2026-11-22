@@ -22,6 +22,11 @@ describe('assess', () => {
 		]);
 	});
 
+	test('a pre-release with a single identifier is a pre-release', () => {
+		const a = assess({ app: 'plane-a', version: '0.1.0-rc', changelog: unreleasedNotes, tags: [] });
+		expect(a).toMatchObject({ status: 'pending', prerelease: true, problems: [] });
+	});
+
 	test('0.0.0 is unreleased and needs no changelog', () => {
 		expect(assess({ app: 'plane-a', version: '0.0.0', changelog: undefined, tags: [] })).toEqual({
 			app: 'plane-a',
@@ -149,6 +154,7 @@ describe('floatingTags', () => {
 		['0.1.0', ['0.2.0-rc.1'], ['0.1', 'latest']],
 		['1.0.0', ['0.9.0'], ['1.0', 'latest']],
 		['0.1.0', ['0.1.0'], ['0.1', 'latest']],
+		['0.1.0', ['1.1.0'], ['0.1']],
 	])('%s against %j gives %j', (version, released, expected) => {
 		expect(
 			floatingTags(

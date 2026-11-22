@@ -188,8 +188,82 @@ describe('floating', () => {
 	});
 });
 
+describe('repository layout', () => {
+	test('a root without apps has nothing to release', () => {
+		expect(run(['check'], root)).toEqual({ code: 0, stdout: '', stderr: '' });
+		expect(run(['plan'], root)).toEqual({
+			code: 0,
+			stdout: 'matrix={"include":[]}\ncount=0\n',
+			stderr: '',
+		});
+	});
+
+	test('only directories with a package.json are apps', () => {
+		app('plane-a', '0.0.0');
+		mkdirSync(join(root, 'apps', 'plane-empty'), { recursive: true });
+		writeFileSync(join(root, 'apps', 'README.md'), 'not an app');
+		expect(run(['check'], root).stdout).toBe('plane-a 0.0.0 unreleased\n');
+	});
+
+	test('a package.json without a string version is a problem', () => {
+		mkdirSync(join(root, 'apps', 'plane-a'), { recursive: true });
+		writeFileSync(
+			join(root, 'apps', 'plane-a', 'package.json'),
+			JSON.stringify({ name: 'x', version: 1 }),
+		);
+		mkdirSync(join(root, 'apps', 'plane-b'), { recursive: true });
+		writeFileSync(join(root, 'apps', 'plane-b', 'package.json'), 'null');
+		expect(run(['check'], root).stderr).toBe(
+			'release: plane-a: package.json has no version\nrelease: plane-b: package.json has no version\n',
+		);
+	});
+
+	test('a failing git is an error, not an empty tag list', () => {
+		const bare = mkdtempSync(join(tmpdir(), 'release-nogit-'));
+		try {
+			mkdirSync(join(bare, 'apps', 'plane-a'), { recursive: true });
+			writeFileSync(join(bare, 'apps', 'plane-a', 'package.json'), '{"version":"0.0.0"}');
+			expect(() => run(['check'], bare)).toThrow();
+		} finally {
+			rmSync(bare, { recursive: true, force: true });
+		}
+	});
+});
+
+describe('entry point', () => {
+	const cli = join(import.meta.dir, '..', 'src', 'cli.ts');
+	const spawn = (...args: string[]) => Bun.spawnSync(['bun', cli, ...args], { cwd: root });
+
+	test('writes stdout and exits 0', () => {
+		app('plane-a', '0.0.0');
+		const r = spawn('check');
+		expect(r.exitCode).toBe(0);
+		expect(r.stdout.toString()).toBe('plane-a 0.0.0 unreleased\n');
+	});
+
+	test('writes stderr and exits with the code', () => {
+		const r = spawn('ship');
+		expect(r.exitCode).toBe(2);
+		expect(r.stdout.toString()).toBe('');
+		expect(r.stderr.toString()).toBe(USAGE);
+	});
+
+	test('passes the arguments after the script', () => {
+		app('plane-a', '0.1.0-rc.1', notes);
+		expect(spawn('notes', 'plane-a', '0.1.0-rc.1').stdout.toString()).toBe(
+			'### Added\n\n- a thing\n',
+		);
+	});
+});
+
 describe('usage', () => {
-	test.each([[[]], [['ship']], [['notes', 'plane-a']], [['check', 'extra']]])('%j', (args) => {
+	test.each([
+		[[]],
+		[['ship']],
+		[['notes', 'plane-a']],
+		[['check', 'extra']],
+		[['notes', 'plane-a', '0.1.0', 'x']],
+	])('%j', (args) => {
 		expect(run(args, root)).toEqual({ code: 2, stdout: '', stderr: USAGE });
 	});
 });
