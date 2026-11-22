@@ -76,6 +76,8 @@ export async function setup(
 		throwingLog?: boolean;
 		/** The tenant's language; `ru` when left out. */
 		locale?: Locale;
+		/** The Plane web address links use; the API host `PLANE_URL` when left out. */
+		planeWebUrl?: string;
 	} = {},
 ) {
 	const signer = await makeSigner();
@@ -120,7 +122,7 @@ export async function setup(
 		]),
 		discord,
 		store,
-		planeUrl: PLANE_URL,
+		planeWebUrl: opts.planeWebUrl ?? PLANE_URL,
 		projectsCached: () => (opts.cached === undefined ? [LAB, ENG, HIDDEN] : opts.cached),
 		log: (e) => {
 			logs.push(e);

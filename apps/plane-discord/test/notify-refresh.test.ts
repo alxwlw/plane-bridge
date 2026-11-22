@@ -90,6 +90,7 @@ function world(opts: { staleProjects: ProjectSummary[]; freshProjects: ProjectSu
 		applicationId: discord.applicationId,
 		store: new Store(':memory:'),
 		planeUrl: 'https://plane.example.com',
+		planeWebUrl: 'https://plane.example.com',
 		channelType: async () => CHANNEL.TEXT,
 		log: (e) => logs.push(e),
 	});

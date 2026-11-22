@@ -3,6 +3,7 @@
 // Order of every request: signature over the raw bytes, then parse, then claim, then dispatch. A modal must open
 // within 3 s (primary response, cache only); a form submit gets a deferred ephemeral reply and the work runs after it.
 import { esc, truncate } from '@alxwlw/plane-kit/html';
+import { workItemUrl } from '@alxwlw/plane-kit/links';
 import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
 import type { Log } from '@alxwlw/plane-kit/log';
 
@@ -11,7 +12,7 @@ import type { TenantRuntime } from '../notify.ts';
 import { PlaneApiError, type ProjectSummary, type WorkItem } from '../plane/client.ts';
 import { readBounded } from '../server.ts';
 import type { Store } from '../store.ts';
-import { discordToPlaneHtml, planeMentionHtml, titleFrom, workItemUrl } from '../text.ts';
+import { discordToPlaneHtml, planeMentionHtml, titleFrom } from '../text.ts';
 import { messageCommandKind, PLANE_COMMAND, PLANE_LINK_COMMAND } from './commands.ts';
 import {
 	attachmentsHtml,
@@ -45,7 +46,8 @@ export type InteractionDeps = {
 	runtimesByGuild: ReadonlyMap<string, TenantRuntime>;
 	discord: DiscordApi;
 	store: Store;
-	planeUrl: string;
+	/** Plane web address, for work-item links. */
+	planeWebUrl: string;
 	/** Synchronous: a modal must open within 3 s. null — the cache is cold. */
 	projectsCached: (tenantId: string) => ProjectSummary[] | null;
 	log: Log;
@@ -213,7 +215,7 @@ export function createInteractionHandler(
 	const messageLink = (ctx: FormContext, text: string): string =>
 		messageLinkHtml(ctx.guildId, ctx.channelId, ctx.messageId, text);
 
-	const itemLink = (rt: TenantRuntime, key: string): string => linkTo(deps.planeUrl, rt, key);
+	const itemLink = (rt: TenantRuntime, key: string): string => linkTo(deps.planeWebUrl, rt, key);
 
 	async function runCreate(
 		rt: TenantRuntime,
@@ -278,7 +280,7 @@ export function createInteractionHandler(
 		let reply: { id: string };
 		try {
 			reply = await deps.discord.sendMessage(ctx.channelId, {
-				content: `→ [\`${key}\` ${m.quoted(mdLabel(item.name))}](<${workItemUrl(deps.planeUrl, tenant.workspace, key)}>)`,
+				content: `→ [\`${key}\` ${m.quoted(mdLabel(item.name))}](<${workItemUrl(deps.planeWebUrl, tenant.workspace, key)}>)`,
 				replyTo: ctx.messageId,
 			});
 		} catch (error) {

@@ -2,6 +2,7 @@
 // The notifier does not send anything itself: Plane lookups happen in the returned promise (the caller retries
 // the event as a whole when one fails), every Discord send is its own Delivery (the queue retries only that one).
 import { truncate } from '@alxwlw/plane-kit/html';
+import { workItemUrl } from '@alxwlw/plane-kit/links';
 import type { Log } from '@alxwlw/plane-kit/log';
 
 import type { ChannelRoute, EventKind, Tenant } from './config.ts';
@@ -18,13 +19,7 @@ import { type Messages, messages } from './i18n.ts';
 import type { MemberSummary, PlaneApi, ProjectSummary, StateSummary } from './plane/client.ts';
 import type { PlaneEvent } from './plane/webhook.ts';
 import type { Store } from './store.ts';
-import {
-	planeHtmlToDiscord,
-	planeMentions,
-	type UserMap,
-	workItemKey,
-	workItemUrl,
-} from './text.ts';
+import { planeHtmlToDiscord, planeMentions, type UserMap, workItemKey } from './text.ts';
 
 export type TenantRuntime = {
 	tenant: Tenant;
@@ -43,6 +38,8 @@ export type NotifyDeps = {
 	applicationId: string;
 	store: Store;
 	planeUrl: string;
+	/** Plane web address, for work-item links (`planeUrl` is the API host: avatars). */
+	planeWebUrl: string;
 	channelType: (channelId: string) => Promise<number>;
 	log: Log;
 	/** Clock in ms (default `Date.now`); tests inject one. */
@@ -290,7 +287,7 @@ export function createNotifier(deps: NotifyDeps): (event: PlaneEvent) => Promise
 			return [];
 		}
 		const key = workItemKey(project.identifier, item.sequenceId);
-		const url = workItemUrl(deps.planeUrl, rt.tenant.workspace, key);
+		const url = workItemUrl(deps.planeWebUrl, rt.tenant.workspace, key);
 		const m = messages(rt.tenant.locale);
 		const who = await actors(rt, m).who(actorId);
 		const text = (action: string): OutMessage => ({
@@ -581,7 +578,7 @@ export function createNotifier(deps: NotifyDeps): (event: PlaneEvent) => Promise
 		if (!project) return (skip(event, 'unknown_project', 'error'), [answer(m.runNoProject)]);
 		const item = await rt.plane.getWorkItem(event.projectId, event.workItemId);
 		const key = workItemKey(project.identifier, item.sequenceId);
-		const url = workItemUrl(deps.planeUrl, rt.tenant.workspace, key);
+		const url = workItemUrl(deps.planeWebUrl, rt.tenant.workspace, key);
 		const people = actors(rt, m);
 		let who = m.someone;
 		let quote: string | null = null;

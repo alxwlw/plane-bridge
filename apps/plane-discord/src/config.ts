@@ -26,6 +26,8 @@ export type Tenant = {
 export type Config = {
 	port: number;
 	planeUrl: string;
+	/** Plane web address for work-item links; `planeUrl` when not set. */
+	planeWebUrl: string;
 	publicUrl: string;
 	configPath: string;
 	dbPath: string;
@@ -69,6 +71,7 @@ export function loadConfig(
 		return value;
 	};
 	const planeUrl = url('PLANE_DISCORD_PLANE_URL');
+	const planeWebUrl = url('PLANE_DISCORD_PLANE_WEB_URL') || planeUrl;
 	const publicUrl = url('PLANE_DISCORD_PUBLIC_URL');
 	const applicationId = read('PLANE_DISCORD_DISCORD_APPLICATION_ID');
 	if (applicationId && !SNOWFLAKE.test(applicationId))
@@ -89,6 +92,7 @@ export function loadConfig(
 	return {
 		port,
 		planeUrl,
+		planeWebUrl,
 		publicUrl,
 		configPath,
 		dbPath,

@@ -14,6 +14,7 @@ import {
 	CAROL,
 	clock,
 	comment,
+	created,
 	D_ALICE,
 	D_BOB,
 	english,
@@ -51,6 +52,31 @@ const bound = (channels = [route(FORUM)]) => {
 	return w;
 };
 const webhookCalls = (w: ReturnType<typeof bound>) => w.discord.callsOf('executeWebhook');
+
+describe('createNotifier: two hosts', () => {
+	const urls = { planeUrl: 'https://api.example.com', planeWebUrl: 'https://app.example.com' };
+	test('a channel notification links to the web address; a root-path avatar joins PLANE_URL', async () => {
+		const text = setup([route(TEXT)], undefined, urls);
+		await runAll(await text.notify(created()));
+		expect(sent(text.discord)).toEqual([
+			[
+				TEXT,
+				{
+					content: expect.stringContaining('<https://app.example.com/example-ws/browse/LAB-41/>'),
+				},
+			],
+		]);
+		const w = setup([route(FORUM)], undefined, urls);
+		w.store.putThread('initech', ITEM, FORUM, THREAD, PROJECT);
+		w.plane.members = [{ id: CAROL, displayName: 'Carol', avatarUrl: '/api/assets/v2/static/1/' }];
+		await runAll(await w.notify(comment('<p>x</p>')));
+		expect(webhookCalls(w)[0]![3]).toEqual({
+			content: 'x',
+			username: 'Carol',
+			avatarUrl: 'https://api.example.com/api/assets/v2/static/1/',
+		});
+	});
+});
 
 describe('createNotifier: comment.created → тред', () => {
 	test('комментарий человека по задаче с тредом → сообщение webhook в тред с именем и аватаром автора', async () => {

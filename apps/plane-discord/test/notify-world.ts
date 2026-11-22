@@ -90,6 +90,7 @@ export class SpyPlane extends FakePlane {
 export function setup(
 	channels: ChannelRoute[] = [route(FORUM)],
 	tenant: Tenant = tenantOf(channels),
+	urls: { planeUrl?: string; planeWebUrl?: string } = {},
 ) {
 	const plane = new SpyPlane();
 	plane.botId = BOT;
@@ -125,7 +126,7 @@ export function setup(
 		[VOICE, 2],
 	] as const)
 		discord.channels.set(id, { id, type, parentId: null, guildId: GUILD, name: 'c' });
-	return build(plane, discord, tenant);
+	return build(plane, discord, tenant, urls);
 }
 
 export const clock = { t: Date.now() };
@@ -135,6 +136,7 @@ export function build(
 	plane: SpyPlane,
 	discord: FakeDiscord,
 	tenants: Tenant | readonly [Tenant, ...Tenant[]],
+	urls: { planeUrl?: string; planeWebUrl?: string } = {},
 ) {
 	const all = Array.isArray(tenants) ? tenants : [tenants as Tenant];
 	const tenant = all[0]!;
@@ -154,7 +156,8 @@ export function build(
 		discord,
 		applicationId: discord.applicationId,
 		store,
-		planeUrl: PLANE_URL,
+		planeUrl: urls.planeUrl ?? PLANE_URL,
+		planeWebUrl: urls.planeWebUrl ?? PLANE_URL,
 		// not a recorded Discord call: tests count calls
 		channelType: async (id) => {
 			const found = discord.channels.get(id);

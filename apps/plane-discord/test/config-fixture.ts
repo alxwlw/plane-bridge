@@ -3,6 +3,7 @@ import type { Config } from '../src/config.ts';
 export const configOf = (): Config => ({
 	port: 8080,
 	planeUrl: 'https://plane.example.com',
+	planeWebUrl: 'https://plane.example.com',
 	publicUrl: 'https://plane-discord.example.com',
 	configPath: '/config/tenants.json',
 	dbPath: ':memory:',

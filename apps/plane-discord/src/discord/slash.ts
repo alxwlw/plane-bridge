@@ -1,10 +1,10 @@
 // Slash commands: `/plane KEY` (phase 2) and `/plane-link KEY` (phase 3). Built on the handler's own deps.
+import { workItemUrl } from '@alxwlw/plane-kit/links';
 import type { Log } from '@alxwlw/plane-kit/log';
 
 import { workItemCard } from '../card.ts';
 import { messages } from '../i18n.ts';
 import type { TenantRuntime } from '../notify.ts';
-import { workItemUrl } from '../text.ts';
 import { PLANE_KEY_OPTION } from './commands.ts';
 import type { InteractionDeps } from './interactions.ts';
 import {
@@ -75,7 +75,7 @@ export function createSlashCommands(env: SlashEnv): {
 		}
 		const card = workItemCard(m, {
 			key,
-			url: workItemUrl(deps.planeUrl, rt.tenant.workspace, key),
+			url: workItemUrl(deps.planeWebUrl, rt.tenant.workspace, key),
 			name: item.name,
 			stateName: mdState(states.find((s) => s.id === item.stateId)?.name),
 			assignees,
@@ -192,7 +192,7 @@ export function createSlashCommands(env: SlashEnv): {
 		}
 		deps.store.putThread(rt.tenant.id, item.id, thread.parentId, thread.id, item.projectId);
 		const text = m.threadLinked(
-			`[\`${key}\` ${m.quoted(mdLabel(item.name))}](<${workItemUrl(deps.planeUrl, rt.tenant.workspace, key)}>)`,
+			`[\`${key}\` ${m.quoted(mdLabel(item.name))}](<${workItemUrl(deps.planeWebUrl, rt.tenant.workspace, key)}>)`,
 		);
 		try {
 			await deps.discord.editOriginal(token, { content: text });

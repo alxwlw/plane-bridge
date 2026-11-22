@@ -1,11 +1,12 @@
 // Pieces shared by the interaction handler and the slash commands: payload parsing, reply shapes, error texts.
 import { esc, link, truncate } from '@alxwlw/plane-kit/html';
+import { workItemUrl } from '@alxwlw/plane-kit/links';
 import type { Log } from '@alxwlw/plane-kit/log';
 
 import { type Messages, messages } from '../i18n.ts';
 import type { TenantRuntime } from '../notify.ts';
 import { PlaneApiError } from '../plane/client.ts';
-import { workItemKey, workItemUrl } from '../text.ts';
+import { workItemKey } from '../text.ts';
 import { CHANNEL, DiscordApiError } from './rest.ts';
 
 export const REPLY = { PONG: 1, MESSAGE: 4, DEFERRED: 5, MODAL: 9 } as const;
@@ -85,8 +86,8 @@ export async function keyOf(
 	return workItemKey(project.identifier, sequenceId);
 }
 
-export const itemLink = (planeUrl: string, rt: TenantRuntime, key: string): string =>
-	`[\`${key}\`](<${workItemUrl(planeUrl, rt.tenant.workspace, key)}>)`;
+export const itemLink = (webUrl: string, rt: TenantRuntime, key: string): string =>
+	`[\`${key}\`](<${workItemUrl(webUrl, rt.tenant.workspace, key)}>)`;
 
 /** `<ul>` of attachment links for a Plane comment; a non-http(s) URL is dropped. */
 export const attachmentsHtml = (

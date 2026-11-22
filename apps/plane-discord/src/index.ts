@@ -131,6 +131,7 @@ export function startService(
 		applicationId: config.discord.applicationId,
 		store,
 		planeUrl: config.planeUrl,
+		planeWebUrl: config.planeWebUrl,
 		channelType,
 		log,
 	});
@@ -149,7 +150,7 @@ export function startService(
 		runtimesByGuild,
 		discord,
 		store,
-		planeUrl: config.planeUrl,
+		planeWebUrl: config.planeWebUrl,
 		projectsCached: (tenantId) => runtimes.get(tenantId)?.projectsCached() ?? null,
 		log,
 		now,

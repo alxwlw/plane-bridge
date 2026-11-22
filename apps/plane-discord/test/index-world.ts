@@ -56,6 +56,7 @@ export type Discord = {
 export function world() {
 	const discord: Discord[] = [];
 	const planeHits: string[] = [];
+	const planeHosts: string[] = [];
 	const planeRequests: Array<{ method: string; path: string; headers: Headers; body: string }> = [];
 	const behaviour = {
 		channelStatus: 200,
@@ -98,6 +99,7 @@ export function world() {
 			return json({}, 404);
 		}
 		planeHits.push(pathname);
+		planeHosts.push(host);
 		planeRequests.push({
 			method: init.method ?? 'GET',
 			path: pathname + new URL(url).search,
@@ -170,6 +172,7 @@ export function world() {
 	return {
 		discord,
 		planeHits,
+		planeHosts,
 		planeRequests,
 		reachedGate,
 		until,

@@ -6,6 +6,8 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { workItemUrl } from '@alxwlw/plane-kit/links';
+
 export const DEFAULT_SCOPES = [
 	'projects:read',
 	'projects.work_items:read',
@@ -30,6 +32,7 @@ export const USAGE = `usage: bun scripts/probe-plane-app.ts [--keep]
 
 env (probe rows, run-reply, comment-get):
   PROBE_PLANE_URL, PROBE_WORKSPACE (slug)
+  PROBE_PLANE_WEB_URL                    optional, the address work-item links use; default PROBE_PLANE_URL
   PROBE_PROJECT_ID                       project for the throwaway work item (rows)
   PROBE_CLIENT_ID, PROBE_CLIENT_SECRET, PROBE_INSTALLATION_ID   (the app is the only mode)
   PROBE_SCOPES                           optional, space-separated; default is the plan's 13 scopes
@@ -219,6 +222,7 @@ class Probe {
 		readonly url: string,
 		readonly slug: string,
 		readonly fetchFn: Fetch,
+		readonly webUrl: string = url,
 	) {}
 
 	get base(): string {
@@ -383,7 +387,7 @@ async function liveRows(p: Probe, env: Env, creds: Creds, keep: boolean): Promis
 			p.row(
 				'browse-url',
 				proj.status === 200 && item?.status === 200,
-				`open and confirm: ${p.url}/${p.slug}/browse/${key}/`,
+				`open and confirm: ${workItemUrl(p.webUrl, p.slug, key)}`,
 			);
 		});
 
@@ -511,6 +515,7 @@ export async function main(argv: string[], env: Env, fetchFn: Fetch = fetch): Pr
 		(env.PROBE_PLANE_URL as string).replace(/\/+$/, ''),
 		env.PROBE_WORKSPACE as string,
 		fetchFn,
+		(env.PROBE_PLANE_WEB_URL ?? '').trim().replace(/\/+$/, '') || undefined,
 	);
 	if (!(await authenticate(p, creds, scopesFromEnv(env)))) {
 		console.log('no authorization — cannot continue');
