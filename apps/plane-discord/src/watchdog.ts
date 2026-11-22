@@ -2,6 +2,7 @@ import type { Log } from '@alxwlw/plane-kit/log';
 
 import type { Tenant } from './config.ts';
 import type { DiscordApi } from './discord/rest.ts';
+import { messages } from './i18n.ts';
 import type { Store } from './store.ts';
 
 const HOUR_MS = 3_600_000;
@@ -22,6 +23,7 @@ export async function checkSilence(deps: {
 	const { store, discord, log, now } = deps;
 	for (const tenant of deps.tenants) {
 		try {
+			const m = messages(tenant.locale);
 			const { lastEventAt, alertedAt } = store.silence(tenant.id);
 			const say = async (content: string) => {
 				if (tenant.serviceChannelId !== null)
@@ -29,7 +31,7 @@ export async function checkSilence(deps: {
 			};
 			if (alertedAt !== null) {
 				if (lastEventAt === null || lastEventAt <= alertedAt) continue;
-				await say('Plane снова на связи');
+				await say(m.planeBack);
 				log({ event: 'plane.alive', tenant: tenant.id });
 				store.markAlerted(tenant.id, null);
 				continue;
@@ -38,9 +40,7 @@ export async function checkSilence(deps: {
 			const quiet = now - (lastEventAt ?? deps.startedAt);
 			if (quiet <= tenant.silenceHours * HOUR_MS) continue;
 			const hours = Math.floor(quiet / HOUR_MS);
-			await say(
-				`Plane молчит ${hours} ч (${tenant.workspace}): проверь вебхук — runbook plane-discord`,
-			);
+			await say(m.planeSilent(hours, tenant.workspace));
 			log({ event: 'plane.silent', level: 'error', tenant: tenant.id, hours });
 			store.markAlerted(tenant.id, now);
 		} catch (error) {

@@ -1,4 +1,5 @@
 import { SerialQueue } from '@alxwlw/plane-kit/queue';
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { describe, expect, test } from 'bun:test';
 
 import type { ChannelRoute } from '../src/config.ts';
@@ -22,6 +23,7 @@ import {
 	D_ALICE,
 	D_BOB,
 	D_BOT,
+	english,
 	FORUM,
 	FORUM_2,
 	ID,
@@ -647,5 +649,79 @@ describe('ошибки не из Discord не принимаются за 404 и
 		discord.failures.set('openDm', foreign({ code: DISCORD_ERR.CANNOT_DM }) as DiscordApiError);
 		await expect((dm as Delivery).run()).rejects.toThrow('boom');
 		expect(logs.filter((e) => e.event === 'dm.closed')).toEqual([]);
+	});
+});
+
+describe('createNotifier: English tenant', () => {
+	const EN_LINK = '[Open in Plane](<https://plane.example.com/example-ws/browse/LAB-41/>)';
+	const en = (channels = [route(TEXT)]) => setup(channels, english(tenantOf(channels)));
+
+	test('created post and assignee DM in English', async () => {
+		const { notify, discord } = en();
+		await runAll(await notify(created({ assignees: [BOB] }, ALICE)));
+		expect(sent(discord)).toEqual([
+			[TEXT, { content: `**LAB-41** Название\nWork item created · <@${D_ALICE}>\n${EN_LINK}` }],
+			[
+				`dm-${D_BOB}`,
+				{ content: `**LAB-41** Название\nYou were assigned · <@${D_ALICE}>\n${EN_LINK}` },
+			],
+		]);
+	});
+
+	test('closed and cancelled posts in English', async () => {
+		const { notify, discord } = en();
+		await runAll(await notify(updated({ stateId: S_STARTED }, { stateId: S_DONE })));
+		await runAll(await notify(updated({ stateId: S_STARTED }, { stateId: S_CANCEL })));
+		expect(sent(discord).map(([, m]) => m.content.split('\n')[1])).toEqual([
+			'Work item closed · Carol',
+			'Work item cancelled · Carol',
+		]);
+	});
+
+	test('description mention DM in English', async () => {
+		const { notify, discord } = en();
+		await runAll(
+			await notify(
+				updated({ descriptionHtml: null }, { descriptionHtml: mentionHtml(BOB) }, ALICE),
+			),
+		);
+		expect(sent(discord)).toEqual([
+			[
+				`dm-${D_BOB}`,
+				{
+					content: `**LAB-41** Название\nYou were mentioned in the description · <@${D_ALICE}>\n${EN_LINK}`,
+				},
+			],
+		]);
+	});
+
+	test('an unknown actor is someone in English', async () => {
+		const { notify, discord } = en();
+		await runAll(await notify(created({}, ID(99))));
+		expect(sent(discord)[0]?.[1].content).toBe(
+			`**LAB-41** Название\nWork item created · someone\n${EN_LINK}`,
+		);
+	});
+
+	test('no Russian text in any English post or DM', async () => {
+		const { notify, discord } = en();
+		await runAll(await notify(created({ assignees: [BOB], descriptionHtml: mentionHtml(BOB) })));
+		await runAll(await notify(updated({ stateId: S_STARTED }, { stateId: S_DONE })));
+		const texts = sent(discord).map(([, m]) => m.content.replace('Название', ''));
+		expect(texts).toHaveLength(3);
+		for (const t of texts) expect(t).not.toMatch(CYRILLIC);
+	});
+
+	test('one notifier, two tenants, two languages', async () => {
+		const first = english(tenantOf([route(TEXT)], 'initech'));
+		const second = tenantOf([route(ANNOUNCE)], 'umbrella');
+		const base = setup([route(TEXT)]);
+		const { notify, discord } = build(base.plane, base.discord, [first, second]);
+		await runAll(await notify(created()));
+		await runAll(await notify({ ...created(), tenant: 'umbrella' }));
+		expect(sent(discord)).toEqual([
+			[TEXT, { content: `**LAB-41** Название\nWork item created · Carol\n${EN_LINK}` }],
+			[ANNOUNCE, { content: `**LAB-41** Название\nЗадача создана · Carol\n${LINK}` }],
+		]);
 	});
 });
