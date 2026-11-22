@@ -30,6 +30,8 @@ const config: Config = {
 				webhookSecret: 'demo-webhook-secret',
 				readKey: 'demo',
 				agentKey: 'demo-agent-key',
+				locale: 'ru',
+				areaPrefix: 'код:',
 			},
 		],
 	]),

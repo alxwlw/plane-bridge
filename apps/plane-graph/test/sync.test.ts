@@ -454,6 +454,8 @@ describe('метки агента', () => {
 		const areas = buildGraph(view, {
 			planeUrl: 'https://plane.example',
 			workspaceSlug: 'w',
+			areaPrefix: 'код:',
+			locale: 'ru',
 			lastRun: null,
 			now: NOW,
 		}).items.find((i) => i.key === 'ABC-2')?.areas;

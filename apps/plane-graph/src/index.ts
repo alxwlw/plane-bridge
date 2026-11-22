@@ -283,7 +283,7 @@ export async function startService(
 	log({
 		event: 'listening',
 		port: server.port ?? 0,
-		tenants: [...config.tenants.keys()].map((id) => ({ id })),
+		tenants: [...config.tenants.values()].map((t) => ({ id: t.id, locale: t.locale })),
 	});
 	for (const timer of timers.values()) timer.start();
 

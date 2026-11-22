@@ -1,7 +1,9 @@
 // Adapted from apps/plane-miro/test/config.test.ts.
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
-import { loadConfig, PLANE_SCOPES } from '../src/config.ts';
+import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
+
+import { DEFAULT_AREA_PREFIX, loadConfig, PLANE_SCOPES } from '../src/config.ts';
 
 const EXAMPLE = readFileSync(new URL('../tenants.example.json', import.meta.url), 'utf8');
 
@@ -44,6 +46,8 @@ describe('loadConfig', () => {
 			webhookSecret: 'ex-webhook-secret',
 			readKey: 'ex-read-key',
 			agentKey: 'ex-agent-key',
+			locale: DEFAULT_LOCALE,
+			areaPrefix: DEFAULT_AREA_PREFIX,
 		});
 		expect(config.planeUrl).toBe('https://plane.example.com');
 		expect(config.dbPath).toBe('/data/plane-graph.sqlite');

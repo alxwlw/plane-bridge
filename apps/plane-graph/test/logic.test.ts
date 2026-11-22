@@ -25,6 +25,7 @@ const edge = (from: string, type: Edge['type'], to: string): Edge => ({
 });
 const graph = (items: Item[], edges: Edge[]): GraphJson => ({
 	generatedAt: '2026-02-01T10:00:00.000Z',
+	locale: 'ru',
 	syncedAt: '2026-02-01T09:59:00.000Z',
 	lastAgentRun: null,
 	projects: [],

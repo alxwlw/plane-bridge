@@ -13,6 +13,8 @@ const lastRun: RunSummary = {
 const opts = {
 	planeUrl: 'https://plane.example.com',
 	workspaceSlug: 'example-ws',
+	areaPrefix: 'код:',
+	locale: 'ru' as const,
 	lastRun: null,
 	now,
 };
@@ -302,6 +304,51 @@ describe('buildGraph', () => {
 			},
 		);
 		expect(slash.items[0]!.url).toBe('https://plane.example.com/example-ws/browse/ABC-1/');
+	});
+
+	test('areas follow the tenant prefix', () => {
+		const g = buildGraph(
+			copyOf({
+				tasks: [
+					task('ABC-1', { labels: ['area:b', 'area:a', 'код:c', 'Area:d', 'x area:e'] }),
+					task('ABC-2', { labels: ['area:b'] }),
+					task('ABC-3', { labels: ['area:b', 'код:c'] }),
+					task('ABC-4', { labels: ['код:c'] }),
+				],
+				edges: [
+					['ABC-1', 'blocks', 'ABC-2'],
+					['ABC-3', 'blocks', 'ABC-2'],
+					['ABC-4', 'blocks', 'ABC-2'],
+				],
+			}),
+			{ ...opts, areaPrefix: 'area:' },
+		);
+		const byKey = (k: string) => g.items.find((i) => i.key === k)?.areas;
+		expect(byKey('ABC-1')).toEqual(['area:a', 'area:b']);
+		expect(byKey('ABC-4')).toEqual([]);
+		expect(g.canStart.map((c) => c.area)).toEqual(['area:a', 'area:b', null]);
+		expect(g.conflicts.map((c) => c.area)).toEqual(['area:b']);
+	});
+
+	test('a prefix with regex and HTML characters is matched literally', () => {
+		const spec = {
+			tasks: [task('ABC-1', { labels: ['a.b:x', 'axb:x', '<x>:y'] })],
+			edges: [['ABC-1', 'relates', 'ABC-2']] as [string, 'relates', string][],
+		};
+		const both = { ...spec, tasks: [...spec.tasks, task('ABC-2')] };
+		const dot = buildGraph(copyOf(both), { ...opts, areaPrefix: 'a.b:' });
+		expect(dot.items.find((i) => i.key === 'ABC-1')?.areas).toEqual(['a.b:x']);
+		const tag = buildGraph(copyOf(both), { ...opts, areaPrefix: '<x>:' });
+		expect(tag.items.find((i) => i.key === 'ABC-1')?.areas).toEqual(['<x>:y']);
+	});
+
+	test('graph.json carries the locale', () => {
+		const spec = {
+			tasks: [task('ABC-1'), task('ABC-2')],
+			edges: [['ABC-1', 'blocks', 'ABC-2']] as [string, 'blocks', string][],
+		};
+		expect(buildGraph(copyOf(spec), { ...opts, locale: 'en' }).locale).toBe('en');
+		expect(buildGraph(copyOf(spec), { ...opts, locale: 'ru' }).locale).toBe('ru');
 	});
 
 	test('порядок по ключу числовой, рёбра по ключам', () => {
