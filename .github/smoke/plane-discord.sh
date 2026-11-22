@@ -27,8 +27,8 @@ docker run -d --name pd -p 18080:8080 \
   -e PLANE_DISCORD_DISCORD_BOT_TOKEN=x \
   -e PLANE_DISCORD_ACME_PLANE_SECRET=x \
   -e PLANE_DISCORD_ACME_WEBHOOK_SECRET=x "$image"
-for _ in $(seq 20); do curl -fs localhost:18080/healthz && break; sleep 0.5; done
-curl -fs localhost:18080/healthz | grep -qx ok
+for _ in $(seq 20); do curl -fs --max-time 2 localhost:18080/healthz && break; sleep 0.5; done
+curl -fs --max-time 5 localhost:18080/healthz | grep -qx ok
 docker exec pd wget -q --spider http://localhost:8080/healthz
 docker logs pd | grep -F '"event":"listening"' | grep -F '"id":"acme"'
 docker exec pd test -f /data/plane-discord.sqlite

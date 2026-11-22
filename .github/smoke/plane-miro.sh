@@ -27,10 +27,10 @@ docker run -d --name pm -p 18080:8080 \
   -e PLANE_MIRO_ACME_WEBHOOK_SECRET=x \
   -e PLANE_MIRO_BETA_PLANE_SECRET=x \
   -e PLANE_MIRO_BETA_WEBHOOK_SECRET=x "$image"
-for _ in $(seq 20); do curl -fs localhost:18080/healthz && break; sleep 0.5; done
-curl -fs localhost:18080/healthz | grep -qx ok
+for _ in $(seq 20); do curl -fs --max-time 2 localhost:18080/healthz && break; sleep 0.5; done
+curl -fs --max-time 5 localhost:18080/healthz | grep -qx ok
 docker exec pm wget -q --spider http://localhost:8080/healthz
 # The pages answer GET only (a HEAD is 405), so the headers come from a GET with the body dropped.
-curl -fsD - -o /dev/null localhost:18080/miro/panel | grep -i '^content-security-policy: frame-ancestors https://miro.com'
+curl -fsD - --max-time 5 -o /dev/null localhost:18080/miro/panel | grep -i '^content-security-policy: frame-ancestors https://miro.com'
 docker logs pm | grep -F '"event":"listening"' | grep -F '"id":"acme"'
 docker exec pm test -f /data/plane-miro.sqlite

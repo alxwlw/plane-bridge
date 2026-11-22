@@ -25,9 +25,9 @@ docker run -d --name pg -p 18080:8080 \
   -e PLANE_GRAPH_EX_WEBHOOK_SECRET=x \
   -e PLANE_GRAPH_EX_READ_KEY=read-x \
   -e PLANE_GRAPH_EX_AGENT_KEY=agent-x "$image"
-for _ in $(seq 20); do curl -fs localhost:18080/healthz && break; sleep 0.5; done
-curl -fs localhost:18080/healthz | grep -qx ok
+for _ in $(seq 20); do curl -fs --max-time 2 localhost:18080/healthz && break; sleep 0.5; done
+curl -fs --max-time 5 localhost:18080/healthz | grep -qx ok
 docker exec pg wget -q --spider http://localhost:8080/healthz
-curl -fs localhost:18080/assets/graph.js | grep -q .
+curl -fs --max-time 5 localhost:18080/assets/graph.js | grep -q .
 docker logs pg | grep -F '"event":"listening"' | grep -F '"id":"ex"'
 docker exec pg test -f /data/plane-graph.sqlite

@@ -28,8 +28,8 @@ docker run -d --name ph -p 18080:8080 \
   -e PLANE_HOOKS_ACME_DOKPLOY_SECRET=x \
   -e PLANE_HOOKS_GH_ACME_PRIVATE_KEY="$key" \
   -e PLANE_HOOKS_GH_ACME_WEBHOOK_SECRET=x "$image"
-for _ in $(seq 20); do curl -fs localhost:18080/healthz && break; sleep 0.5; done
-curl -fs localhost:18080/healthz | grep -qx ok
+for _ in $(seq 20); do curl -fs --max-time 2 localhost:18080/healthz && break; sleep 0.5; done
+curl -fs --max-time 5 localhost:18080/healthz | grep -qx ok
 docker exec ph wget -q --spider http://localhost:8080/healthz
 docker logs ph | grep -F '"event":"listening"' | grep -F '"id":"acme"'
 docker exec ph test -f /data/plane-hooks.sqlite
