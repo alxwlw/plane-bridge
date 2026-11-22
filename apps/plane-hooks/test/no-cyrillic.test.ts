@@ -15,3 +15,8 @@ test('no Cyrillic outside the catalog', () => {
 test('the guard sees the Russian catalog', () => {
 	expect(findCyrillic(ROOT, ['src']).some((h) => h.path === CATALOG)).toBe(true);
 });
+test('every allowed place still holds Cyrillic: a stale entry fails the guard', () => {
+	const hits = findCyrillic(ROOT, ['src', 'scripts', 'web']);
+	const stale = ALLOWED.filter((a) => !hits.some((h) => h.path === a.path && h.line === a.line));
+	expect(stale).toEqual([]);
+});

@@ -1,3 +1,4 @@
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { LOCALES } from '@alxwlw/plane-kit/locale';
 import { describe, expect, test } from 'bun:test';
 
@@ -9,7 +10,6 @@ import { BadPayload } from '../src/payload.ts';
 import { fixture } from './fixtures.ts';
 
 const T = '2026-10-06T10:00:00Z';
-const CYRILLIC = /[Ѐ-ӿ]/;
 
 /** The Russian catalog and the default table unless a test says otherwise. */
 const parseGrafanaWebhook = (

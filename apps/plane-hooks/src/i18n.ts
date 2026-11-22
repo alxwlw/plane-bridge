@@ -122,6 +122,9 @@ export const ru: Messages = {
 		'GitHub не вернул данные App. Начните заново: страница установки выдаст новую ссылку.\n',
 };
 
+/** One catalog per locale: a new `Locale` without a catalog is a type error here. */
+const CATALOGS: Record<Locale, Messages> = { en, ru };
+
 export function messages(locale: Locale): Messages {
-	return locale === 'en' ? en : ru;
+	return CATALOGS[locale];
 }

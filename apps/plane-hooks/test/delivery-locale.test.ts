@@ -1,3 +1,4 @@
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { LOCALES } from '@alxwlw/plane-kit/locale';
 import { describe, expect, test } from 'bun:test';
 
@@ -11,8 +12,6 @@ import { tenantOf } from './config-fixture.ts';
 import { fact, REPO, setup, squash } from './delivery-deploy-world.ts';
 import { world } from './delivery-sync-world.ts';
 import { deliveryWorld } from './delivery-world.ts';
-
-const CYRILLIC = /[Ѐ-ӿ]/;
 const PULLS = [
 	{ repo: 'acme/api', number: 1, url: 'https://github.com/acme/api/pull/1' },
 ] as Pull[];

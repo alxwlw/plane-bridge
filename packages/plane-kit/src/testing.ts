@@ -5,7 +5,8 @@ import { join } from 'node:path';
 
 export type CyrillicHit = { path: string; line: number; text: string };
 
-const CYRILLIC = /[\u0400-\u04FF]/;
+/** Matches a character of U+0400–U+04FF: the one definition every Cyrillic check in tests shares. */
+export const CYRILLIC = /[\u0400-\u04FF]/;
 
 /**
  * Every line holding a character of U+0400–U+04FF in the `*.ts` and `*.html` files under `root/<dir>`

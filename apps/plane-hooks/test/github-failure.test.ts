@@ -1,3 +1,4 @@
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { LOCALES } from '@alxwlw/plane-kit/locale';
 import { describe, expect, test } from 'bun:test';
 
@@ -143,8 +144,6 @@ describe('deploymentSignal', () => {
 });
 
 describe('deploymentSignal by locale', () => {
-	const CYRILLIC = /[Ѐ-ӿ]/;
-
 	test('GitHub deployment failure in English', () => {
 		const signal = deploymentSignal(event('failure'), tenantOf({ locale: 'en' }), NOW);
 		expect(signal).toMatchObject({

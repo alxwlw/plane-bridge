@@ -1,3 +1,4 @@
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { describe, expect, test } from 'bun:test';
 
 import { messages } from '../src/i18n.ts';
@@ -15,8 +16,6 @@ import {
 	vercelRequest,
 	world,
 } from './server-harness.ts';
-
-const CYRILLIC = /[Ѐ-ӿ]/;
 const SHA = 'abcdef0123456789abcdef0123456789abcdef01';
 
 /** Two tenants of one process, each with its own Plane, one in English and one in Russian. */

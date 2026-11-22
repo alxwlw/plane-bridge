@@ -1,3 +1,4 @@
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -667,7 +668,7 @@ describe('GitHub setup page', () => {
 		expect(en.status).toBe(400);
 		const enBody = await en.text();
 		expect(enBody).toBe(messages('en').setupParamsMissing);
-		expect(enBody).not.toMatch(/[А-Яа-яЁё]/);
+		expect(enBody).not.toMatch(CYRILLIC);
 		const ru = await w.handler(new Request('https://hooks.example.com/github/setup?tenant=beta'));
 		expect(await ru.text()).toBe(messages('ru').setupParamsMissing);
 	});

@@ -1,3 +1,4 @@
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { describe, expect, test } from 'bun:test';
 
 import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
@@ -16,7 +17,6 @@ const NOW = 1_800_000_000;
 const PUBLIC_URL = 'https://hooks.example.com';
 const PEM = '-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA\n-----END RSA PRIVATE KEY-----\n';
 const WEBHOOK_SECRET = 'whsec_created_by_github';
-const CYRILLIC = /[А-Яа-яЁё]/;
 
 describe('манифест', () => {
 	test('манифест GitHub App — имя, URL, права и события', () => {
@@ -215,7 +215,9 @@ describe('callback', () => {
 	test("callback answers in the tenant's language once the tenant is known", async () => {
 		const en = tenantOf({ locale: 'en' });
 		const enState = setupState(en, NOW);
-		const m = messages('en');
+		const EXPIRED = 'GitHub does not know this code: it has expired, start over.\n';
+		const GATEWAY =
+			'GitHub did not return the App data. Start over: the setup page will give a new link.\n';
 		const answer = async (reply: Response | Error, code = 'abc123') => {
 			const h = harness(reply);
 			h.deps.tenants = [en];
@@ -223,11 +225,25 @@ describe('callback', () => {
 			return { res, body: await res.text() };
 		};
 		const noCode = await answer(Response.json(conversion, { status: 201 }), '');
-		expect([noCode.res.status, noCode.body]).toEqual([400, m.setupNoCode]);
+		expect([noCode.res.status, noCode.body]).toEqual([
+			400,
+			'The address has no GitHub code. Start over.\n',
+		]);
 		const expired = await answer(new Response('{}', { status: 404 }));
-		expect([expired.res.status, expired.body]).toEqual([400, m.setupCodeExpired]);
+		expect([expired.res.status, expired.body]).toEqual([400, EXPIRED]);
 		const gateway = await answer(new Response('x', { status: 500 }));
-		expect([gateway.res.status, gateway.body]).toEqual([502, m.setupGatewayFailed]);
+		expect([gateway.res.status, gateway.body]).toEqual([502, GATEWAY]);
+		// Every other way the exchange can fail answers with the same English text.
+		for (const reply of [
+			new Error('network down'),
+			new Response('not json', { status: 201 }),
+			Response.json([], { status: 201 }),
+			Response.json({ id: 1 }, { status: 201 }),
+		]) {
+			const failed = await answer(reply);
+			expect([failed.res.status, failed.body]).toEqual([502, GATEWAY]);
+			expect(failed.body).not.toMatch(CYRILLIC);
+		}
 		for (const { body } of [noCode, expired, gateway]) expect(body).not.toMatch(CYRILLIC);
 		const ok = await answer(Response.json(conversion, { status: 201 }));
 		expect(ok.res.status).toBe(200);

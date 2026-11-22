@@ -1,3 +1,4 @@
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { LOCALES } from '@alxwlw/plane-kit/locale';
 import { describe, expect, test } from 'bun:test';
 
@@ -457,7 +458,6 @@ describe('recordDokployDeploy', () => {
 });
 
 describe('Dokploy incidents by locale', () => {
-	const CYRILLIC = /[Ѐ-ӿ]/;
 	const en = messages('en');
 	const signalOf = (body: unknown, m = en) => {
 		const event = parseDokployWebhook(body, m);

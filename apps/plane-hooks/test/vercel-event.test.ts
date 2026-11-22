@@ -1,3 +1,4 @@
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { createHash, createHmac } from 'node:crypto';
 
 import { LOCALES } from '@alxwlw/plane-kit/locale';
@@ -546,7 +547,6 @@ describe('deployment.succeeded: Погас и сводка', () => {
 });
 
 describe('parseVercelEvent: incidents by locale', () => {
-	const CYRILLIC = /[Ѐ-ӿ]/;
 	const parse = async (name: string, locale: 'en' | 'ru') =>
 		parseVercelEvent(await fixture(name), messages(locale));
 

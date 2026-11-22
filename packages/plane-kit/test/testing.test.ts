@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { findCyrillic } from '../src/testing.ts';
+import { CYRILLIC, findCyrillic } from '../src/testing.ts';
 
 let root: string;
 beforeEach(() => {
@@ -54,4 +54,9 @@ test('findCyrillic orders by path even when the later path has the earlier line'
 		'src/m.ts:2',
 		'src/z.ts:1',
 	]);
+});
+test('CYRILLIC covers both ends of U+0400–U+04FF, capitals and small letters, and nothing outside', () => {
+	for (const ch of ['\u0400', '\u04FF', 'А', 'я', 'Ё', 'ё', 'І', 'ї'])
+		expect(CYRILLIC.test(ch)).toBe(true);
+	for (const ch of ['\u03FF', '\u0500', 'a', 'Z', '0', ' ']) expect(CYRILLIC.test(ch)).toBe(false);
 });

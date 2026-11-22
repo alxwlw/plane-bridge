@@ -187,6 +187,7 @@ export async function githubCallback(
 	const name = appNameOf(owner);
 	const upper = name.toUpperCase();
 	deps.log({ event: 'github.app_created', tenant: tenant.id, appId, owner });
+	// Operator instructions (shell names, env keys): English for every locale by design, so it bypasses the catalog.
 	return plain(
 		200,
 		[

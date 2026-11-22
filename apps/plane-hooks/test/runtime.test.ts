@@ -1,3 +1,4 @@
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
 
@@ -236,7 +237,7 @@ describe('runtime: release changelog locale', () => {
 		expect(result.release).toMatchObject({ action: 'created' });
 		const changelog = w.plane.releases[0]?.changelog ?? '';
 		expect(changelog).toContain('<h3>Commits</h3>');
-		expect(changelog).not.toMatch(/[Ѐ-ӿ]/);
+		expect(changelog).not.toMatch(CYRILLIC);
 	});
 });
 

@@ -1,3 +1,4 @@
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { beforeEach, describe, expect, test } from 'bun:test';
 
 import { messages } from '../src/i18n.ts';
@@ -98,7 +99,7 @@ describe('changelogHtml by locale', () => {
 		const html = changelogHtml(messages('en'), draft(), ITEMS);
 		expect(html).toContain('<h3>Commits</h3>');
 		expect(html).toContain('<h3>Work items</h3>');
-		expect(html).not.toMatch(/[Ѐ-ӿ]/);
+		expect(html).not.toMatch(CYRILLIC);
 	});
 
 	test('changelog without commits in English', () => {
