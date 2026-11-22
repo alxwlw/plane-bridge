@@ -54,6 +54,18 @@ export const en = {
 	alertSilence: 'Silence',
 	annotationFiring: (title: string) => `Firing: ${title}`,
 	annotationResolved: (title: string) => `Resolved: ${title}`,
+	// GitHub App setup page: the inner HTML of its paragraph (both values are plain text) and the button.
+	setupIntroHtml: (tenantId: string, owner: string) =>
+		`Tenant ${esc(tenantId)}, owner ${esc(owner)}. The button opens GitHub with a ready manifest: there, press "Create GitHub App". The link is valid for an hour.`,
+	setupButton: 'Create GitHub App',
+	// GitHub App setup: plain-text answers, each ends with a newline.
+	setupParamsMissing:
+		'The owner parameter (a GitHub organization or account) and kind=org|user are required: /github/setup?tenant=<id>&owner=<login>&kind=org\n',
+	setupLinkExpired: 'The link has expired or is not ours. Start over from the setup page.\n',
+	setupNoCode: 'The address has no GitHub code. Start over.\n',
+	setupCodeExpired: 'GitHub does not know this code: it has expired, start over.\n',
+	setupGatewayFailed:
+		'GitHub did not return the App data. Start over: the setup page will give a new link.\n',
 };
 
 export type Messages = Catalog<typeof en>;
@@ -98,6 +110,16 @@ export const ru: Messages = {
 	alertSilence: 'Заглушить',
 	annotationFiring: (title) => `Сработал: ${title}`,
 	annotationResolved: (title) => `Погас: ${title}`,
+	setupIntroHtml: (tenantId, owner) =>
+		`Тенант ${esc(tenantId)}, владелец ${esc(owner)}. Кнопка откроет GitHub с готовым манифестом: там останется нажать «Create GitHub App». Ссылка действует час.`,
+	setupButton: 'Создать GitHub App',
+	setupParamsMissing:
+		'Нужны параметры owner (организация или аккаунт GitHub) и kind=org|user: /github/setup?tenant=<id>&owner=<login>&kind=org\n',
+	setupLinkExpired: 'Ссылка устарела или не наша. Начните заново со страницы установки.\n',
+	setupNoCode: 'В адресе нет кода GitHub. Начните заново.\n',
+	setupCodeExpired: 'GitHub не знает этот код: код истёк, начните заново.\n',
+	setupGatewayFailed:
+		'GitHub не вернул данные App. Начните заново: страница установки выдаст новую ссылку.\n',
 };
 
 export function messages(locale: Locale): Messages {

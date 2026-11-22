@@ -2,8 +2,10 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import type { Fetch } from '@alxwlw/plane-app';
 import { esc } from '@alxwlw/plane-kit/html';
+import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
 
 import type { Tenant } from '../config.ts';
+import { messages } from '../i18n.ts';
 import { isRecord, optString } from '../payload.ts';
 
 const STATE_TTL_SECONDS = 3600;
@@ -84,8 +86,9 @@ export function githubSetupPage(opts: {
 			: 'https://github.com/settings/apps/new';
 	const action = `${base}?state=${setupState(opts.tenant, opts.nowSeconds)}`;
 	const manifest = JSON.stringify(githubManifest(opts.publicUrl, name));
+	const m = messages(opts.tenant.locale);
 	const html = `<!doctype html>
-<html lang="ru">
+<html lang="${opts.tenant.locale}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -94,10 +97,10 @@ export function githubSetupPage(opts: {
 </head>
 <body>
 <h1>GitHub App ${esc(name)}</h1>
-<p>Тенант ${esc(opts.tenant.id)}, владелец ${esc(opts.owner)}. Кнопка откроет GitHub с готовым манифестом: там останется нажать «Create GitHub App». Ссылка действует час.</p>
+<p>${m.setupIntroHtml(opts.tenant.id, opts.owner)}</p>
 <form method="post" action="${esc(action)}">
 <input type="hidden" name="manifest" value="${esc(manifest)}">
-<button type="submit">Создать GitHub App</button>
+<button type="submit">${m.setupButton}</button>
 </form>
 </body>
 </html>
@@ -113,9 +116,6 @@ function plain(status: number, body: string): Response {
 		headers: { 'Content-Type': 'text/plain; charset=utf-8', ...NO_STORE },
 	});
 }
-
-const GATEWAY =
-	'GitHub не вернул данные App. Начните заново: страница установки выдаст новую ссылку.\n';
 
 /** Exchanges the code (POST /app-manifests/{code}/conversions) and shows what to put in tenants.json and env. */
 export async function githubCallback(
@@ -137,11 +137,10 @@ export async function githubCallback(
 		url.searchParams.get('state') ?? '',
 		deps.nowSeconds,
 	);
-	if (!tenant)
-		return plain(400, 'Ссылка устарела или не наша. Начните заново со страницы установки.\n');
+	if (!tenant) return plain(400, messages(DEFAULT_LOCALE).setupLinkExpired);
+	const m = messages(tenant.locale);
 	const code = url.searchParams.get('code') ?? '';
-	if (!/^[A-Za-z0-9_-]+$/.test(code))
-		return plain(400, 'В адресе нет кода GitHub. Начните заново.\n');
+	if (!/^[A-Za-z0-9_-]+$/.test(code)) return plain(400, m.setupNoCode);
 
 	let res: Response;
 	try {
@@ -155,19 +154,18 @@ export async function githubCallback(
 			signal: AbortSignal.timeout(CONVERT_TIMEOUT_MS),
 		});
 	} catch {
-		return plain(502, GATEWAY);
+		return plain(502, m.setupGatewayFailed);
 	}
-	if (res.status === 404)
-		return plain(400, 'GitHub не знает этот код: код истёк, начните заново.\n');
-	if (!res.ok) return plain(502, GATEWAY);
+	if (res.status === 404) return plain(400, m.setupCodeExpired);
+	if (!res.ok) return plain(502, m.setupGatewayFailed);
 
 	let body: unknown;
 	try {
 		body = await res.json();
 	} catch {
-		return plain(502, GATEWAY);
+		return plain(502, m.setupGatewayFailed);
 	}
-	if (!isRecord(body)) return plain(502, GATEWAY);
+	if (!isRecord(body)) return plain(502, m.setupGatewayFailed);
 	const appId = body.id;
 	const slug = optString(body.slug);
 	const pem = optString(body.pem);
@@ -183,7 +181,7 @@ export async function githubCallback(
 		secret === null ||
 		owner === null
 	) {
-		return plain(502, GATEWAY);
+		return plain(502, m.setupGatewayFailed);
 	}
 
 	const name = appNameOf(owner);

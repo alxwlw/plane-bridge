@@ -272,10 +272,7 @@ export function createHandler(deps: HandlerDeps): (req: Request) => Promise<Resp
 				const owner = url.searchParams.get('owner') ?? '';
 				const kind = url.searchParams.get('kind');
 				if (!GITHUB_OWNER.test(owner) || (kind !== 'org' && kind !== 'user')) {
-					return text(
-						400,
-						'Нужны параметры owner (организация или аккаунт GitHub) и kind=org|user: /github/setup?tenant=<id>&owner=<login>&kind=org\n',
-					);
+					return text(400, messages(tenant.locale).setupParamsMissing);
 				}
 				return githubSetupPage({ publicUrl: config.publicUrl, tenant, owner, kind, nowSeconds });
 			}

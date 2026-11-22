@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, test } from 'bun:test';
 
 import type { Tenant } from '../src/config.ts';
+import { messages } from '../src/i18n.ts';
 import { PlaneApiError } from '../src/plane.ts';
 import { Store } from '../src/store.ts';
 import { FakePlane } from './fake-plane.ts';
@@ -654,5 +655,20 @@ describe('GitHub: очередь и входящие', () => {
 			{ event: 'inbox.orphaned', level: 'warn', tenant: 'gone', id: 1 },
 		]);
 		w.store.close();
+	});
+});
+
+describe('GitHub setup page', () => {
+	test("setup request without owner answers in the tenant's language", async () => {
+		const w = world({
+			tenants: [tenantOf({ locale: 'en' }), tenantOf({ id: 'beta', locale: 'ru' })],
+		});
+		const en = await w.handler(new Request('https://hooks.example.com/github/setup?tenant=acme'));
+		expect(en.status).toBe(400);
+		const enBody = await en.text();
+		expect(enBody).toBe(messages('en').setupParamsMissing);
+		expect(enBody).not.toMatch(/[А-Яа-яЁё]/);
+		const ru = await w.handler(new Request('https://hooks.example.com/github/setup?tenant=beta'));
+		expect(await ru.text()).toBe(messages('ru').setupParamsMissing);
 	});
 });
