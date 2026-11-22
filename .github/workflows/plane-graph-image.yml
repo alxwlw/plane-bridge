@@ -4,6 +4,7 @@ on:
     paths:
       - 'apps/plane-graph/**'
       - 'packages/**'
+      - '!packages/release/**'
       - '.github/workflows/plane-graph-image.yml'
       - '.github/workflows/image.yml'
       - '.github/smoke/plane-graph.sh'
@@ -13,6 +14,7 @@ on:
     paths:
       - 'apps/plane-graph/**'
       - 'packages/**'
+      - '!packages/release/**'
       - '.github/workflows/plane-graph-image.yml'
       - '.github/workflows/image.yml'
       - '.github/smoke/plane-graph.sh'

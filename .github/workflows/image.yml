@@ -18,6 +18,11 @@ on:
         description: Publish the image (otherwise build and smoke-test only)
         type: boolean
         required: true
+      release-tag:
+        description: Git tag of the release these images belong to; the merge refuses when it already exists
+        type: string
+        required: false
+        default: ''
 jobs:
   build:
     name: build ${{ matrix.platform }}
@@ -119,6 +124,17 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Refuse a released version
+        if: inputs.release-tag != ''
+        env:
+          RELEASE_TAG: ${{ inputs.release-tag }}
+        run: |
+          set -euo pipefail
+          found=$(git ls-remote --tags origin "refs/tags/$RELEASE_TAG")
+          if [ -n "$found" ]; then
+            echo "::error::$RELEASE_TAG is already released; its images are not tagged again"
+            exit 1
+          fi
       - name: Download digests
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:

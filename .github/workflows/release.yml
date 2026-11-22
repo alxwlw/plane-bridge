@@ -1,0 +1,152 @@
+name: release
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/*/package.json'
+  pull_request:
+    paths:
+      - 'apps/*/package.json'
+      - 'apps/*/CHANGELOG.md'
+      - 'packages/release/**'
+      - '.github/workflows/release.yml'
+      - '.github/workflows/image.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+defaults:
+  run:
+    shell: bash
+jobs:
+  plan:
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      count: ${{ steps.plan.outputs.count }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - uses: alxwlw/stack/.github/actions/setup@715627021e4c73aa71fda577cd64209c166c3f2f # v1
+        with:
+          install: 'false'
+      - name: Plan
+        id: plan
+        run: bun packages/release/src/cli.ts plan | tee -a "$GITHUB_OUTPUT"
+  image:
+    name: image ${{ matrix.app }} ${{ matrix.version }}
+    needs: plan
+    if: needs.plan.outputs.count != '0'
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    uses: ./.github/workflows/image.yml
+    with:
+      app: ${{ matrix.app }}
+      version: ${{ matrix.version }}
+      tags: ${{ matrix.version }}
+      push: ${{ github.event_name != 'pull_request' }}
+      release-tag: ${{ matrix.app }}-v${{ matrix.version }}
+  publish:
+    name: publish ${{ matrix.app }} ${{ matrix.version }}
+    needs: [plan, image]
+    if: needs.plan.outputs.count != '0'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      APP: ${{ matrix.app }}
+      VERSION: ${{ matrix.version }}
+      PRERELEASE: ${{ matrix.prerelease }}
+      IMAGE: ghcr.io/alxwlw/${{ matrix.app }}
+      DRY_RUN: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - uses: alxwlw/stack/.github/actions/setup@715627021e4c73aa71fda577cd64209c166c3f2f # v1
+        with:
+          install: 'false'
+      - name: Notes and floating tags
+        run: |
+          bun packages/release/src/cli.ts notes "$APP" "$VERSION" > "$RUNNER_TEMP/notes.md"
+          bun packages/release/src/cli.ts floating "$APP" "$VERSION" > "$RUNNER_TEMP/floating"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+        if: github.event_name != 'pull_request'
+      - name: Log in to ghcr.io
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag the release images
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          digest=$(.github/image/platforms.sh "$IMAGE:$VERSION")
+          mapfile -t floating < <(grep -v '^$' "$RUNNER_TEMP/floating" || true)
+          if [ "${#floating[@]}" -gt 0 ]; then
+            args=()
+            for tag in "${floating[@]}"; do
+              args+=(-t "$IMAGE:$tag")
+            done
+            docker buildx imagetools create "${args[@]}" "$IMAGE@$digest"
+            for tag in "${floating[@]}"; do
+              got=$(.github/image/platforms.sh "$IMAGE:$tag")
+              if [ "$got" != "$digest" ]; then
+                echo "::error::$IMAGE:$tag has digest $got, expected $digest"
+                exit 1
+              fi
+            done
+          fi
+          {
+            echo
+            echo '---'
+            echo
+            echo "Image: \`$IMAGE:$VERSION\` for \`linux/amd64\` and \`linux/arm64\`, index digest \`$digest\`."
+            if [ "${#floating[@]}" -gt 0 ]; then
+              also=""
+              for tag in "${floating[@]}"; do
+                also+="${also:+, }\`:$tag\`"
+              done
+              echo "Also tagged: $also."
+            fi
+          } >> "$RUNNER_TEMP/notes.md"
+      - name: Summary
+        run: |
+          floating=$(tr '\n' ' ' < "$RUNNER_TEMP/floating" | sed 's/ *$//')
+          {
+            echo "## $APP $VERSION"
+            if [ "$DRY_RUN" = true ]; then
+              echo 'Dry run: nothing was published.'
+            fi
+            echo "Floating tags: ${floating:-none}"
+            echo
+            cat "$RUNNER_TEMP/notes.md"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags=()
+          if [ "$PRERELEASE" = true ]; then
+            flags+=(--prerelease)
+          fi
+          if ! grep -qx latest "$RUNNER_TEMP/floating"; then
+            flags+=(--latest=false)
+          fi
+          gh release create "$APP-v$VERSION" --target "$GITHUB_SHA" --title "$APP $VERSION" \
+            --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}"

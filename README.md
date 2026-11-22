@@ -24,6 +24,8 @@ plane-bridge is a community project. It is not affiliated with, endorsed by or s
   install redirect and callback (`planeSetupRedirect`, `planeOauthCallback`).
 - [`packages/plane-kit`](packages/plane-kit) — modules the Plane apps share: `html`, `queue`, `rate`, `ttl`, `log`
   and `capture` (the request-capture script behind each app's `scripts/capture.ts`).
+- [`packages/release`](packages/release) — the release tool: which app versions to release, their tags and notes;
+  see [RELEASING.md](RELEASING.md). Each app keeps a `CHANGELOG.md` next to its `package.json`.
 
 ## Development
 

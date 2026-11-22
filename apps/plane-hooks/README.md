@@ -484,7 +484,7 @@ This version is not compatible with the single-project, API-key one:
 
 `ghcr.io/alxwlw/plane-hooks` for `linux/amd64` and `linux/arm64`, built from the repository root by
 `.github/workflows/plane-hooks-image.yml` (through `.github/workflows/image.yml`) on every push to `main` that touches
-this app or anything under `packages/`; deploy by digest. Each platform is smoke-tested on its own runner by
+this app or a package it ships; deploy by digest. Each platform is smoke-tested on its own runner by
 `.github/smoke/plane-hooks.sh` before publishing: `tenants.example.json` in `/config`, a fresh RSA key, the `listening`
 line with the tenant, `/healthz`, the SQLite file in `/data`. Pull requests build both platforms and run the smoke test
 without publishing. The image runs as `bun`; `wget` (busybox) serves

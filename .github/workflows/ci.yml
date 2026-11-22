@@ -13,6 +13,8 @@ jobs:
       - uses: alxwlw/stack/.github/actions/setup@v1
       - run: pnpm exec stack check
       - run: pnpm exec moon run :lint :format :typecheck :test
+      - name: Release notes for every unreleased version
+        run: bun packages/release/src/cli.ts check
       - name: gitleaks по всей истории
         run: gitleaks git --redact --no-banner .
       - run: proto run actionlint -- -color
