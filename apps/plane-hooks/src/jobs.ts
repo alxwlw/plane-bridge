@@ -8,6 +8,7 @@ import { containsVia, type SyncResult } from './delivery/sync.ts';
 import { type DokployEvent, recordDokployDeploy } from './dokploy.ts';
 import { deploymentSignal } from './github/failure.ts';
 import type { GitHubEvent } from './github/webhook.ts';
+import { type Messages } from './i18n.ts';
 import { IncidentProjectMissing, type IncidentSignal } from './incident.ts';
 import type { TenantRuntime } from './runtime.ts';
 import type { InboxJob, Store } from './store.ts';
@@ -290,6 +291,7 @@ async function resolveJob(
 /** Grafana alerts: a new firing or a new resolution is a mark on the dashboards; a replay (noop) or an error is not. */
 export function incidentAnnotation(
 	signal: IncidentSignal,
+	m: Messages,
 ): (action: string) => Annotation | undefined {
 	return (action) => {
 		const fresh =
@@ -297,10 +299,11 @@ export function incidentAnnotation(
 				? action === 'created' || action === 'reopened' || action === 'commented'
 				: action === 'commented';
 		if (!fresh) return undefined;
-		const verb = signal.status === 'firing' ? 'Сработал' : 'Погас';
 		return {
 			annotation: 'incident',
-			title: `${verb}: ${signal.title ?? signal.key}`,
+			title: (signal.status === 'firing' ? m.annotationFiring : m.annotationResolved)(
+				signal.title ?? signal.key,
+			),
 			env: markEnv(signal.env),
 		};
 	};

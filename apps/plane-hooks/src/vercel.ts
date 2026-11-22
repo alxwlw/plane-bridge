@@ -2,6 +2,7 @@ import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 
 import { esc, link, p, truncate } from '@alxwlw/plane-kit/html';
 
+import type { Messages } from './i18n.ts';
 import type { IncidentSignal } from './incident.ts';
 import { BadPayload, isRecord, optString } from './payload.ts';
 
@@ -65,7 +66,7 @@ export type VercelHookEvent =
  * `githubCommitRepo` / `githubCommitRef` / `githubCommitSha` are present, `meta.githubPrId` is a string, and
  * `deployment.created` arrives before `deployment.succeeded` (it is ignored). promote and rollback were not captured.
  */
-export function parseVercelEvent(body: unknown): VercelHookEvent {
+export function parseVercelEvent(body: unknown, m: Messages): VercelHookEvent {
 	if (!isRecord(body)) throw new BadPayload('vercel: body is not an object');
 	const type = optString(body.type);
 	if (type === null) throw new BadPayload('vercel: no event type');
@@ -99,7 +100,7 @@ export function parseVercelEvent(body: unknown): VercelHookEvent {
 	const label = sha7 ?? deploymentId;
 
 	if (type === 'deployment.error') {
-		const links = [link(inspector, 'Инспектор Vercel'), link(url, url)].filter(
+		const links = [link(inspector, m.vercelInspector), link(url, url)].filter(
 			(html): html is string => html !== null,
 		);
 		return {
@@ -110,22 +111,20 @@ export function parseVercelEvent(body: unknown): VercelHookEvent {
 				key,
 				occurrence: deploymentId,
 				at,
-				title: truncate(`Деплой упал: ${name} (${target}) · ${branch}`, TITLE_MAX),
+				title: truncate(`${m.deployFailed}: ${name} (${target}) · ${branch}`, TITLE_MAX),
 				bodyHtml: [
-					p(
-						`Проект: <code>${esc(name)}</code>, окружение: <code>${target}</code>, ветка: <code>${esc(branch)}</code>`,
-					),
-					sha ? p(`Коммит: <code>${esc(sha)}</code>`) : '',
+					p(m.vercelProjectHtml(name, target, branch)),
+					sha ? p(m.commitHtml(`<code>${esc(sha)}</code>`)) : '',
 					message ? p(esc(message)) : '',
 					links.length > 0 ? p(links.join(' · ')) : '',
 				].join(''),
 				noteHtml: p(
-					`Деплой упал: ${link(inspector, deploymentId) ?? `<code>${esc(deploymentId)}</code>`}${sha7 ? ` · <code>${esc(sha7)}</code>` : ''}`,
+					`${m.deployFailed}: ${link(inspector, deploymentId) ?? `<code>${esc(deploymentId)}</code>`}${sha7 ? ` · <code>${esc(sha7)}</code>` : ''}`,
 				),
 				priority: target === 'production' ? 'high' : 'medium',
 				label: 'deploy-failed',
 			},
-			summary: { title: `✗ ${name} → ${target} упал · ${label}`, env: target, sha },
+			summary: { title: m.vercelFailedSummary(name, target, label), env: target, sha },
 		};
 	}
 
@@ -134,7 +133,7 @@ export function parseVercelEvent(body: unknown): VercelHookEvent {
 		source: 'vercel',
 		key,
 		at,
-		noteHtml: p(`Деплой снова проходит: <code>${esc(sha7 ?? deploymentId)}</code>`),
+		noteHtml: p(m.deployPassesAgainHtml(sha7 ?? deploymentId)),
 	};
 	if (target !== 'preview')
 		return {

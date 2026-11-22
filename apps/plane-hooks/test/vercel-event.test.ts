@@ -1,6 +1,9 @@
-import { describe, expect, test } from 'bun:test';
 import { createHash, createHmac } from 'node:crypto';
 
+import { LOCALES } from '@alxwlw/plane-kit/locale';
+import { describe, expect, test } from 'bun:test';
+
+import { messages } from '../src/i18n.ts';
 import type { IncidentSignal } from '../src/incident.ts';
 import { BadPayload } from '../src/payload.ts';
 import { parseVercelEvent, type VercelHookEvent, verifyVercelSignature } from '../src/vercel.ts';
@@ -16,7 +19,7 @@ async function event(
 ): Promise<VercelHookEvent> {
 	const body = await fixture(name);
 	mutate(body);
-	return parseVercelEvent(body);
+	return parseVercelEvent(body, messages('ru'));
 }
 
 // по документации Vercel: Webhooks API, `deployment.promoted` (https://vercel.com/docs/webhooks/webhooks-api)
@@ -44,7 +47,7 @@ const promoted = (mutate: (body: any) => void = () => undefined) => {
 		},
 	};
 	mutate(body);
-	return parseVercelEvent(body);
+	return parseVercelEvent(body, messages('ru'));
 };
 
 // по документации Vercel: Webhooks API, `deployment.rollback` — payload.fromDeploymentId / toDeploymentId,
@@ -63,7 +66,7 @@ const rollback = (mutate: (body: any) => void = () => undefined) => {
 		},
 	};
 	mutate(body);
-	return parseVercelEvent(body);
+	return parseVercelEvent(body, messages('ru'));
 };
 
 describe('parseVercelEvent: деплой', () => {
@@ -230,11 +233,11 @@ describe('parseVercelEvent: promote и rollback', () => {
 
 describe('parseVercelEvent: прочее', () => {
 	test('другие события — ignored', () => {
-		expect(parseVercelEvent({ type: 'deployment.created', payload: {} })).toEqual({
+		expect(parseVercelEvent({ type: 'deployment.created', payload: {} }, messages('ru'))).toEqual({
 			kind: 'ignored',
 			type: 'deployment.created',
 		});
-		expect(parseVercelEvent({ type: 'project.created' })).toEqual({
+		expect(parseVercelEvent({ type: 'project.created' }, messages('ru'))).toEqual({
 			kind: 'ignored',
 			type: 'project.created',
 		});
@@ -250,8 +253,8 @@ describe('parseVercelEvent: прочее', () => {
 	});
 
 	test('не объект и без типа — BadPayload', () => {
-		expect(() => parseVercelEvent('x')).toThrow(BadPayload);
-		expect(() => parseVercelEvent({})).toThrow(BadPayload);
+		expect(() => parseVercelEvent('x', messages('ru'))).toThrow(BadPayload);
+		expect(() => parseVercelEvent({}, messages('ru'))).toThrow(BadPayload);
 	});
 
 	const bad: unknown[] = [
@@ -278,7 +281,7 @@ describe('parseVercelEvent: прочее', () => {
 	test.each(bad.map((body, index) => [index, body] as const))(
 		'чужая форма %d → BadPayload',
 		(_index, body) => {
-			expect(() => parseVercelEvent(body)).toThrow(BadPayload);
+			expect(() => parseVercelEvent(body, messages('ru'))).toThrow(BadPayload);
 		},
 	);
 });
@@ -539,5 +542,58 @@ describe('deployment.succeeded: Погас и сводка', () => {
 		expect(await urlOf('http://x.vercel.app')).toBe('http://x.vercel.app');
 		expect(await urlOf('HTTPS://X.VERCEL.APP')).toBe('HTTPS://X.VERCEL.APP');
 		expect(await urlOf('x.vercel.app')).toBe('https://x.vercel.app');
+	});
+});
+
+describe('parseVercelEvent: incidents by locale', () => {
+	const CYRILLIC = /[Ѐ-ӿ]/;
+	const parse = async (name: string, locale: 'en' | 'ru') =>
+		parseVercelEvent(await fixture(name), messages(locale));
+
+	test('Vercel failure in English', async () => {
+		const ev = await parse('vercel-deployment-error.json', 'en');
+		if (ev.kind !== 'failed' || ev.signal.status !== 'firing')
+			throw new Error(`expected failed, got ${ev.kind}`);
+		expect(ev.signal.title).toBe(`Deploy failed: terminal (production) · ${BRANCH}`);
+		expect(ev.signal.bodyHtml).toContain(
+			`<p>Project: <code>terminal</code>, environment: <code>production</code>, branch: <code>${BRANCH}</code></p>`,
+		);
+		expect(ev.signal.bodyHtml).toContain(`<p>Commit: <code>${SHA}</code></p>`);
+		expect(ev.signal.bodyHtml).toContain('>Vercel inspector</a>');
+		expect(ev.signal.noteHtml).toStartWith('<p>Deploy failed: ');
+		expect(ev.summary.title).toBe('✗ terminal → production failed · 0123456');
+		expect(JSON.stringify(ev)).not.toMatch(CYRILLIC);
+	});
+
+	test('Vercel success note in English', async () => {
+		const ev = await parse('vercel-deployment-succeeded.json', 'en');
+		if (ev.kind !== 'succeeded') throw new Error(`expected succeeded, got ${ev.kind}`);
+		expect(ev.resolve.noteHtml).toBe('<p>Deploy passes again: <code>0123456</code></p>');
+		expect(JSON.stringify(ev)).not.toMatch(CYRILLIC);
+	});
+
+	test('Vercel signal identity does not depend on the locale', async () => {
+		for (const name of ['vercel-deployment-error.json', 'vercel-deployment-succeeded.json']) {
+			const [en, ru] = await Promise.all(LOCALES.map((l) => parse(name, l)));
+			const pick = (ev: VercelHookEvent) => {
+				const s = ev.kind === 'failed' ? ev.signal : ev.kind === 'succeeded' ? ev.resolve : null;
+				return (
+					s && {
+						status: s.status,
+						source: s.source,
+						key: s.key,
+						at: s.at,
+						env:
+							ev.kind === 'failed'
+								? ev.summary.env
+								: ev.kind === 'succeeded'
+									? ev.summary.env
+									: null,
+					}
+				);
+			};
+			expect(pick(en as VercelHookEvent)).toEqual(pick(ru as VercelHookEvent));
+			expect(pick(en as VercelHookEvent)).not.toBeNull();
+		}
 	});
 });

@@ -1,6 +1,7 @@
 import { esc, link, p, truncate } from '@alxwlw/plane-kit/html';
 
 import { matchRepo, type Tenant } from '../config.ts';
+import { messages } from '../i18n.ts';
 import type { IncidentSignal } from '../incident.ts';
 import type { GitHubEvent } from './webhook.ts';
 
@@ -17,6 +18,7 @@ export function deploymentSignal(
 	now: () => Date = () => new Date(),
 ): IncidentSignal | null {
 	const { deployment, state } = event;
+	const m = messages(tenant.locale);
 	if (state !== 'failure' && state !== 'error' && state !== 'success') return null;
 	if (deployment.creator === 'vercel[bot]' && tenant.inputs.vercel !== null) return null;
 	const rule = matchRepo(tenant.delivery?.repos ?? [], deployment.repo);
@@ -32,26 +34,27 @@ export function deploymentSignal(
 			source: 'github',
 			key,
 			at,
-			noteHtml: p(`Деплой снова проходит: <code>${esc(sha7)}</code>`),
+			noteHtml: p(m.deployPassesAgainHtml(sha7)),
 		};
 	}
 	const commitUrl = `https://github.com/${deployment.repo}/commit/${deployment.sha}`;
-	const logLink = link(event.logUrl, 'Лог деплоя');
+	const logLink = link(event.logUrl, m.deployLog);
 	return {
 		status: 'firing',
 		source: 'github',
 		key,
 		occurrence: String(deployment.id),
 		at,
-		title: truncate(`Деплой упал: ${deployment.repo} → ${environment.name} · ${sha7}`, TITLE_MAX),
+		title: truncate(
+			`${m.deployFailed}: ${deployment.repo} → ${environment.name} · ${sha7}`,
+			TITLE_MAX,
+		),
 		bodyHtml: [
-			p(
-				`Репозиторий: <code>${esc(deployment.repo)}</code>, окружение: <code>${esc(environment.name)}</code>`,
-			),
-			p(`Коммит: ${link(commitUrl, sha7) ?? `<code>${esc(sha7)}</code>`}`),
+			p(m.deployRepoHtml(deployment.repo, environment.name)),
+			p(m.commitHtml(link(commitUrl, sha7) ?? `<code>${esc(sha7)}</code>`)),
 			...(logLink ? [p(logLink)] : []),
 		].join(''),
-		noteHtml: p(`Деплой упал: <code>${esc(sha7)}</code>${logLink ? `, ${logLink}` : ''}`),
+		noteHtml: p(`${m.deployFailed}: <code>${esc(sha7)}</code>${logLink ? `, ${logLink}` : ''}`),
 		priority: environment.release ? 'urgent' : 'high',
 		label: 'deploy-failed',
 		env: environment.name,

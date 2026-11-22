@@ -4,6 +4,7 @@ import { esc, link, p, truncate } from '@alxwlw/plane-kit/html';
 
 import type { Tenant } from './config.ts';
 import type { GitHubApi } from './github/client.ts';
+import { type Messages, messages } from './i18n.ts';
 import type { IncidentSignal } from './incident.ts';
 import { BadPayload, isRecord, optString } from './payload.ts';
 
@@ -37,14 +38,15 @@ export function verifyDokploy(headers: Headers, secret: string): boolean {
  * `type: "build"` with `status`, a backup is told by its `title` and succeeds or fails by `status`.
  * Throws BadPayload on a body Dokploy would not send.
  */
-export function parseDokployWebhook(body: unknown): DokployEvent {
+export function parseDokployWebhook(body: unknown, m: Messages): DokployEvent {
 	if (!isRecord(body)) throw new BadPayload('dokploy: body is not an object');
 	const title = optString(body.title) ?? '';
 	const status = optString(body.status);
 	const type = optString(body.type);
 
-	if (BACKUP_TITLE.test(title)) return backup(body, title, status);
-	if (type === 'build' && (status === 'success' || status === 'error')) return build(body, status);
+	if (BACKUP_TITLE.test(title)) return backup(body, title, status, m);
+	if (type === 'build' && (status === 'success' || status === 'error'))
+		return build(body, status, m);
 	// The Test button of the Custom notification sends only {title, message, timestamp}: no type, no status.
 	if (title === TEST_TITLE) return { kind: 'ignored', type: 'test' };
 	const kind = optString(body.alertType) ?? type;
@@ -52,7 +54,11 @@ export function parseDokployWebhook(body: unknown): DokployEvent {
 	return { kind: 'ignored', type: kind };
 }
 
-function build(body: Record<string, unknown>, status: 'success' | 'error'): DokployEvent {
+function build(
+	body: Record<string, unknown>,
+	status: 'success' | 'error',
+	m: Messages,
+): DokployEvent {
 	const app = optString(body.applicationName);
 	if (app === null) throw new BadPayload(`dokploy: build ${status} without applicationName`);
 	const at = timestampOf(body);
@@ -70,12 +76,12 @@ function build(body: Record<string, unknown>, status: 'success' | 'error'): Dokp
 				source: 'dokploy',
 				key,
 				at,
-				noteHtml: p(`Сборка снова проходит: <code>${esc(app)}</code>`),
+				noteHtml: p(m.buildPassesAgainHtml(app)),
 			},
 		};
 	}
 	const project = optString(body.projectName);
-	const detail = link(url, 'Деплои в Dokploy');
+	const detail = link(url, m.dokployDeploys);
 	return {
 		kind: 'failed',
 		signal: {
@@ -84,22 +90,25 @@ function build(body: Record<string, unknown>, status: 'success' | 'error'): Dokp
 			key,
 			occurrence: at,
 			at,
-			title: truncate(`Сборка упала: ${app}`, 200),
+			title: truncate(`${m.buildFailed}: ${app}`, 200),
 			bodyHtml: [
-				p(
-					`Приложение: <code>${esc(app)}</code>${project ? `, проект: <code>${esc(project)}</code>` : ''}`,
-				),
+				p(m.buildAppHtml(app, project)),
 				errorBlock(body.errorMessage),
 				detail ? p(detail) : '',
 			].join(''),
-			noteHtml: p(`Сборка упала: <code>${esc(app)}</code>`),
+			noteHtml: p(`${m.buildFailed}: <code>${esc(app)}</code>`),
 			priority: 'high',
 			label: 'deploy-failed',
 		},
 	};
 }
 
-function backup(body: Record<string, unknown>, title: string, status: string | null): DokployEvent {
+function backup(
+	body: Record<string, unknown>,
+	title: string,
+	status: string | null,
+	m: Messages,
+): DokployEvent {
 	const app = optString(body.applicationName);
 	if (app === null) throw new BadPayload(`dokploy: ${title} without applicationName`);
 	if (status !== 'success' && status !== 'error')
@@ -117,7 +126,7 @@ function backup(body: Record<string, unknown>, title: string, status: string | n
 				source: 'dokploy',
 				key,
 				at,
-				noteHtml: p(`Бэкап снова проходит: <code>${esc(name)}</code>`),
+				noteHtml: p(m.backupPassesAgainHtml(name)),
 			},
 		};
 	}
@@ -129,12 +138,9 @@ function backup(body: Record<string, unknown>, title: string, status: string | n
 			key,
 			occurrence: at,
 			at,
-			title: truncate(`Бэкап упал: ${name}`, 200),
-			bodyHtml: [
-				p(`${volume ? 'Том' : 'База'}: <code>${esc(name)}</code>`),
-				errorBlock(body.errorMessage),
-			].join(''),
-			noteHtml: p(`Бэкап упал: <code>${esc(name)}</code>`),
+			title: truncate(`${m.backupFailed}: ${name}`, 200),
+			bodyHtml: [p(m.backupTargetHtml(volume, name)), errorBlock(body.errorMessage)].join(''),
+			noteHtml: p(`${m.backupFailed}: <code>${esc(name)}</code>`),
 			priority: 'high',
 			label: 'alert',
 		},
@@ -181,7 +187,10 @@ export async function recordDokployDeploy(
 	const deploymentId = await github.createDeployment(rule.repo, {
 		sha,
 		environment: rule.environment,
-		description: truncate(`голова ${rule.branch} в момент уведомления Dokploy`, DESCRIPTION_MAX),
+		description: truncate(
+			messages(deps.tenant.locale).dokployDeployDescription(rule.branch),
+			DESCRIPTION_MAX,
+		),
 	});
 	await github.createDeploymentStatus(rule.repo, deploymentId, 'success', event.url);
 	return { action: 'recorded', deploymentId };
