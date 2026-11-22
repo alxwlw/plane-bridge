@@ -275,3 +275,35 @@ describe('createInteractionHandler: модалка «создать задачу
 		}
 	});
 });
+
+describe('createInteractionHandler: modals in English', () => {
+	test('modals in English', async () => {
+		const labels = (body: any) => body.data.components.map((c: any) => c.label);
+		const ru = await setup();
+		const en = await setup({ locale: 'en' });
+		const create = await open(en);
+		expect(create.body.data.title).toBe('Plane work item');
+		expect(labels(create.body)).toEqual(['Title', 'Description']);
+		const unmapped = await open(en, {
+			channel: { id: UNMAPPED, type: 0 },
+			message: msg({ id: '444444444444444442' }),
+		});
+		expect(labels(unmapped.body)).toEqual(['Title', 'Description', 'Project']);
+		const append = await open(en, {
+			name: APPEND_COMMAND,
+			message: msg({ id: '444444444444444443' }),
+		});
+		expect(append.body.data.title).toBe('Comment on a work item');
+		expect(labels(append.body)).toEqual(['Work item key', 'Text']);
+
+		const ruCreate = await open(ru);
+		const ruAppend = await open(ru, {
+			name: APPEND_COMMAND,
+			message: msg({ id: '444444444444444443' }),
+		});
+		const ids = (body: any) => body.data.components.map((c: any) => c.component.custom_id);
+		expect(ids(create.body)).toEqual(ids(ruCreate.body));
+		expect(ids(append.body)).toEqual(ids(ruAppend.body));
+		expect(append.body.data.components[0].component.placeholder).toBe('LAB-40');
+	});
+});

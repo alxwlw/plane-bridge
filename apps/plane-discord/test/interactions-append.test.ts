@@ -4,6 +4,7 @@ import { describe, expect, test } from 'bun:test';
 import { APPEND_COMMAND } from '../src/discord/commands.ts';
 import { createInteractionHandler } from '../src/discord/interactions.ts';
 import { CYRILLIC } from '@alxwlw/plane-kit/testing';
+import { DiscordApiError } from '../src/discord/rest.ts';
 import { PlaneApiError } from '../src/plane/client.ts';
 import { createHandler } from '../src/server.ts';
 import { Store } from '../src/store.ts';
@@ -162,7 +163,9 @@ describe('createInteractionHandler: «добавить в задачу»', () =>
 		await w.settle();
 		expect(w.plane.createdComments).toHaveLength(1);
 		expect(w.plane.createdComments[0]!.comment.external_id).toBe(MSG);
-		expect(edits(w).at(-1)).toContain('LAB-40');
+		expect(edits(w).at(-1)).toBe(
+			'Already added: [`LAB-40`](<https://plane.example.com/example-ws/browse/LAB-40/>)',
+		);
 	});
 
 	test('сообщение только с вложением: комментарий без цитаты', async () => {
@@ -231,6 +234,50 @@ describe('createInteractionHandler: «добавить в задачу»', () =>
 			status: 500,
 		});
 		expect(JSON.stringify(w.logs)).not.toContain(SECRET_TEXT);
+	});
+});
+
+describe('createInteractionHandler: append replies in English', () => {
+	const seedItem = (w: World) =>
+		w.plane.items.set('w40', {
+			id: 'w40',
+			projectId: P_LAB,
+			sequenceId: 40,
+			name: 'Old',
+			stateId: '',
+			assignees: [],
+			priority: 'none',
+			descriptionHtml: null,
+		});
+	const url = '[`LAB-40`](<https://plane.example.com/example-ws/browse/LAB-40/>)';
+
+	test('append replies in English', async () => {
+		const w = await setup({ locale: 'en' });
+		seedItem(w);
+		const run = async (key: string, id = MSG) => {
+			const form = await open(w, { name: APPEND_COMMAND, message: msg({ id }) });
+			await submitCreate(w, form.customId, { key, text: 'hi' });
+			await w.settle();
+			return (w.discord.callsOf('editOriginal').at(-1)?.[1] as { content: string }).content;
+		};
+		expect(await run('nope')).toBe('Use a key like LAB-40.');
+		expect(await run('ZZZ-9')).toBe('Work item ZZZ-9 not found.');
+		expect(await run('LAB-40')).toBe(`→ comment in ${url}`);
+		expect(await run('LAB-40')).toBe(`Already added: ${url}`);
+	});
+
+	test('a Discord failure while appending is reported in English', async () => {
+		const w = await setup({ locale: 'en' });
+		seedItem(w);
+		w.discord.failOnce.set('editOriginal', new DiscordApiError(500, 'PATCH', '/x'));
+		const form = await open(w, { name: APPEND_COMMAND });
+		await submitCreate(w, form.customId, { key: 'LAB-40', text: 'hi' });
+		await w.settle();
+		expect(w.logs.find((l) => l.event === 'ix.failed')).toMatchObject({ status: 500 });
+		const edits = w.discord
+			.callsOf('editOriginal')
+			.map((c) => (c[1] as { content: string }).content);
+		expect(edits).toEqual([`→ comment in ${url}`, 'Failed: Discord answered 500.']);
 	});
 });
 

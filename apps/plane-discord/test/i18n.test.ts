@@ -34,6 +34,32 @@ test('the English plain strings, pinned literally', () => {
 		unknownAuthor: 'unknown',
 		role: '@role',
 		channel: '#channel',
+		notConfigured: 'This server is not set up.',
+		alreadyHandled: 'Already handled.',
+		brokenRequest: 'Could not read the Discord request.',
+		unknownCommand: 'Unknown command.',
+		noMessage: 'Could not read the message.',
+		noChannel: 'Could not determine the channel.',
+		coldCache: 'Plane is unavailable, try again in a minute.',
+		noProjects: 'There is no project to create a work item in.',
+		creationHidden: 'Creating work items from Discord is turned off for this project.',
+		formExpired: 'The form has expired, run the command again.',
+		itemMissing: 'Work item not found.',
+		internal: 'Internal error, try again in a minute.',
+		titleRequired: 'A title is required.',
+		noProjectChosen: 'No project selected.',
+		projectNotOffered: 'This project is not in the list, run the command again.',
+		noPostPermission: 'no permission to post in the channel',
+		keyFormat: 'Use a key like LAB-40.',
+		internalError: 'internal error',
+		projectNotInPlane: 'project not found in Plane',
+		appendModalTitle: 'Comment on a work item',
+		keyLabel: 'Work item key',
+		textLabel: 'Text',
+		createModalTitle: 'Plane work item',
+		titleLabel: 'Title',
+		descriptionLabel: 'Description',
+		projectLabel: 'Project',
 	});
 });
 
@@ -61,5 +87,54 @@ test('every Html entry escapes its text parameters', () => {
 			expect(out, `${locale}.${key}`).toContain('<a href="u">LINK</a>');
 			expect(out, `${locale}.${key}`).toContain('<b>AUTHOR</b>');
 		}
+	}
+});
+
+test('the message-command sentences carry their values, in both locales', () => {
+	expect([en.quoted('x'), ru.quoted('x')]).toEqual(['“x”', '«x»']);
+	expect([en.alreadyExists('T'), ru.alreadyExists('T')]).toEqual([
+		'Already exists: T',
+		'Уже есть: T',
+	]);
+	expect([en.createdWithProblem('T', 'why'), ru.createdWithProblem('T', 'why')]).toEqual([
+		'Work item created: T — why.',
+		'Задача создана: T — why.',
+	]);
+	expect([en.keyNotFound('LAB-1'), ru.keyNotFound('LAB-1')]).toEqual([
+		'Work item LAB-1 not found',
+		'Задача LAB-1 не найдена',
+	]);
+	expect([en.alreadyAdded('W'), ru.alreadyAdded('W')]).toEqual([
+		'Already added: W',
+		'Уже добавлено: W',
+	]);
+	expect([en.commentAdded('W'), ru.commentAdded('W')]).toEqual([
+		'→ comment in W',
+		'→ комментарий в W',
+	]);
+	expect([en.failed('r'), ru.failed('r')]).toEqual(['Failed: r.', 'Не получилось: r.']);
+	expect([en.planeAnswered(500), ru.planeAnswered(500)]).toEqual([
+		'Plane answered 500',
+		'Plane ответил 500',
+	]);
+	expect([en.discordAnswered(500), ru.discordAnswered(500)]).toEqual([
+		'Discord answered 500',
+		'Discord ответил 500',
+	]);
+});
+
+test("modal titles and labels fit Discord's limit", () => {
+	for (const locale of LOCALES) {
+		const m = messages(locale);
+		for (const text of [
+			m.appendModalTitle,
+			m.createModalTitle,
+			m.keyLabel,
+			m.textLabel,
+			m.titleLabel,
+			m.descriptionLabel,
+			m.projectLabel,
+		])
+			expect(Array.from(text).length, `${locale}: ${text}`).toBeLessThanOrEqual(45);
 	}
 });

@@ -2,7 +2,7 @@
 import { esc, link, truncate } from '@alxwlw/plane-kit/html';
 import type { Log } from '@alxwlw/plane-kit/log';
 
-import type { Messages } from '../i18n.ts';
+import { type Messages, messages } from '../i18n.ts';
 import type { TenantRuntime } from '../notify.ts';
 import { PlaneApiError } from '../plane/client.ts';
 import { workItemKey, workItemUrl } from '../text.ts';
@@ -48,11 +48,11 @@ export const ephemeral = (content: string): Response =>
 export class Failure extends Error {}
 
 /** What the user is told; never the response body, never a path. */
-export function describe(error: unknown): string {
-	if (error instanceof PlaneApiError) return `Plane ответил ${error.status}`;
-	if (error instanceof DiscordApiError) return `Discord ответил ${error.status}`;
+export function describe(m: Messages, error: unknown): string {
+	if (error instanceof PlaneApiError) return m.planeAnswered(error.status);
+	if (error instanceof DiscordApiError) return m.discordAnswered(error.status);
 	if (error instanceof Failure) return error.message;
-	return 'внутренняя ошибка';
+	return m.internalError;
 }
 
 /** The `ix.failed` log entry of a deferred job: ids, the error class and an upstream status, never a text. */
@@ -81,7 +81,7 @@ export async function keyOf(
 	sequenceId: number,
 ): Promise<string> {
 	const project = (await rt.projects()).find((p) => p.id === projectId);
-	if (!project) throw new Failure('проект не найден в Plane');
+	if (!project) throw new Failure(messages(rt.tenant.locale).projectNotInPlane);
 	return workItemKey(project.identifier, sequenceId);
 }
 

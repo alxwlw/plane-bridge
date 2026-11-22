@@ -2,6 +2,7 @@
 import type { Log } from '@alxwlw/plane-kit/log';
 
 import { workItemCard } from '../card.ts';
+import { messages } from '../i18n.ts';
 import type { TenantRuntime } from '../notify.ts';
 import { workItemUrl } from '../text.ts';
 import { PLANE_KEY_OPTION } from './commands.ts';
@@ -132,7 +133,9 @@ export function createSlashCommands(env: SlashEnv): {
 				await withdraw(
 					token,
 					base,
-					missing ? `${error.message}.` : `Не получилось: ${describe(error)}.`,
+					missing
+						? `${error.message}.`
+						: `Не получилось: ${describe(messages(rt.tenant.locale), error)}.`,
 				);
 			}
 		});
@@ -191,7 +194,7 @@ export function createSlashCommands(env: SlashEnv): {
 				base,
 				noAccess
 					? 'Не могу войти в тред: добавь @Plane в тред и повтори.'
-					: `Не получилось: ${describe(error)}.`,
+					: `Не получилось: ${describe(messages(rt.tenant.locale), error)}.`,
 			);
 			return 'join_failed';
 		}
@@ -250,7 +253,11 @@ export function createSlashCommands(env: SlashEnv): {
 				log({ event: 'ix.done', ...base, result, ms: now() - started });
 			} catch (error) {
 				log(failedEntry(base, error, now() - started));
-				await withdraw(token, base, `Не получилось: ${describe(error)}.`);
+				await withdraw(
+					token,
+					base,
+					`Не получилось: ${describe(messages(rt.tenant.locale), error)}.`,
+				);
 			}
 		});
 		// No ephemeral flag: the confirmation is for the whole thread.

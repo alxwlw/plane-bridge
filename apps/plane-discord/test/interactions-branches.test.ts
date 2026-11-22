@@ -1,8 +1,10 @@
+import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
 import { describe, expect, test } from 'bun:test';
 
 import { APPEND_COMMAND, CREATE_COMMAND } from '../src/discord/commands.ts';
 import { createInteractionHandler } from '../src/discord/interactions.ts';
 import { DiscordApiError } from '../src/discord/rest.ts';
+import { messages } from '../src/i18n.ts';
 import { PlaneApiError } from '../src/plane/client.ts';
 import { commandPayload, makeSigner, submitPayload } from './discord-harness.ts';
 import {
@@ -365,5 +367,38 @@ describe('createInteractionHandler: границы', () => {
 		expect(html).toContain('<p>user49 пользователь</p>');
 		expect(html).toContain(`автор: ${'я'.repeat(79)}…</p>`);
 		expect(html).toContain(`>${'ф'.repeat(199)}…</a>`);
+	});
+});
+
+describe('createInteractionHandler: replies before the tenant is known', () => {
+	test('replies before the tenant is known', async () => {
+		const w = await setup({ locale: 'en' });
+		const content = async (payload: Record<string, unknown>) =>
+			(await w.ask(payload)).body.data.content;
+		const base = (guildId: string) =>
+			commandPayload({
+				id: w.ids.next(),
+				guildId,
+				channel: { id: MAPPED, type: 0 },
+				name: CREATE_COMMAND,
+				message: msg(),
+			});
+		// A guild no tenant owns: the default language, whatever the tenants speak.
+		expect(await content(base(NOCONF_GUILD))).toBe(messages(DEFAULT_LOCALE).notConfigured);
+		// The guild of the English tenant.
+		const first = base(GUILD);
+		expect((await w.ask(first)).body.type).toBe(9);
+		expect(await content(first)).toBe('Already handled.');
+		expect(await content({ type: 2, guild_id: GUILD, data: { type: 3 } })).toBe(
+			'Could not read the Discord request.',
+		);
+		// A payload without an id from an unknown guild: the default language.
+		expect(await content({ type: 2, guild_id: NOCONF_GUILD })).toBe(
+			messages(DEFAULT_LOCALE).brokenRequest,
+		);
+		w.store.claim = () => {
+			throw new Error('disk full');
+		};
+		expect(await content(base(GUILD))).toBe('Internal error, try again in a minute.');
 	});
 });
