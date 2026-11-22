@@ -24,12 +24,11 @@ describe('incident entries escape every interpolated value the same way in both 
 		});
 
 		test(`${locale}: Vercel project, environment and branch`, () => {
-			for (const args of [
-				[HOSTILE, clean, clean],
-				[clean, HOSTILE, clean],
-				[clean, clean, HOSTILE],
-			] as const) {
-				const html = m.vercelProjectHtml(...args);
+			for (const html of [
+				m.vercelProjectHtml(HOSTILE, clean, clean),
+				m.vercelProjectHtml(clean, HOSTILE, clean),
+				m.vercelProjectHtml(clean, clean, HOSTILE),
+			]) {
 				expect(html).toContain(`<code>${ESCAPED}</code>`);
 				expect(html).not.toContain(HOSTILE);
 			}
