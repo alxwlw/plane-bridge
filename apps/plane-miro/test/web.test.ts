@@ -64,6 +64,13 @@ describe('бандлы', () => {
 		expect(assets.get('app')).toContain('/miro/panel');
 	});
 
+	test('the client bundles carry the catalog', () => {
+		expect(assets.get('panel')).toContain('Selected for Plane');
+		expect(assets.get('panel')).toContain('Выделено для Plane');
+		expect(assets.get('card')).toContain('Open in Plane');
+		expect(assets.get('card')).toContain('Открыть в Plane');
+	});
+
 	test('ошибка сборки — исключение, а не пустой бандл', async () => {
 		const dir = mkdtempSync(join(tmpdir(), 'plane-miro-web-'));
 		try {

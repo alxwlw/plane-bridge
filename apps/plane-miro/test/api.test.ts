@@ -321,6 +321,49 @@ describe('POST /miro/api/convert', () => {
 		);
 	});
 
+	test('the locale route answers the tenant locale', async () => {
+		const en = world({ id: 'enteam', locale: 'en', miroTeamId: '3458764500000000002' });
+		const ru = world({ id: 'ruteam', locale: 'ru', miroTeamId: '3458764500000000003' });
+		const api = createApi({
+			config: { ...en.config, tenants: [en.tenant, ru.tenant] },
+			runtimes: new Map([
+				[en.tenant.id, en.rt],
+				[ru.tenant.id, ru.rt],
+			]),
+			store: en.store,
+			log: en.log,
+			nowSec: () => NOW_SEC,
+		});
+		const call = async (method: string, token: string | null) => {
+			const url = new URL('http://x/miro/api/locale');
+			const res = await api(
+				new Request(url.href, {
+					method,
+					...(token === null ? {} : { headers: { authorization: `Bearer ${token}` } }),
+				}),
+				url,
+			);
+			return { status: res.status, body: await res.json() };
+		};
+		expect(await call('GET', jwt({ team: '3458764500000000002' }))).toEqual({
+			status: 200,
+			body: { locale: 'en' },
+		});
+		expect(await call('GET', jwt({ team: '3458764500000000003' }))).toEqual({
+			status: 200,
+			body: { locale: 'ru' },
+		});
+		expect(await call('GET', null)).toEqual({ status: 401, body: { error: 'unauthorized' } });
+		expect(await call('GET', jwt({ team: '999' }))).toEqual({
+			status: 403,
+			body: { error: 'unknown_team' },
+		});
+		expect(await call('POST', jwt({ team: '3458764500000000002' }))).toEqual({
+			status: 405,
+			body: { error: 'method_not_allowed' },
+		});
+	});
+
 	test('two teams, two languages', async () => {
 		const en = world({ id: 'enteam', locale: 'en', miroTeamId: '3458764500000000002' });
 		const ru = world({ id: 'ruteam', locale: 'ru', miroTeamId: '3458764500000000003' });

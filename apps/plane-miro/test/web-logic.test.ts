@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'bun:test';
+import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
+
 import { CONVERTIBLE as serverConvertible, MAX_ITEMS } from '../src/convert.ts';
+import { messages } from '../src/i18n.ts';
 import {
 	apiResult,
 	BATCH_SIZE,
@@ -10,9 +13,13 @@ import {
 	currentSelection,
 	convertibleIds,
 	errorText,
+	localeFrom,
 	mergeBatch,
 	summary,
 } from '../web/logic.ts';
+
+const RU = messages('ru');
+const EN = messages('en');
 
 describe('convertibleIds', () => {
 	test('стикер, карточка, фигура, текст — да; фрейм, коннектор, app_card — нет', () => {
@@ -48,7 +55,7 @@ describe('bindableId', () => {
 describe('summary', () => {
 	test('ключи и ошибки', () => {
 		expect(
-			summary([
+			summary(RU, [
 				{ ok: true, key: 'LAB-1' },
 				{ ok: true, key: 'LAB-2' },
 				{ ok: false, error: 'empty_text' },
@@ -57,13 +64,15 @@ describe('summary', () => {
 	});
 
 	test('только успех и только неудача', () => {
-		expect(summary([{ ok: true, key: 'LAB-7' }])).toBe('Готово: LAB-7.');
-		expect(summary([{ ok: false, error: 'not_found' }])).toBe('Не вышло: 1 — элемент не найден.');
+		expect(summary(RU, [{ ok: true, key: 'LAB-7' }])).toBe('Готово: LAB-7.');
+		expect(summary(RU, [{ ok: false, error: 'not_found' }])).toBe(
+			'Не вышло: 1 — элемент не найден.',
+		);
 	});
 
 	test('разные причины перечисляются один раз, точка в конце причины не двоится', () => {
 		expect(
-			summary([
+			summary(RU, [
 				{ ok: false, error: 'plane_failed' },
 				{ ok: false, error: 'empty_text' },
 				{ ok: false, error: 'plane_failed' },
@@ -76,14 +85,14 @@ describe('summary', () => {
 	});
 
 	test('пусто — пустая строка', () => {
-		expect(summary([])).toBe('');
+		expect(summary(RU, [])).toBe('');
 	});
 });
 
 describe('errorText', () => {
 	test('известный код и неизвестный', () => {
-		expect(errorText('board_no_access')).toContain('Служебный аккаунт');
-		expect(errorText('zzz')).toBe('Что-то пошло не так.');
+		expect(errorText(RU, 'board_no_access')).toContain('Служебный аккаунт');
+		expect(errorText(RU, 'zzz')).toBe('Что-то пошло не так.');
 	});
 
 	test('каждый код из таблицы', () => {
@@ -102,12 +111,12 @@ describe('errorText', () => {
 			empty_text: 'пустой стикер',
 			already_linked: 'стикер уже связан с другой задачей',
 		};
-		for (const [code, text] of Object.entries(table)) expect(errorText(code)).toBe(text);
+		for (const [code, text] of Object.entries(table)) expect(errorText(RU, code)).toBe(text);
 	});
 
 	test('ключи прототипа — не коды', () => {
-		expect(errorText('constructor')).toBe('Что-то пошло не так.');
-		expect(errorText('toString')).toBe('Что-то пошло не так.');
+		expect(errorText(RU, 'constructor')).toBe('Что-то пошло не так.');
+		expect(errorText(RU, 'toString')).toBe('Что-то пошло не так.');
 	});
 });
 
@@ -170,8 +179,8 @@ describe('convertInBatches', () => {
 			Array.from({ length: 10 }, () => ({ ok: false, error: 'network' })),
 		);
 		expect(out.slice(20).every((o) => o.ok)).toBe(true);
-		expect(summary(out)).toContain('Не вышло: 10 —');
-		expect(summary(out)).toStartWith('Готово: LAB-0, LAB-1');
+		expect(summary(RU, out)).toContain('Не вышло: 10 —');
+		expect(summary(RU, out)).toStartWith('Готово: LAB-0, LAB-1');
 	});
 
 	test('пакеты уходят по очереди, а не вместе', async () => {
@@ -260,5 +269,64 @@ describe('apiResult', () => {
 			ok: true,
 			data: { projects: [] },
 		});
+	});
+});
+
+describe('English texts', () => {
+	test('error texts in English', () => {
+		const table: Record<string, string> = {
+			unauthorized: 'The Miro session has expired — reload the board.',
+			unknown_team: 'This Miro team is not connected to Plane.',
+			board_no_access:
+				'The service account cannot write to this board. Share the board with the team and try again; on the Free plan only the team’s three most recent boards can be edited.',
+			miro_not_connected: 'The service is not connected to Miro yet. Contact your administrator.',
+			unknown_project: 'Project not found or hidden.',
+			unknown_card: 'This card is not linked to a work item.',
+			plane_failed: 'Plane did not answer — try again.',
+			miro_failed: 'Miro did not answer — try again.',
+			not_found: 'item not found',
+			unsupported_type: 'this item type cannot be converted',
+			empty_text: 'empty sticky note',
+			already_linked: 'the sticky note is already linked to another work item',
+		};
+		for (const [code, text] of Object.entries(table)) expect(errorText(EN, code)).toBe(text);
+	});
+
+	test('an unknown code, __proto__ and constructor are the fallback in English', () => {
+		for (const code of ['zzz', '__proto__', 'constructor', 'toString'])
+			expect(errorText(EN, code)).toBe('Something went wrong.');
+	});
+
+	test('summary in English', () => {
+		expect(
+			summary(EN, [
+				{ ok: true, key: 'LAB-1' },
+				{ ok: true, key: 'LAB-2' },
+				{ ok: false, error: 'empty_text' },
+			]),
+		).toBe('Done: LAB-1, LAB-2. Failed: 1 — empty sticky note.');
+		expect(summary(EN, [{ ok: true, key: 'LAB-7' }])).toBe('Done: LAB-7.');
+		expect(summary(EN, [{ ok: false, error: 'not_found' }])).toBe('Failed: 1 — item not found.');
+		expect(
+			summary(EN, [
+				{ ok: false, error: 'plane_failed' },
+				{ ok: false, error: 'empty_text' },
+				{ ok: false, error: 'plane_failed' },
+				{ ok: false, error: 'zzz' },
+				{ ok: false, error: 'yyy' },
+			]),
+		).toBe(
+			'Failed: 5 — Plane did not answer — try again, empty sticky note, Something went wrong.',
+		);
+	});
+});
+
+describe('localeFrom', () => {
+	test('a valid locale is taken, anything else is the default', () => {
+		expect(localeFrom({ ok: true, data: { locale: 'en' } })).toBe('en');
+		expect(localeFrom({ ok: true, data: { locale: 'ru' } })).toBe('ru');
+		for (const data of [{ locale: 'fr' }, {}, null, { locale: 1 }])
+			expect(localeFrom({ ok: true, data })).toBe(DEFAULT_LOCALE);
+		expect(localeFrom({ ok: false, error: 'unauthorized' })).toBe(DEFAULT_LOCALE);
 	});
 });

@@ -60,10 +60,39 @@ test('English copy', () => {
 		missingCode: 'Missing code parameter',
 		miroTokenFailed: 'Could not get a Miro token',
 		wrongMiroTeam: 'This is not the expected Miro team',
+		errorUnauthorized: 'The Miro session has expired — reload the board.',
+		errorUnknownTeam: 'This Miro team is not connected to Plane.',
+		errorBoardNoAccess:
+			'The service account cannot write to this board. Share the board with the team and try again; on the Free plan only the team’s three most recent boards can be edited.',
+		errorMiroNotConnected: 'The service is not connected to Miro yet. Contact your administrator.',
+		errorUnknownProject: 'Project not found or hidden.',
+		errorUnknownCard: 'This card is not linked to a work item.',
+		errorPlaneFailed: 'Plane did not answer — try again.',
+		errorMiroFailed: 'Miro did not answer — try again.',
+		errorNotFound: 'item not found',
+		errorUnsupportedType: 'this item type cannot be converted',
+		errorEmptyText: 'empty sticky note',
+		errorAlreadyLinked: 'the sticky note is already linked to another work item',
+		errorFallback: 'Something went wrong.',
+		nothingFound: 'Nothing found.',
+		projectLabel: 'Project',
+		toPlane: 'To Plane',
+		bindHeading: 'Link to a work item',
+		searchPlaceholder: 'Key or words from the title',
+		bind: 'Link',
+		cardTitle: 'Plane work item',
+		loading: 'Loading…',
+		openInPlane: 'Open in Plane',
+		stateField: 'State',
+		assigneesField: 'Assignees',
 	});
 	expect(en.fromBoardByHtml('Ann')).toBe('From the Miro board (Ann):');
 	expect(en.fromBoardHtml('Ann')).toBe('From the Miro board: Ann');
 	expect(en.miroTagsHtml('a, b')).toBe('Miro tags: a, b');
+	expect(en.done('LAB-1, LAB-2')).toBe('Done: LAB-1, LAB-2.');
+	expect(en.failed(2, 'empty sticky note')).toBe('Failed: 2 — empty sticky note.');
+	expect(en.selected(3)).toBe('Selected for Plane: 3');
+	expect(en.converting(4, 10)).toBe('Converting: 4 of 10…');
 });
 
 test("Russian copy is today's text", () => {

@@ -30,7 +30,7 @@ export type Config = {
 	tenants: readonly Tenant[];
 };
 
-/** Design §10 «Итоги пробы»: a Miro comment dies with its sticker, so the source item stays by default. */
+/** Design §10 "Probe results": a Miro comment dies with its sticker, so the source item stays by default. */
 export const KEEP_SOURCE_DEFAULT = true;
 
 // A Plane id: a UUID, any case.

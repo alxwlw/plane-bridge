@@ -1,4 +1,7 @@
-// Pure front-end logic: no DOM, no imports from src/ (the bundle must not pull server code).
+// Pure front-end logic: no DOM; the only import from src/ is the catalog (it holds no server code).
+import { DEFAULT_LOCALE, isLocale, type Locale } from '@alxwlw/plane-kit/locale';
+
+import { type Messages } from '../src/i18n.ts';
 
 /** Item types that carry text a work item can be made of; a test pins it to src/convert.ts. */
 export const CONVERTIBLE: readonly string[] = ['sticky_note', 'card', 'shape', 'text'];
@@ -12,22 +15,21 @@ export type Item = { id: string; type: string };
 export type Outcome = { ok: true; key: string } | { ok: false; error: string };
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
-const TEXTS: Readonly<Record<string, string>> = {
-	unauthorized: 'Сессия Miro устарела — перезагрузите доску.',
-	unknown_team: 'Эта команда Miro не подключена к Plane.',
-	board_no_access:
-		'Служебный аккаунт не может писать на эту доску. Откройте доступ к доске команде и повторите; на плане Free редактируются только три последние доски команды.',
-	miro_not_connected: 'Сервис ещё не подключён к Miro. Напишите администратору.',
-	unknown_project: 'Проект не найден или скрыт.',
-	unknown_card: 'Карточка не связана с задачей.',
-	plane_failed: 'Plane не ответил — попробуйте ещё раз.',
-	miro_failed: 'Miro не ответил — попробуйте ещё раз.',
-	not_found: 'элемент не найден',
-	unsupported_type: 'этот тип элемента не переносится',
-	empty_text: 'пустой стикер',
-	already_linked: 'стикер уже связан с другой задачей',
+/** An API error code → the catalog key of its text. */
+const ERROR_KEYS: Readonly<Record<string, keyof Messages>> = {
+	unauthorized: 'errorUnauthorized',
+	unknown_team: 'errorUnknownTeam',
+	board_no_access: 'errorBoardNoAccess',
+	miro_not_connected: 'errorMiroNotConnected',
+	unknown_project: 'errorUnknownProject',
+	unknown_card: 'errorUnknownCard',
+	plane_failed: 'errorPlaneFailed',
+	miro_failed: 'errorMiroFailed',
+	not_found: 'errorNotFound',
+	unsupported_type: 'errorUnsupportedType',
+	empty_text: 'errorEmptyText',
+	already_linked: 'errorAlreadyLinked',
 };
-const FALLBACK = 'Что-то пошло не так.';
 
 /**
  * One API call's outcome, never a throw: a rejected `send` is `network`; an error status carries the body's
@@ -63,12 +65,22 @@ export function bindableId(items: readonly Item[]): string | null {
 	return ids.length === 1 ? (ids[0] ?? null) : null;
 }
 
-export function errorText(code: string): string {
-	return Object.hasOwn(TEXTS, code) ? (TEXTS[code] ?? FALLBACK) : FALLBACK;
+export function errorText(m: Messages, code: string): string {
+	if (!Object.hasOwn(ERROR_KEYS, code)) return m.errorFallback;
+	const key = ERROR_KEYS[code];
+	const text = key === undefined ? undefined : m[key];
+	return typeof text === 'string' ? text : m.errorFallback;
 }
 
-/** `Готово: <keys>.` and/or `Не вышло: <n> — <distinct reasons>.`, joined by a space. */
-export function summary(results: readonly Outcome[]): string {
+/** The tenant's locale from a `/miro/api/locale` answer; anything else is the default. */
+export function localeFrom(result: ApiResult<unknown>): Locale {
+	if (!result.ok) return DEFAULT_LOCALE;
+	const locale = (result.data as { locale?: unknown } | null)?.locale;
+	return isLocale(locale) ? locale : DEFAULT_LOCALE;
+}
+
+/** `Done: <keys>.` and/or `Failed: <n> — <distinct reasons>.` (the tenant's language), joined by a space. */
+export function summary(m: Messages, results: readonly Outcome[]): string {
 	const keys: string[] = [];
 	const reasons = new Set<string>();
 	let failed = 0;
@@ -77,12 +89,12 @@ export function summary(results: readonly Outcome[]): string {
 			keys.push(result.key);
 		} else {
 			failed += 1;
-			reasons.add(errorText(result.error).replace(/\.$/, ''));
+			reasons.add(errorText(m, result.error).replace(/\.$/, ''));
 		}
 	}
 	const parts: string[] = [];
-	if (keys.length > 0) parts.push(`Готово: ${keys.join(', ')}.`);
-	if (failed > 0) parts.push(`Не вышло: ${failed} — ${[...reasons].join(', ')}.`);
+	if (keys.length > 0) parts.push(m.done(keys.join(', ')));
+	if (failed > 0) parts.push(m.failed(failed, [...reasons].join(', ')));
 	return parts.join(' ');
 }
 

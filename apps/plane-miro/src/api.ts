@@ -29,6 +29,7 @@ const ITEM_ID = /^\d{1,24}$/;
 const WORK_ITEM_ID = /^[A-Za-z0-9_-]{1,64}$/;
 const WORK_ITEM_KEY = /^[A-Za-z][A-Za-z0-9]{0,11}-\d{1,9}$/;
 const METHODS: Record<string, string> = {
+	locale: 'GET',
 	projects: 'GET',
 	search: 'GET',
 	card: 'GET',
@@ -210,6 +211,8 @@ export function createApi(deps: ApiDeps): (req: Request, url: URL) => Promise<Re
 		}
 		try {
 			switch (route) {
+				case 'locale':
+					return reply(200, { locale: rt.tenant.locale });
 				case 'projects':
 					return await projects(rt);
 				case 'search':
