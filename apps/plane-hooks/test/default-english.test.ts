@@ -1,5 +1,5 @@
 import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
-import { CYRILLIC } from '@alxwlw/plane-kit/testing';
+import { CYRILLIC, expectEnglishOnly } from '@alxwlw/plane-kit/testing';
 import { describe, expect, test } from 'bun:test';
 
 import { syncTask } from '../src/delivery/sync.ts';
@@ -31,12 +31,6 @@ const sentTo = (plane: FakePlane): string[] => [
 const loggedBy = (w: ReturnType<typeof world>): string[] => w.logs.map((l) => JSON.stringify(l));
 
 /** The three checks every scenario ends with. */
-function expectEnglishOnly(bodies: string[], english: string) {
-	expect(bodies.length).toBeGreaterThan(0);
-	expect(bodies.filter((b) => CYRILLIC.test(b))).toEqual([]);
-	expect(bodies.some((b) => b.includes(english))).toBe(true);
-}
-
 /** a0 ← a1 (ENG-1, PR #1 merged as a1), deployed to staging and to production. */
 function deployWorld() {
 	const w = world({ tenants: [tenant()] });
@@ -140,6 +134,8 @@ describe('a tenant without locale sends no Cyrillic', () => {
 		expectEnglishOnly([bareBody, html], 'kind=org|user');
 	});
 
+	// Exempt from the DEFAULT_LOCALE mutation: the tenant is unknown, so the reply is the fixed English
+	// `not found` outside the catalog (src/server.ts:259, :271).
 	test('hooks: GitHub setup of an unknown tenant is answered before a tenant is known', async () => {
 		const w = world({ tenants: [tenant()] });
 		const res = await w.handler(new Request(`${BASE}/github/setup?tenant=unknown`));

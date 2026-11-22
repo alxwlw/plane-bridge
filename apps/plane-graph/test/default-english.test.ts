@@ -1,5 +1,5 @@
 import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
-import { CYRILLIC } from '@alxwlw/plane-kit/testing';
+import { CYRILLIC, expectEnglishOnly } from '@alxwlw/plane-kit/testing';
 import { describe, expect, test } from 'bun:test';
 
 import { DEFAULT_AREA_PREFIX, type Config, type TenantConfig } from '../src/config.ts';
@@ -10,13 +10,6 @@ import { copyOf, type CopySpec } from './copy-builder.ts';
 
 const NOW = 1_800_000_000_000;
 const READ = 'read-key-1111';
-
-/** The checks every scenario ends with: something was sent, none of it is Russian, a named English text is in it. */
-function expectEnglishOnly(bodies: string[], english: string) {
-	expect(bodies.length).toBeGreaterThan(0);
-	expect(bodies.filter((b) => CYRILLIC.test(b))).toEqual([]);
-	expect(bodies.some((b) => b.includes(english))).toBe(true);
-}
 
 /** A tenant without `locale` and `areaPrefix` (the loader fills the two defaults). */
 const tenant: TenantConfig = {

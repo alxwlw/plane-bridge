@@ -75,7 +75,7 @@ describe('loadServiceConfig', () => {
 			port: 8080,
 			planeUrl: 'https://plane.example.com',
 			publicUrl: 'https://hooks.example.com',
-			tenants: [tenantOf({ locale: DEFAULT_LOCALE })],
+			tenants: [tenantOf({ locale: 'en' })],
 		});
 	});
 
@@ -128,7 +128,7 @@ describe('loadServiceConfig', () => {
 		);
 		expect(config.tenants[0]).toEqual(
 			tenantOf({
-				locale: DEFAULT_LOCALE,
+				locale: 'en',
 				github: [],
 				delivery: null,
 				dokploy: [],

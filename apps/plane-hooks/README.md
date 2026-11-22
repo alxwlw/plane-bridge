@@ -296,7 +296,7 @@ Optional keys: `github` (without it no GitHub App is served), `delivery` (no sta
 `incidents` (no incidents; required when the Grafana token is set), `dokploy`, `silenceHours` and `locale`. The [full example with every key](https://github.com/alxwlw/plane-bridge/blob/main/apps/plane-hooks/tenants.example.json)
 is in the repository. The file is read only at start: every change needs a restart.
 
-`locale` is `en` (the default) or `ru`. Every text the hub writes (Plane comments, incidents and the setup pages) is in the tenant's language; logs and startup errors are English. A request whose tenant is unknown is answered in English. A change takes effect after a restart.
+`locale` is `en` (the default) or `ru`. Every text the hub writes (Plane comments, incidents and the setup pages) is in the tenant's language; logs, startup errors and the operator scripts are English, except the titles in the `annotation: "incident"` log lines, which follow the tenant's language. A request whose tenant is unknown is answered in English. A change takes effect after a restart.
 
 This one is a fuller tenant:
 

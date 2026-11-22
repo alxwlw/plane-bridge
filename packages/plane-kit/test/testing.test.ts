@@ -3,7 +3,12 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { CYRILLIC, findCyrillic, findCyrillicOutsideRu } from '../src/testing.ts';
+import {
+	CYRILLIC,
+	expectEnglishOnly,
+	findCyrillic,
+	findCyrillicOutsideRu,
+} from '../src/testing.ts';
 
 let root: string;
 beforeEach(() => {
@@ -107,4 +112,12 @@ test('findCyrillicOutsideRu: a catalog path is relative to root', () => {
 test('findCyrillicOutsideRu: the ru object may start on line 1; its first line belongs to it', () => {
 	put('src/i18n.ts', "export const ru = { // а\n\ta: 'А',\n};\nconst z = 'В';\n");
 	expect(findCyrillicOutsideRu(root).map((h) => h.line)).toEqual([4]);
+});
+test('expectEnglishOnly: passes on English bodies that hold the named text', () => {
+	expectEnglishOnly(['Deployed to staging', 'other'], 'Deployed');
+});
+test('expectEnglishOnly: fails on no bodies, a Cyrillic body or a missing text', () => {
+	expect(() => expectEnglishOnly([], 'x')).toThrow();
+	expect(() => expectEnglishOnly(['Deployed', 'Готово'], 'Deployed')).toThrow();
+	expect(() => expectEnglishOnly(['Deployed'], 'Rolled back')).toThrow();
 });

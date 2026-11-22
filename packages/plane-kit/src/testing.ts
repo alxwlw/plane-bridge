@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { expect } from 'bun:test';
+
 /** Test-only helpers: no `src/` file of any app imports this module. */
 
 export type CyrillicHit = { path: string; line: number; text: string };
@@ -49,4 +51,11 @@ export function findCyrillicOutsideRu(root: string, catalog = 'src/i18n.ts'): Cy
 			hits.push({ path: catalog, line: i + 1, text });
 	});
 	return hits;
+}
+
+/** The checks every English-default scenario ends with: something was sent, none of it is Russian, a named English text is in it. */
+export function expectEnglishOnly(bodies: string[], english: string): void {
+	expect(bodies.length).toBeGreaterThan(0);
+	expect(bodies.filter((b) => CYRILLIC.test(b))).toEqual([]);
+	expect(bodies.some((b) => b.includes(english))).toBe(true);
 }

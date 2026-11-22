@@ -24,7 +24,8 @@ function load(extra: Record<string, unknown>) {
 }
 
 test('a tenant without locale gets the default locale', () => {
-	expect(load({}).tenants[0]?.locale).toBe('en');
+	// undefined is dropped by JSON.stringify: the tenant has no locale key
+	expect(load({ locale: undefined }).tenants[0]?.locale).toBe(DEFAULT_LOCALE);
 	expect(DEFAULT_LOCALE).toBe('en');
 });
 test('a tenant takes locale en or ru', () => {

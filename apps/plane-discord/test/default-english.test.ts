@@ -1,6 +1,6 @@
 import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
 import type { LogEntry } from '@alxwlw/plane-kit/log';
-import { CYRILLIC } from '@alxwlw/plane-kit/testing';
+import { CYRILLIC, expectEnglishOnly } from '@alxwlw/plane-kit/testing';
 import { describe, expect, test } from 'bun:test';
 
 import { registerCommands } from '../scripts/register-commands.ts';
@@ -36,13 +36,6 @@ import {
 	setup as notifySetup,
 	tenantOf as notifyTenantOf,
 } from './notify-world.ts';
-
-/** The checks every scenario ends with: something was sent, none of it is Russian, a named English text is in it. */
-function expectEnglishOnly(bodies: string[], english: string) {
-	expect(bodies.length).toBeGreaterThan(0);
-	expect(bodies.filter((b) => CYRILLIC.test(b))).toEqual([]);
-	expect(bodies.some((b) => b.includes(english))).toBe(true);
-}
 
 /** Every recorded Discord call as one JSON body (JSON.stringify keeps non-ASCII characters as they are). */
 const calls = (discord: FakeDiscord): string[] => discord.calls.map((c) => JSON.stringify(c));

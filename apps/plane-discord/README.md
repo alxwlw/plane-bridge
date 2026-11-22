@@ -146,7 +146,7 @@ docker exec <container> bun scripts/list-channels.ts       # id, type, parent an
   channels (Discord allows 15 per channel, so remove stale ones by hand). Nothing in Plane or Discord is
   lost.
 - **Queue** is in memory: a restart drops the deliveries not yet sent. A Discord form open in a modal is
-  also in memory; after a restart it answers "form is stale", and the command is run again.
+  also in memory; after a restart it answers "The form has expired, run the command again.", and the command is run again.
 
 ## Image
 

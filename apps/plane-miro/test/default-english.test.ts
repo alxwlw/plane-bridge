@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 
 import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
-import { CYRILLIC } from '@alxwlw/plane-kit/testing';
+import { CYRILLIC, expectEnglishOnly } from '@alxwlw/plane-kit/testing';
 import { describe, expect, test } from 'bun:test';
 
 import { messages } from '../src/i18n.ts';
@@ -10,13 +10,6 @@ import { createWeb } from '../src/web.ts';
 import { configOf } from './config-fixture.ts';
 import { Store } from '../src/store.ts';
 import { BOARD, frame, sticky, world } from './world.ts';
-
-/** The checks every scenario ends with: something was sent, none of it is Russian, a named English text is in it. */
-function expectEnglishOnly(bodies: string[], english: string) {
-	expect(bodies.length).toBeGreaterThan(0);
-	expect(bodies.filter((b) => CYRILLIC.test(b))).toEqual([]);
-	expect(bodies.some((b) => b.includes(english))).toBe(true);
-}
 
 /** A world of a tenant without `locale` (the loader fills DEFAULT_LOCALE) whose board, items and members are ASCII. */
 function englishWorld() {
