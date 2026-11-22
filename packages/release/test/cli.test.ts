@@ -176,6 +176,12 @@ describe('floating', () => {
 			stdout: '',
 			stderr: '',
 		});
+		tag('plane-a-v0.1.1');
+		expect(run(['floating', 'plane-a', '0.1.0'], root)).toEqual({
+			code: 0,
+			stdout: '',
+			stderr: '',
+		});
 	});
 
 	test('unknown app and invalid version', () => {

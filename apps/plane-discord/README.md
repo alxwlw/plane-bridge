@@ -152,7 +152,7 @@ docker exec <container> bun scripts/list-channels.ts       # id, type, parent an
 ## Image
 
 `ghcr.io/alxwlw/plane-discord` for `linux/amd64` and `linux/arm64`, built by `.github/workflows/plane-discord-image.yml`
-(through `.github/workflows/image.yml`) on every push to `main` that touches this directory or `packages/`; deploy by
+(through `.github/workflows/image.yml`) on every push to `main` that touches this directory or a package it ships; deploy by
 digest. Each platform is smoke-tested on its own runner by `.github/smoke/plane-discord.sh` before publishing
 (`/healthz`, the `listening` line, the SQLite file in `/data`).
 

@@ -70,6 +70,10 @@ describe('notesFor', () => {
 		expect(notesFor('## [0.1.0] - 2026-11-30\n\n- a\n', v('0.1.0-rc.1'))).toBeUndefined();
 	});
 
+	test('a changelog without the heading yields nothing, not its preamble', () => {
+		expect(notesFor('Some preamble\n\n- a\n', v('0.1.0-rc.1'))).toBeUndefined();
+	});
+
 	test('a first-level heading ends the section', () => {
 		expect(notesFor('## [Unreleased]\n- a\n# Other\n- b\n', v('0.1.0-rc.1'))).toBe('- a');
 	});
