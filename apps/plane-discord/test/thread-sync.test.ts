@@ -1,4 +1,6 @@
+import type { Locale } from '@alxwlw/plane-kit/locale';
 import type { LogEntry } from '@alxwlw/plane-kit/log';
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { describe, expect, test } from 'bun:test';
 
 import type { Tenant } from '../src/config.ts';
@@ -53,7 +55,9 @@ const message = (over: Partial<GatewayMessage> = {}): GatewayMessage => ({
 	...over,
 });
 
-function setup(opts: { bind?: boolean; projectId?: string | null; itemProject?: string } = {}) {
+function setup(
+	opts: { bind?: boolean; projectId?: string | null; itemProject?: string; locale?: Locale } = {},
+) {
 	const plane = new FakePlane();
 	plane.projects = [
 		{ id: P_LAB, identifier: 'LAB', name: 'Lab' },
@@ -70,7 +74,7 @@ function setup(opts: { bind?: boolean; projectId?: string | null; itemProject?: 
 		priority: 'none',
 		descriptionHtml: null,
 	});
-	const t = tenant();
+	const t = { ...tenant(), locale: opts.locale ?? 'ru' };
 	const rt: TenantRuntime = {
 		tenant: t,
 		plane,
@@ -363,5 +367,37 @@ describe('createThreadSync', () => {
 			throw new Error('boom');
 		};
 		await expect(w.sync(message())).rejects.toThrow('boom');
+	});
+
+	test('thread comment in English', async () => {
+		const w = setup({ locale: 'en' });
+		await w.sync(
+			message({
+				author: { id: AUTHOR, name: 'Mira', bot: false },
+				content: 'cc <@555555555555555559>',
+				mentions: [
+					{ id: '555555555555555559', name: 'Ken' },
+					{ id: LINKED, name: 'Lin' },
+				],
+				attachments: [{ url: 'https://cdn.example.com/a.png', filename: '' }],
+			}),
+		);
+		const html = w.plane.createdComments[0]!.comment.comment_html;
+		expect(html).toBe(
+			'<p><strong>Mira</strong> (Discord):</p><p>cc Ken</p>' +
+				'<ul><li><a href="https://cdn.example.com/a.png">file</a></li></ul>' +
+				`<p><a href="https://discord.com/channels/${GUILD}/${THREAD}/${MSG}">message</a></p>`,
+		);
+		const bare = setup({ locale: 'en' });
+		await bare.sync(
+			message({
+				author: { id: AUTHOR, name: 'Mira', bot: false },
+				content: 'cc <@555555555555555559>',
+				mentions: [],
+			}),
+		);
+		expect(bare.plane.createdComments[0]!.comment.comment_html).toContain('<p>cc user</p>');
+		expect(html).not.toMatch(CYRILLIC);
+		expect(bare.plane.createdComments[0]!.comment.comment_html).not.toMatch(CYRILLIC);
 	});
 });

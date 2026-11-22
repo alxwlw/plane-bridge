@@ -3,6 +3,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { APPEND_COMMAND } from '../src/discord/commands.ts';
 import { createInteractionHandler } from '../src/discord/interactions.ts';
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { PlaneApiError } from '../src/plane/client.ts';
 import { createHandler } from '../src/server.ts';
 import { Store } from '../src/store.ts';
@@ -116,6 +117,52 @@ describe('createInteractionHandler: «добавить в задачу»', () =>
 		expect(edits(w).at(-1)).toBe(
 			'Уже добавлено: [`LAB-40`](<https://plane.example.com/example-ws/browse/LAB-40/>)',
 		);
+	});
+
+	test('appended comment in English', async () => {
+		const w = await setup({ locale: 'en' });
+		seed(w);
+		const form = await open(w, {
+			name: APPEND_COMMAND,
+			message: msg({ author: { id: '555555555555555559', username: 'mira' } }),
+		});
+		await submitCreate(w, form.customId, { key: 'LAB-40', text: 'quote' });
+		await w.settle();
+		const html = w.plane.createdComments[0]!.comment.comment_html;
+		expect(html).toBe(
+			'<blockquote><p>quote</p></blockquote>' +
+				`<p>— mira, <a href="https://discord.com/channels/${GUILD}/${MAPPED}/${MSG}">message in Discord</a></p>`,
+		);
+		expect(html).not.toMatch(CYRILLIC);
+	});
+
+	test('an unmapped mention is user in English', async () => {
+		const w = await setup({ locale: 'en' });
+		seed(w);
+		const form = await open(w, {
+			name: APPEND_COMMAND,
+			message: msg({ author: { id: '555555555555555559', username: 'mira' } }),
+		});
+		await submitCreate(w, form.customId, { key: 'LAB-40', text: 'hi <@777777777777777777>' });
+		await w.settle();
+		const html = w.plane.createdComments[0]!.comment.comment_html;
+		expect(html).toContain('<p>hi user</p>');
+		expect(html).not.toMatch(CYRILLIC);
+	});
+
+	test('a message redelivered after a language change finds its comment', async () => {
+		const w = await setup({ locale: 'ru' });
+		seed(w);
+		const first = await open(w, { name: APPEND_COMMAND });
+		await submitCreate(w, first.customId, { key: 'LAB-40', text: 'раз' });
+		await w.settle();
+		w.setLocale('en');
+		const again = await open(w, { name: APPEND_COMMAND });
+		await submitCreate(w, again.customId, { key: 'LAB-40', text: 'again' });
+		await w.settle();
+		expect(w.plane.createdComments).toHaveLength(1);
+		expect(w.plane.createdComments[0]!.comment.external_id).toBe(MSG);
+		expect(edits(w).at(-1)).toContain('LAB-40');
 	});
 
 	test('сообщение только с вложением: комментарий без цитаты', async () => {

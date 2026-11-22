@@ -1,3 +1,4 @@
+import { LOCALES } from '@alxwlw/plane-kit/locale';
 import { describe, expect, test } from 'bun:test';
 
 import { CREATE_COMMAND } from '../src/discord/commands.ts';
@@ -9,6 +10,7 @@ import {
 	UNMAPPED,
 	MSG,
 	SECRET_TEXT,
+	AUTHOR,
 	msg,
 	setup,
 	open,
@@ -178,6 +180,25 @@ describe('createInteractionHandler: враждебный ввод', () => {
 		expect(
 			w.discord.callsOf('editOriginal').map((c) => (c[1] as { content: string }).content),
 		).toEqual(['Проект не выбран.', 'Проект не выбран.', 'Проект не выбран.']);
+	});
+
+	test('author and file names are escaped the same way in both languages', async () => {
+		const name = 'a<b&"c';
+		for (const locale of LOCALES) {
+			const w = await setup({ locale });
+			const { customId } = await open(w, {
+				message: msg({
+					author: { id: AUTHOR, username: name },
+					attachments: [{ url: 'https://cdn.example.com/f.png', filename: name }],
+				}),
+			});
+			await submitCreate(w, customId, { title: 'T' });
+			await w.settle();
+			const html = w.plane.createdItems[0]!.item.description_html;
+			expect(html, locale).toContain('a&lt;b&amp;&quot;c</a>');
+			expect(html, locale).toContain('a&lt;b&amp;&quot;c</p>');
+			expect(html, locale).not.toContain(name);
+		}
 	});
 
 	test('логи не содержат текстов сообщения; падающий sink не ломает ответ', async () => {

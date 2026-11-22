@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test';
+import { LOCALES } from '@alxwlw/plane-kit/locale';
 import { en, messages, ru } from '../src/i18n.ts';
 
 test('both catalogs have the same keys', () => {
@@ -26,6 +27,13 @@ test('the English plain strings, pinned literally', () => {
 		runNoProject: 'Could not send to Discord: project not found in Plane',
 		runHidden: 'Forwarding to Discord is turned off for this project',
 		planeBack: 'Plane is sending events again',
+		user: 'user',
+		message: 'message',
+		messageInDiscord: 'message in Discord',
+		file: 'file',
+		unknownAuthor: 'unknown',
+		role: '@role',
+		channel: '#channel',
 	});
 });
 
@@ -34,4 +42,24 @@ test('the sentences with values carry them, in both locales', () => {
 	expect(ru.planeSilent(5, 'ws')).toBe(
 		'Plane молчит 5 ч (ws): проверь вебхук — runbook plane-discord',
 	);
+});
+
+// Every entry that returns Plane HTML. `fromDiscordHtml` takes only ready HTML, so every argument must arrive verbatim.
+const HTML_ENTRIES: Record<string, (m: typeof en) => string> = {
+	fromDiscordHtml: (m) => m.fromDiscordHtml('<a href="u">LINK</a>', '<b>AUTHOR</b>'),
+};
+
+test('every Html entry escapes its text parameters', () => {
+	expect(Object.keys(HTML_ENTRIES).sort()).toEqual(
+		Object.keys(en)
+			.filter((k) => k.endsWith('Html'))
+			.sort(),
+	);
+	for (const locale of LOCALES) {
+		for (const [key, call] of Object.entries(HTML_ENTRIES)) {
+			const out = call(messages(locale));
+			expect(out, `${locale}.${key}`).toContain('<a href="u">LINK</a>');
+			expect(out, `${locale}.${key}`).toContain('<b>AUTHOR</b>');
+		}
+	}
 });

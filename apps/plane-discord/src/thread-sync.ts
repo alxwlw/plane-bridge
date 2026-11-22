@@ -5,6 +5,7 @@ import type { Log } from '@alxwlw/plane-kit/log';
 
 import type { GatewayMessage } from './discord/gateway.ts';
 import { attachmentsHtml, isHidden, messageLinkHtml } from './discord/ix-common.ts';
+import { messages } from './i18n.ts';
 import type { TenantRuntime } from './notify.ts';
 import { PlaneApiError } from './plane/client.ts';
 import type { Store } from './store.ts';
@@ -90,14 +91,15 @@ export function createThreadSync(deps: {
 			const planeId = rt.users.toPlane(discordId);
 			return planeId !== null ? planeMentionHtml(planeId) : esc(fallback);
 		};
+		const m = messages(rt.tenant.locale);
 		const text = truncate(message.content.trim(), TEXT_MAX);
 		const html =
 			`<p><strong>${person(message.author.id, truncate(message.author.name, NAME_MAX))}</strong> (Discord):</p>` +
 			(text === ''
 				? ''
-				: discordToPlaneHtml(text, (id) => person(id, names.get(id) ?? 'пользователь'))) +
-			attachmentsHtml(message.attachments) +
-			`<p>${messageLinkHtml(message.guildId ?? rt.tenant.guildId, message.channelId, message.id, 'сообщение')}</p>`;
+				: discordToPlaneHtml(m, text, (id) => person(id, names.get(id) ?? m.user))) +
+			attachmentsHtml(m, message.attachments) +
+			`<p>${messageLinkHtml(message.guildId ?? rt.tenant.guildId, message.channelId, message.id, m.message)}</p>`;
 		const result = await rt.plane.createComment(projectId, link.workItemId, {
 			comment_html: html,
 			external_id: message.id,

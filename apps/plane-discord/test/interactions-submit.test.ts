@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 
 import { createInteractionHandler } from '../src/discord/interactions.ts';
 import { DiscordApiError } from '../src/discord/rest.ts';
+import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { PlaneApiError } from '../src/plane/client.ts';
 import { Store } from '../src/store.ts';
 import { submitPayload } from './discord-harness.ts';
@@ -50,6 +51,54 @@ describe('createInteractionHandler: отправка формы «создать
 			projectId: P_LAB,
 			workItemId: created.id,
 		});
+	});
+
+	test('created work item description in English', async () => {
+		const w = await setup({ locale: 'en' });
+		const { customId } = await open(w, {
+			message: msg({ author: { id: AUTHOR, username: 'mira' } }),
+		});
+		await submitCreate(w, customId, { title: 'Fix login', description: 'ping <@&1> in <#2>' });
+		await w.settle();
+		const html = w.plane.createdItems[0]!.item.description_html;
+		expect(html).toBe(
+			'<p>ping @role in #channel</p>' +
+				`<p>From Discord: <a href="https://discord.com/channels/${GUILD}/${MAPPED}/${MSG}">message</a> · author: mira</p>`,
+		);
+		expect(html).not.toMatch(CYRILLIC);
+	});
+
+	test('unknown author and nameless file in English', async () => {
+		const w = await setup({ locale: 'en' });
+		const { customId } = await open(w, {
+			message: msg({
+				author: { id: AUTHOR },
+				attachments: [{ url: 'https://cdn.example.com/f.png', filename: '' }],
+			}),
+		});
+		await submitCreate(w, customId, { title: 'T' });
+		await w.settle();
+		const html = w.plane.createdItems[0]!.item.description_html;
+		expect(html).toContain('author: unknown</p>');
+		expect(html).toContain('<ul><li><a href="https://cdn.example.com/f.png">file</a></li></ul>');
+		expect(html).not.toMatch(CYRILLIC);
+	});
+
+	test('a message redelivered after a language change finds its work item', async () => {
+		const w = await setup({ locale: 'ru' });
+		const first = await open(w);
+		await submitCreate(w, first.customId, { title: 'Починить вход' });
+		await w.settle();
+		w.setLocale('en');
+		const again = await open(w);
+		await submitCreate(w, again.customId, { title: 'Fix login' });
+		await w.settle();
+		expect(w.plane.createdItems).toHaveLength(1);
+		expect(w.plane.createdItems[0]!.item.external_id).toBe(MSG);
+		expect(w.discord.callsOf('sendMessage')).toHaveLength(1);
+		expect(
+			(w.discord.callsOf('editOriginal').at(-1)?.[1] as { content: string }).content,
+		).toContain('LAB-1');
 	});
 
 	test('публичный ответ — reply на исходное сообщение «→ `LAB-1` «Название»», ephemeral удалён', async () => {

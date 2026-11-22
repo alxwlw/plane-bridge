@@ -1,3 +1,4 @@
+import type { Locale } from '@alxwlw/plane-kit/locale';
 import { type LogEntry } from '@alxwlw/plane-kit/log';
 
 import type { Tenant } from '../src/config.ts';
@@ -73,6 +74,8 @@ export async function setup(
 		/** Leave `now` and `nonce` to the handler's own defaults. */
 		realClockAndNonce?: boolean;
 		throwingLog?: boolean;
+		/** The tenant's language; `ru` when left out. */
+		locale?: Locale;
 	} = {},
 ) {
 	const signer = await makeSigner();
@@ -93,7 +96,7 @@ export async function setup(
 	const discord = new FakeDiscord();
 	const store = opts.store ?? new Store(':memory:');
 	const logs: LogEntry[] = [];
-	const t = tenant();
+	const t = { ...tenant(), locale: opts.locale ?? 'ru' };
 	const rt: TenantRuntime = {
 		tenant: t,
 		plane: countedPlane,
@@ -140,6 +143,8 @@ export async function setup(
 		rt,
 		handler,
 		ids,
+		/** Switches the tenant's language in place, as a config reload would. */
+		setLocale: (locale: Locale) => void (rt.tenant = { ...rt.tenant, locale }),
 		advance: (ms: number) => void (clock += ms),
 		async ask(payload: unknown): Promise<{ status: number; body: any; headers: Headers }> {
 			const res = await handler(await signer.request(JSON.stringify(payload)));

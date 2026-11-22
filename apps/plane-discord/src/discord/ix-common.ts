@@ -2,6 +2,7 @@
 import { esc, link, truncate } from '@alxwlw/plane-kit/html';
 import type { Log } from '@alxwlw/plane-kit/log';
 
+import type { Messages } from '../i18n.ts';
 import type { TenantRuntime } from '../notify.ts';
 import { PlaneApiError } from '../plane/client.ts';
 import { workItemKey, workItemUrl } from '../text.ts';
@@ -88,9 +89,12 @@ export const itemLink = (planeUrl: string, rt: TenantRuntime, key: string): stri
 	`[\`${key}\`](<${workItemUrl(planeUrl, rt.tenant.workspace, key)}>)`;
 
 /** `<ul>` of attachment links for a Plane comment; a non-http(s) URL is dropped. */
-export const attachmentsHtml = (files: readonly { url: string; filename: string }[]): string => {
+export const attachmentsHtml = (
+	m: Messages,
+	files: readonly { url: string; filename: string }[],
+): string => {
 	const items = files.flatMap((f) => {
-		const a = link(f.url, truncate(f.filename === '' ? 'файл' : f.filename, FILENAME_MAX));
+		const a = link(f.url, truncate(f.filename === '' ? m.file : f.filename, FILENAME_MAX));
 		return a === null ? [] : [`<li>${a}</li>`];
 	});
 	return items.length === 0 ? '' : `<ul>${items.join('')}</ul>`;

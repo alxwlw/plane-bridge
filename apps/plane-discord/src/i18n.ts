@@ -23,6 +23,17 @@ export const en = {
 	planeBack: 'Plane is sending events again',
 	planeSilent: (hours: number, workspace: string) =>
 		`Plane has been silent for ${hours} h (${workspace}): check the webhook`,
+	// Written into Plane: plain words for an unmapped mention, a nameless file, a link text and the unknown author.
+	user: 'user',
+	message: 'message',
+	messageInDiscord: 'message in Discord',
+	file: 'file',
+	unknownAuthor: 'unknown',
+	role: '@role',
+	channel: '#channel',
+	// Plane HTML: both parts arrive as ready HTML (a link, an author mention or an escaped name).
+	fromDiscordHtml: (linkHtml: string, authorHtml: string) =>
+		`From Discord: ${linkHtml} · author: ${authorHtml}`,
 };
 
 export type Messages = Catalog<typeof en>;
@@ -44,6 +55,14 @@ export const ru: Messages = {
 	planeBack: 'Plane снова на связи',
 	planeSilent: (hours, workspace) =>
 		`Plane молчит ${hours} ч (${workspace}): проверь вебхук — runbook plane-discord`,
+	user: 'пользователь',
+	message: 'сообщение',
+	messageInDiscord: 'сообщение в Discord',
+	file: 'файл',
+	unknownAuthor: 'неизвестный',
+	role: '@роль',
+	channel: '#канал',
+	fromDiscordHtml: (linkHtml, authorHtml) => `Из Discord: ${linkHtml} · автор: ${authorHtml}`,
 };
 
 /** One catalog per locale: a new `Locale` without a catalog is a type error here. */

@@ -5,6 +5,7 @@
 import { esc, truncate } from '@alxwlw/plane-kit/html';
 import type { Log } from '@alxwlw/plane-kit/log';
 
+import { messages } from '../i18n.ts';
 import type { TenantRuntime } from '../notify.ts';
 import { PlaneApiError, type ProjectSummary, type WorkItem } from '../plane/client.ts';
 import { readBounded } from '../server.ts';
@@ -214,7 +215,7 @@ export function createInteractionHandler(
 			const planeId = rt.users.toPlane(discordUserId);
 			return planeId !== null
 				? planeMentionHtml(planeId)
-				: esc(ctx.mentionNames.get(discordUserId) ?? 'пользователь');
+				: esc(ctx.mentionNames.get(discordUserId) ?? messages(rt.tenant.locale).user);
 		};
 	}
 
@@ -267,10 +268,11 @@ export function createInteractionHandler(
 				workItemId = found.id;
 			} else {
 				const description = truncate(fields.text('description') ?? '', DESCRIPTION_MAX);
+				const m = messages(tenant.locale);
 				const html =
-					discordToPlaneHtml(description, mentionFor(rt, ctx)) +
-					`<p>Из Discord: ${messageLink(ctx, 'сообщение')} · автор: ${authorHtml(rt, ctx)}</p>` +
-					attachmentsHtml(ctx.attachments);
+					discordToPlaneHtml(m, description, mentionFor(rt, ctx)) +
+					`<p>${m.fromDiscordHtml(messageLink(ctx, m.message), authorHtml(rt, ctx))}</p>` +
+					attachmentsHtml(m, ctx.attachments);
 				const made = await rt.plane.createWorkItem(projectId, {
 					name: title,
 					description_html: html,
@@ -348,12 +350,13 @@ export function createInteractionHandler(
 		if (dup) return edit(token, `Уже добавлено: ${where}`);
 
 		const text = truncate((fields.text('text') ?? '').trim(), DESCRIPTION_MAX);
+		const m = messages(rt.tenant.locale);
 		const html =
 			(text === ''
 				? ''
-				: `<blockquote>${discordToPlaneHtml(text, mentionFor(rt, ctx))}</blockquote>`) +
-			`<p>— ${authorHtml(rt, ctx)}, ${messageLink(ctx, 'сообщение в Discord')}</p>` +
-			attachmentsHtml(ctx.attachments);
+				: `<blockquote>${discordToPlaneHtml(m, text, mentionFor(rt, ctx))}</blockquote>`) +
+			`<p>— ${authorHtml(rt, ctx)}, ${messageLink(ctx, m.messageInDiscord)}</p>` +
+			attachmentsHtml(m, ctx.attachments);
 		await rt.plane.createComment(item.projectId, item.id, {
 			comment_html: html,
 			external_id: ctx.messageId,
@@ -406,8 +409,8 @@ export function createInteractionHandler(
 		if (data === null || data.type !== MESSAGE_COMMAND || kind === null)
 			return refuse(tenant.id, id, 'unknown_command', TEXT.unknownCommand);
 		const targetId = snowflake(data.target_id);
-		const messages = rec(own(rec(data.resolved), 'messages'));
-		const message = targetId === null ? null : rec(own(messages, targetId));
+		const resolvedMessages = rec(own(rec(data.resolved), 'messages'));
+		const message = targetId === null ? null : rec(own(resolvedMessages, targetId));
 		const messageId = snowflake(message?.id);
 		if (message === null || messageId === null)
 			return refuse(tenant.id, id, 'no_message', TEXT.noMessage);
@@ -433,6 +436,7 @@ export function createInteractionHandler(
 			if (offered.length === 0) return refuse(tenant.id, id, 'no_projects', TEXT.noProjects);
 		}
 
+		const m = messages(tenant.locale);
 		const content = typeof message.content === 'string' ? message.content : '';
 		const author = rec(message.author);
 		const names = new Map<string, string>();
@@ -449,7 +453,7 @@ export function createInteractionHandler(
 			const file = rec(raw);
 			const url = str(file?.url);
 			if (url !== null && HTTP_URL.test(url))
-				attachments.push({ url, filename: truncate(str(file?.filename) ?? 'файл', FILENAME_MAX) });
+				attachments.push({ url, filename: truncate(str(file?.filename) ?? m.file, FILENAME_MAX) });
 		}
 
 		const formId = nonce();
@@ -465,7 +469,7 @@ export function createInteractionHandler(
 			author: {
 				id: snowflake(author?.id),
 				name: truncate(
-					str(author?.global_name) ?? str(author?.username) ?? 'неизвестный',
+					str(author?.global_name) ?? str(author?.username) ?? m.unknownAuthor,
 					NAME_MAX,
 				),
 			},
