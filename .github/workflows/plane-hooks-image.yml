@@ -4,6 +4,7 @@ on:
     paths:
       - 'apps/plane-hooks/**'
       - 'packages/**'
+      - '!packages/release/**'
       - '.github/workflows/plane-hooks-image.yml'
       - '.github/workflows/image.yml'
       - '.github/smoke/plane-hooks.sh'
@@ -13,6 +14,7 @@ on:
     paths:
       - 'apps/plane-hooks/**'
       - 'packages/**'
+      - '!packages/release/**'
       - '.github/workflows/plane-hooks-image.yml'
       - '.github/workflows/image.yml'
       - '.github/smoke/plane-hooks.sh'

@@ -324,6 +324,18 @@ importers:
         specifier: catalog:dev
         version: 7.1.0-beta
 
+  packages/release:
+    devDependencies:
+      '@alxwlw/tsconfig':
+        specifier: catalog:dev
+        version: 1.18.0
+      '@types/bun':
+        specifier: catalog:dev
+        version: 1.4.4
+      typescript:
+        specifier: catalog:dev
+        version: 7.1.0-beta
+
 packages:
 
   '@alxwlw/oxlint-config@1.18.0':

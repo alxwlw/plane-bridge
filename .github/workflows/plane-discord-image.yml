@@ -4,6 +4,7 @@ on:
     paths:
       - 'apps/plane-discord/**'
       - 'packages/**'
+      - '!packages/release/**'
       - '.github/workflows/plane-discord-image.yml'
       - '.github/workflows/image.yml'
       - '.github/smoke/plane-discord.sh'
@@ -13,6 +14,7 @@ on:
     paths:
       - 'apps/plane-discord/**'
       - 'packages/**'
+      - '!packages/release/**'
       - '.github/workflows/plane-discord-image.yml'
       - '.github/workflows/image.yml'
       - '.github/smoke/plane-discord.sh'

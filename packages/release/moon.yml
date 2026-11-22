@@ -1,0 +1,11 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+
+language: 'typescript'
+layer: 'library'
+
+# The canon looks at src/ and tests/; here the test directory is test/.
+fileGroups:
+  tests:
+    - 'test/**/*'
+  sources:
+    - 'src/**/*'
