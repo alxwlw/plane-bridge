@@ -9,7 +9,8 @@
 		"./rate": "./src/rate.ts",
 		"./ttl": "./src/ttl.ts",
 		"./log": "./src/log.ts",
-		"./capture": "./src/capture.ts"
+		"./capture": "./src/capture.ts",
+		"./locale": "./src/locale.ts"
 	},
 	"devDependencies": {
 		"@alxwlw/tsconfig": "catalog:dev",

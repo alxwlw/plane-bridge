@@ -1,5 +1,7 @@
 import { createPrivateKey } from 'node:crypto';
 
+import { DEFAULT_LOCALE, isLocale, type Locale, LOCALES } from '@alxwlw/plane-kit/locale';
+
 // Grafana re-parses env-substituted provisioning values through YAML type
 // inference: a token that looks like a number would turn into an int (the
 // `chatid` trap in contact-points.yaml). The `ph_` prefix keeps it a string.
@@ -42,6 +44,8 @@ export type DokployAppRule = { name: string; repo: string; branch: string; envir
 export type Tenant = {
 	id: string;
 	workspace: string;
+	/** The language of the texts sent for this tenant. */
+	locale: Locale;
 	plane: { clientId: string; clientSecret: string; appInstallationId: string };
 	github: readonly GitHubAppConfig[];
 	incidents: { project: string; priority: PriorityTable } | null;
@@ -181,12 +185,27 @@ function parseServiceTenant(
 
 	unknownKeys(
 		raw,
-		['id', 'workspace', 'plane', 'github', 'incidents', 'delivery', 'dokploy', 'silenceHours'],
+		[
+			'id',
+			'workspace',
+			'locale',
+			'plane',
+			'github',
+			'incidents',
+			'delivery',
+			'dokploy',
+			'silenceHours',
+		],
 		at,
 	);
 	const rawId = typeof raw.id === 'string' ? raw.id : '';
 	const id = str(raw, 'id', at, NAME_RE, NAME_HINT);
 	const workspace = str(raw, 'workspace', at);
+	let locale: Locale = DEFAULT_LOCALE;
+	if (raw.locale !== undefined) {
+		if (isLocale(raw.locale)) locale = raw.locale;
+		else fail(`${at}.locale must be one of ${LOCALES.join(', ')}`);
+	}
 
 	let clientId = '';
 	let appInstallationId = '';
@@ -323,6 +342,7 @@ function parseServiceTenant(
 	return {
 		id,
 		workspace,
+		locale,
 		plane: { clientId, clientSecret, appInstallationId },
 		github,
 		incidents,

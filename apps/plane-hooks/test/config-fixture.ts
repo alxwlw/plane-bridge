@@ -12,6 +12,7 @@ export function tenantOf(overrides: Partial<Tenant> = {}): Tenant {
 	return {
 		id: 'acme',
 		workspace: 'example-ws',
+		locale: 'ru',
 		plane: {
 			clientId: 'example-client-id',
 			clientSecret: 'plane-secret',
