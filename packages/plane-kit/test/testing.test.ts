@@ -45,3 +45,13 @@ test('findCyrillic sorts by path, then by line, whatever the dir order', () => {
 	const got = findCyrillic(root, ['web', 'src']).map((h) => `${h.path}:${h.line}`);
 	expect(got).toEqual(['src/a.ts:1', 'src/b.ts:2', 'src/b.ts:3', 'web/z.html:1']);
 });
+test('findCyrillic orders by path even when the later path has the earlier line', () => {
+	put('src/a.ts', 'x\nx\nда\n');
+	put('src/m.ts', 'x\nда\n');
+	put('src/z.ts', 'да\n');
+	expect(findCyrillic(root, ['src']).map((h) => `${h.path}:${h.line}`)).toEqual([
+		'src/a.ts:3',
+		'src/m.ts:2',
+		'src/z.ts:1',
+	]);
+});
