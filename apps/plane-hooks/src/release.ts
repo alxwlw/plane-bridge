@@ -1,5 +1,6 @@
 import { esc, link, truncate } from '@alxwlw/plane-kit/html';
 
+import type { Messages } from './i18n.ts';
 import { type PlaneApi, RELEASE_ITEMS_MAX } from './plane.ts';
 
 /** A deployed commit: full sha (lower case) and message. */
@@ -42,10 +43,14 @@ export function releaseName(draft: ReleaseDraft): string {
 }
 
 /** Commits of the deploy (headline, short sha linked to the commit), then the work items it delivered. */
-export function changelogHtml(draft: ReleaseDraft, items: readonly ReleaseItem[]): string {
-	const parts = ['<h3>Коммиты</h3>'];
+export function changelogHtml(
+	m: Messages,
+	draft: ReleaseDraft,
+	items: readonly ReleaseItem[],
+): string {
+	const parts = [`<h3>${m.commits}</h3>`];
 	if (draft.commits.length === 0) {
-		parts.push('<p>Новых коммитов нет: повторный деплой того же sha.</p>');
+		parts.push(`<p>${m.noNewCommits}</p>`);
 	} else {
 		const rows = draft.commits.map((commit) => {
 			const sha7 = commit.sha.slice(0, 7);
@@ -59,7 +64,7 @@ export function changelogHtml(draft: ReleaseDraft, items: readonly ReleaseItem[]
 	const unique = uniqueItems(items);
 	if (unique.length > 0) {
 		parts.push(
-			`<h3>Задачи</h3><ul>${unique.map((item) => `<li><code>${esc(item.key)}</code></li>`).join('')}</ul>`,
+			`<h3>${m.workItems}</h3><ul>${unique.map((item) => `<li><code>${esc(item.key)}</code></li>`).join('')}</ul>`,
 		);
 	}
 	return parts.join('');
@@ -72,7 +77,7 @@ export function changelogHtml(draft: ReleaseDraft, items: readonly ReleaseItem[]
  * commits or the release is new: a rerun with no commits must not erase the list written by the first run.
  */
 export async function publishRelease(
-	deps: { plane: PlaneApi },
+	deps: { plane: PlaneApi; messages: Messages },
 	draft: ReleaseDraft,
 	items: readonly ReleaseItem[],
 ): Promise<ReleaseResult> {
@@ -90,7 +95,7 @@ export async function publishRelease(
 				});
 	// A rerun of an already deployed sha carries no commits (the deploy tag has moved): keep the changelog written before.
 	if (release.created || draft.commits.length > 0) {
-		await deps.plane.updateReleaseChangelog(release.id, changelogHtml(draft, items));
+		await deps.plane.updateReleaseChangelog(release.id, changelogHtml(deps.messages, draft, items));
 	}
 	const ids = uniqueItems(items)
 		.map((item) => item.workItemId)

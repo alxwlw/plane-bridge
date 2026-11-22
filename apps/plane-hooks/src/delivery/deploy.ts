@@ -2,6 +2,7 @@ import { describeError } from '@alxwlw/plane-kit/log';
 
 import { matchRepo } from '../config.ts';
 import type { Commit, GitHubApi, Pull } from '../github/client.ts';
+import { messages } from '../i18n.ts';
 import type { ReleaseDraft, ReleaseItem, ReleaseResult } from '../release.ts';
 import { ownedKeys } from './keys.ts';
 import { deployedHtml, rolledBackHtml } from './notes.ts';
@@ -160,6 +161,7 @@ export async function handleDeploy(deps: DeployDeps, fact: DeployFact): Promise<
 	}
 
 	const out = result(range.action);
+	const m = messages(deps.tenant.locale);
 	const rolledBack = range.action === 'rolled_back';
 	const pulls = await pullsOfCommits(github, fact.repo, range.commits);
 	const identifiers = new Set((await deps.projects()).map((p) => p.identifier));
@@ -184,7 +186,7 @@ export async function handleDeploy(deps: DeployDeps, fact: DeployFact): Promise<
 				}
 			}
 			const comment = await deps.plane.createComment(item.project, item.id, {
-				comment_html: rolledBack ? rolledBackHtml(fact) : deployedHtml(fact, owned),
+				comment_html: rolledBack ? rolledBackHtml(m, fact) : deployedHtml(m, fact, owned),
 				// Plane's duplicate check spans the project: the work item id keeps one deploy's notes apart.
 				external_id: `${rolledBack ? 'rolledback' : 'deployed'}:${item.id}:${fact.repo}:${fact.environment}:${fact.sha}`,
 				external_source: SOURCE,

@@ -18,6 +18,7 @@
 
 import { botTokenAuth } from '@alxwlw/plane-app';
 
+import { messages } from '../src/i18n.ts';
 import { PLANE_HOOKS_SCOPES } from '../src/plane.ts';
 import { changelogHtml, type ReleaseDraft } from '../src/release.ts';
 
@@ -617,7 +618,9 @@ try {
 		);
 
 		const changelog = await call('PATCH', `${base}/releases/${releaseId}/changelog/`, {
-			description_html: changelogHtml(probeDraft, [{ key: 'OPS-1', workItemId: 'probe' }]),
+			description_html: changelogHtml(messages('en'), probeDraft, [
+				{ key: 'OPS-1', workItemId: 'probe' },
+			]),
 		});
 		row(
 			'12',

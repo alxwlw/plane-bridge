@@ -1,22 +1,23 @@
 import { esc, link, p } from '@alxwlw/plane-kit/html';
 
 import type { Pull } from '../github/client.ts';
+import type { Messages } from '../i18n.ts';
 import type { DeployFact } from './deploy.ts';
 
 /** `<repo> → <environment> · <sha7>` in code tags, then the run link when the deploy has one. */
-function head(label: string, fact: DeployFact): string[] {
+function head(m: Messages, label: string, fact: DeployFact): string[] {
 	const parts = [
 		`${label}: <code>${esc(fact.repo)}</code> → ${esc(fact.environment)}`,
 		`<code>${esc(fact.sha.slice(0, 7))}</code>`,
 	];
-	const run = fact.logUrl === null ? null : link(fact.logUrl, 'прогон');
+	const run = fact.logUrl === null ? null : link(fact.logUrl, m.run);
 	if (run !== null) parts.push(run);
 	return parts;
 }
 
 /** «Выкачено» on a work item: where, which commit, and the PRs of this task that were in the deploy. */
-export function deployedHtml(fact: DeployFact, pulls: readonly Pull[]): string {
-	const parts = head('Выкачено', fact);
+export function deployedHtml(m: Messages, fact: DeployFact, pulls: readonly Pull[]): string {
+	const parts = head(m, m.deployed, fact);
 	// A commit without a PR (number 0) has nothing to link: the sha above already names it.
 	const prs = pulls
 		.filter((pull) => pull.number > 0)
@@ -27,6 +28,6 @@ export function deployedHtml(fact: DeployFact, pulls: readonly Pull[]): string {
 }
 
 /** «Откачено» on a work item whose PR left the environment: the environment now stands at `fact.sha`. */
-export function rolledBackHtml(fact: DeployFact): string {
-	return p(head('Откачено', fact).join(' · '));
+export function rolledBackHtml(m: Messages, fact: DeployFact): string {
+	return p(head(m, m.rolledBack, fact).join(' · '));
 }

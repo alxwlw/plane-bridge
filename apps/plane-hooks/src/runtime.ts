@@ -7,6 +7,7 @@ import type { GitHubAppConfig, ServiceConfig, SilenceInput, Tenant } from './con
 import type { DeployDeps } from './delivery/deploy.ts';
 import { createGitHubApp, type GitHubApp } from './github/app.ts';
 import type { GitHubApi } from './github/client.ts';
+import { messages } from './i18n.ts';
 import {
 	createIncidentReporter,
 	IncidentProjectMissing,
@@ -203,7 +204,8 @@ function createRuntime(
 			warnOnce,
 			moved: (move) =>
 				deps.store.journalAdd({ tenant: tenant.id, ...move, at: new Date(now()).toISOString() }),
-			releases: (draft, items) => publishRelease({ plane }, draft, items),
+			releases: (draft, items) =>
+				publishRelease({ plane, messages: messages(tenant.locale) }, draft, items),
 			cursor: deps.store.cursorFor(tenant.id),
 		},
 		lastDelivery: new Map(),

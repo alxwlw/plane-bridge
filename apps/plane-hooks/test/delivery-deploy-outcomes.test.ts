@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
 import { handleDeploy } from '../src/delivery/deploy.ts';
+import { messages } from '../src/i18n.ts';
 import { PlaneApiError } from '../src/plane.ts';
 import { publishRelease, type ReleaseDraft, type ReleaseItem } from '../src/release.ts';
 import { tenantOf } from './config-fixture.ts';
@@ -78,7 +79,8 @@ describe('handleDeploy: ignored, релиз, сбои', () => {
 		const { w, id, fact: deploy } = releaseHistory();
 		const deps = {
 			...w.deps,
-			releases: (d: ReleaseDraft, i: ReleaseItem[]) => publishRelease({ plane: w.plane }, d, i),
+			releases: (d: ReleaseDraft, i: ReleaseItem[]) =>
+				publishRelease({ plane: w.plane, messages: messages('ru') }, d, i),
 		};
 
 		const result = await handleDeploy(deps, deploy);
