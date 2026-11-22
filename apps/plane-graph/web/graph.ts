@@ -10,6 +10,7 @@ import {
 	fitBox,
 	projectColor,
 	startGroups,
+	tipText,
 	visible,
 } from './logic.ts';
 
@@ -424,7 +425,7 @@ function drawGraph(): void {
 				keep ? (keep.has(n.id) ? null : 'none') : labelled(n) ? null : 'none',
 			);
 		const n = id === null ? undefined : nodes.find((x) => x.id === id);
-		tip.textContent = n === undefined ? '' : m.tooltip(n.item.key, n.item.name, n.item.closed);
+		tip.textContent = tipText(m, n?.item);
 	}
 	nodeSel
 		.on('pointerdown', (e) => {

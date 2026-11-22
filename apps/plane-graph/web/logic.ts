@@ -16,6 +16,11 @@ export function catalogFor(data: GraphJson | null, pageLang: string): Messages {
 	return messages(pickLocale(data?.locale, pageLang));
 }
 
+/** The tooltip line of a focused node; empty when nothing is focused. */
+export function tipText(m: Messages, item: GraphJson['items'][number] | undefined): string {
+	return item === undefined ? '' : m.tooltip(item.key, item.name, item.closed);
+}
+
 export type Filters = { showClosed: boolean; project: string | null; area: string | null };
 
 /**

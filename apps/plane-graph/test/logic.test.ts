@@ -13,6 +13,7 @@ import {
 	pickLocale,
 	projectColor,
 	startGroups,
+	tipText,
 	visible,
 } from '../web/logic.ts';
 
@@ -273,6 +274,21 @@ test('catalogFor follows the answer, then the page, then the default', () => {
 test('the client takes its catalog only from catalogFor', () => {
 	const source = readFileSync(new URL('../web/graph.ts', import.meta.url), 'utf8');
 	expect(source).toContain('catalogFor(data, document.documentElement.lang)');
+	expect(source.match(/catalogFor\(/g)).toHaveLength(1);
+	const picks = source.match(/const m = .*/g) ?? [];
+	expect(picks).toHaveLength(4);
+	// The tooltip is fed the focused node's item and the render's catalog.
+	expect(source).toContain('tipText(m, n?.item)');
+	for (const pick of picks) expect(pick).toBe('const m = texts();');
 	expect(source).not.toMatch(/\bmessages\(/);
 	expect(source).not.toMatch(/\bpickLocale\(/);
+});
+
+test('tipText marks a closed item in the catalog language and is empty without a node', () => {
+	const open = item('LAB-1');
+	const closed = item('LAB-1', { closed: true });
+	expect(tipText(en, closed)).toBe('LAB-1 · Задача LAB-1 (closed)');
+	expect(tipText(ru, closed)).toBe('LAB-1 · Задача LAB-1 (закрыта)');
+	expect(tipText(en, open)).toBe('LAB-1 · Задача LAB-1');
+	expect(tipText(en, undefined)).toBe('');
 });
