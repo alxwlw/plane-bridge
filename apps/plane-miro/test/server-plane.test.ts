@@ -26,6 +26,7 @@ const tenant = (id: string, workspaceId: string, webhookSecret: string): Tenant 
 	keepSource: true,
 	silenceHours: 72,
 	hiddenProjects: [],
+	locale: 'ru',
 });
 
 function setup(opts: { store?: Store } = {}) {

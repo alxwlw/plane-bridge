@@ -23,6 +23,7 @@ export const configOf = (): Config => ({
 			keepSource: true,
 			silenceHours: 72,
 			hiddenProjects: [],
+			locale: 'ru',
 		},
 	],
 });

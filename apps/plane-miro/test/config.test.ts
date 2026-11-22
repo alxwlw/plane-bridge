@@ -1,6 +1,9 @@
 // Adapted from apps/plane-discord/test/config.test.ts.
 import { describe, expect, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
+
+import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
+
 import { KEEP_SOURCE_DEFAULT, loadConfig } from '../src/config.ts';
 import { badEmbed, badTeam, env, read, sameTeam, twoTenants } from './config-fixture.ts';
 
@@ -244,6 +247,7 @@ describe('loadConfig', () => {
 					keepSource: false,
 					silenceHours: 24,
 					hiddenProjects: ['00000000-0000-4000-8000-000000000013'],
+					locale: DEFAULT_LOCALE,
 				},
 			],
 		});

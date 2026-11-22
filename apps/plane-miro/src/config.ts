@@ -1,3 +1,5 @@
+import { DEFAULT_LOCALE, isLocale, type Locale, LOCALES } from '@alxwlw/plane-kit/locale';
+
 // Adapted from apps/plane-discord/src/config.ts.
 
 /** Plane App only: the key mode (API key + workspace webhook v2) was dropped after the probe (design §10). */
@@ -15,6 +17,8 @@ export type Tenant = {
 	keepSource: boolean;
 	silenceHours: number;
 	hiddenProjects: readonly string[];
+	/** The language of every text the tenant sees. */
+	locale: Locale;
 };
 export type Config = {
 	port: number;
@@ -164,6 +168,7 @@ function parseTenant(
 			'keepSource',
 			'silenceHours',
 			'hiddenProjects',
+			'locale',
 		],
 		at,
 	);
@@ -214,6 +219,12 @@ function parseTenant(
 			});
 	}
 
+	let locale: Locale = DEFAULT_LOCALE;
+	if (raw.locale !== undefined) {
+		if (isLocale(raw.locale)) locale = raw.locale;
+		else fail(`${at}.locale must be one of ${LOCALES.join(', ')}`);
+	}
+
 	// Secrets: both are required and distinct (the webhook is signed with the form's own secret, design §10).
 	let clientSecret = '';
 	let webhookSecret = '';
@@ -238,6 +249,7 @@ function parseTenant(
 		keepSource,
 		silenceHours,
 		hiddenProjects,
+		locale,
 	};
 	return { tenant, ids };
 }

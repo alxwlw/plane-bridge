@@ -102,6 +102,26 @@ describe('convertItems', () => {
 		expect(descs[3]).toBe('<p>Первый стикер</p><p>С доски Miro: Аня</p>');
 	});
 
+	test('description in English', async () => {
+		const w = world({ locale: 'en' });
+		const long = 'я'.repeat(300);
+		w.board.items.set('103', sticky('103', `<p>${long}</p><p>вторая &amp; &lt;b&gt;</p>`, 1, 2));
+		w.board.tags.set('103', ['срочно', 'miro']);
+		const r = await convertItems(w.rt, w.store, req(['103'], { author: 'Аня <&> Co' }), w.log);
+		expect(r[0]?.ok).toBe(true);
+		expect(w.plane.createdItems[0]!.item.description_html).toBe(
+			`<p>${long}</p><p>вторая &amp; &lt;b&gt;</p><p>Miro tags: срочно, miro</p><p>From the Miro board: Аня &lt;&amp;&gt; Co</p>`,
+		);
+	});
+
+	test('a description without tags in English', async () => {
+		const w = world({ locale: 'en' });
+		await convertItems(w.rt, w.store, req(['101']), w.log);
+		expect(w.plane.createdItems[0]!.item.description_html).toBe(
+			'<p>Первый стикер</p><p>From the Miro board: Аня</p>',
+		);
+	});
+
 	test('пустой стикер → empty_text, задачи нет, стикер на месте', async () => {
 		const w = world();
 		w.board.items.set('107', sticky('107', '<p> &nbsp; </p>', 1, 2));

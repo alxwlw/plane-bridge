@@ -313,6 +313,47 @@ describe('POST /miro/api/convert', () => {
 		expect(wide.status).toBe(200);
 	});
 
+	test('an empty author is the Miro user in English', async () => {
+		const w = world({ locale: 'en' });
+		await w.call('POST', '/miro/api/convert', { body: convertBody({ author: '   ' }) });
+		expect(w.plane.createdItems[0]?.item.description_html).toBe(
+			'<p>Первый стикер</p><p>From the Miro board: Miro user</p>',
+		);
+	});
+
+	test('two teams, two languages', async () => {
+		const en = world({ id: 'enteam', locale: 'en', miroTeamId: '3458764500000000002' });
+		const ru = world({ id: 'ruteam', locale: 'ru', miroTeamId: '3458764500000000003' });
+		const api = createApi({
+			config: { ...en.config, tenants: [en.tenant, ru.tenant] },
+			runtimes: new Map([
+				[en.tenant.id, en.rt],
+				[ru.tenant.id, ru.rt],
+			]),
+			store: en.store,
+			log: en.log,
+			nowSec: () => NOW_SEC,
+		});
+		for (const team of ['3458764500000000002', '3458764500000000003']) {
+			const body = convertBody({ author: '   ' });
+			const res = await api(
+				new Request('http://x/miro/api/convert', {
+					method: 'POST',
+					headers: { authorization: `Bearer ${jwt({ team })}` },
+					body: JSON.stringify(body),
+				}),
+				new URL('http://x/miro/api/convert'),
+			);
+			expect(res.status).toBe(200);
+		}
+		expect(en.plane.createdItems[0]?.item.description_html).toBe(
+			'<p>Первый стикер</p><p>From the Miro board: Miro user</p>',
+		);
+		expect(ru.plane.createdItems[0]?.item.description_html).toBe(
+			'<p>Первый стикер</p><p>С доски Miro: участник Miro</p>',
+		);
+	});
+
 	test('author: пустой → «участник Miro», пробелы обрезаются, 100 символов проходят', async () => {
 		const w = world();
 		await w.call('POST', '/miro/api/convert', { body: convertBody({ author: '   ' }) });

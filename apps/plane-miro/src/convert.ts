@@ -3,6 +3,7 @@ import type { Log } from '@alxwlw/plane-kit/log';
 import { ttl } from '@alxwlw/plane-kit/ttl';
 
 import { boardLink, cardFor, fieldsHash, linkTitle } from './card.ts';
+import { type Messages, messages } from './i18n.ts';
 import {
 	type Connector,
 	MiroApiError,
@@ -290,7 +291,7 @@ async function attempt(
 		if (found === null)
 			await plane(() =>
 				rt.plane.createComment(projectId, workItemId, {
-					comment_html: `<p>С доски Miro (${esc(ctx.author)}):</p>${paragraphs(lines)}`,
+					comment_html: `<p>${messages(tenant.locale).fromBoardByHtml(ctx.author)}</p>${paragraphs(lines)}`,
 					external_source: SOURCE,
 					external_id: externalId,
 				}),
@@ -369,7 +370,7 @@ async function resolveWorkItem(
 	const created = await plane(() =>
 		rt.plane.createWorkItem(projectId, {
 			name: truncate(lines[0] as string, NAME_MAX),
-			description_html: descriptionOf(lines, tags, ctx.author),
+			description_html: descriptionOf(messages(rt.tenant.locale), lines, tags, ctx.author),
 			external_source: SOURCE,
 			external_id: `${boardId}:${itemId}`,
 		}),
@@ -390,10 +391,15 @@ async function resolveWorkItem(
 const paragraphs = (lines: readonly string[]): string =>
 	lines.map((line) => `<p>${esc(line)}</p>`).join('');
 
-function descriptionOf(lines: readonly string[], tags: readonly string[], author: string): string {
+function descriptionOf(
+	m: Messages,
+	lines: readonly string[],
+	tags: readonly string[],
+	author: string,
+): string {
 	return (
 		paragraphs(lines) +
-		(tags.length === 0 ? '' : `<p>Теги Miro: ${esc(tags.join(', '))}</p>`) +
-		`<p>С доски Miro: ${esc(author)}</p>`
+		(tags.length === 0 ? '' : `<p>${m.miroTagsHtml(tags.join(', '))}</p>`) +
+		`<p>${m.fromBoardHtml(author)}</p>`
 	);
 }

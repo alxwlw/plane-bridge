@@ -73,6 +73,19 @@ describe('bindItem', () => {
 		);
 	});
 
+	test('bind comment in English', async () => {
+		const w = withItem({ locale: 'en' });
+		await bindItem(w.rt, w.store, bind({ itemId: '101' }), w.log);
+		expect(w.plane.createdComments[0]?.comment.comment_html).toBe(
+			'<p>From the Miro board (Аня):</p><p>Первый стикер</p>',
+		);
+		const x = withItem({ locale: 'en' });
+		await bindItem(x.rt, x.store, bind({ itemId: '102', author: 'А<б>' }), x.log);
+		expect(x.plane.createdComments[0]?.comment.comment_html).toBe(
+			'<p>From the Miro board (А&lt;б&gt;):</p><p>Второй</p><p>стикер</p>',
+		);
+	});
+
 	test('повтор привязки — комментарий и ссылка не дублируются', async () => {
 		const w = withItem();
 		w.miro.failNext('deleteItem', new MiroApiError(503, 'DELETE', '/x'));

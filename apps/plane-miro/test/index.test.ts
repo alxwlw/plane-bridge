@@ -44,6 +44,7 @@ const TENANTS = JSON.stringify({
 			plane: { clientId: 'example-client-id', appInstallationId: 'inst-1' },
 			miro: { teamId: '3458764500000000001' },
 			embed: true,
+			locale: 'ru',
 		},
 	],
 });
@@ -116,7 +117,7 @@ describe('startService', () => {
 			ts: expect.any(String),
 			event: 'listening',
 			port: service.port,
-			tenants: [{ id: 'acme' }],
+			tenants: [{ id: 'acme', locale: 'ru' }],
 		});
 		for (const secret of [WEBHOOK_SECRET, MIRO_SECRET, 'acme-plane-secret', WORKSPACE])
 			expect(w.lines.join('\n')).not.toContain(secret);
