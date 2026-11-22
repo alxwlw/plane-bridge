@@ -12,13 +12,13 @@ What it does:
   branch. A PR ready for review puts it into the review state; a merged one moves it along the chain of
   environments the tenant configured, as far as the PR's merge commit has been deployed. The work item stands
   where its **least advanced** PR stands, and it only ever moves **forward**.
-- **Deploys.** Every successful GitHub deployment of a configured environment writes «Выкачено» (deployed) on the
+- **Deploys.** Every successful GitHub deployment of a configured environment writes "Deployed" on the
   work items of the PRs it carried, moves them, and on a release environment would create a Plane release (see [Releases](#behaviour)). A deploy
-  of an older commit is a rollback: «Откачено» (rolled back), the status stays.
+  of an older commit is a rollback: "Rolled back", the status stays.
 - **Previews.** A Vercel preview gets one comment per work item and Vercel project, updated with each new link.
 - **Incidents.** A Grafana alert, a failed GitHub or Vercel deploy and a failed Dokploy build or backup open a work
   item in the tenant's incident project; a repeat comments on it, a closed one is reopened, the recovery adds
-  «Погас» (resolved). Closing stays a human decision.
+  "Resolved". Closing stays a human decision.
 
 Keys only mentioned in a PR description get the PR link, never a status change. The incident project is never
 touched by the status rules.
@@ -97,7 +97,7 @@ with no log line. Bodies over 4 MiB answer 413. A GitHub delivery is saved to th
 (GitHub waits 10 s and never retries by itself); a repeat of a delivery already done answers `200 duplicate`.
 The incident part of Grafana, Vercel and Dokploy (an alert, a failed deploy, build or backup, a Vercel production
 deploy, a backup that recovered) runs while the sender waits and answers `502` when Plane fails, so the sender
-retries; every write carries an `external_id`, so a retry duplicates nothing. «Погас» that comes with a deploy (a
+retries; every write carries an `external_id`, so a retry duplicates nothing. "Resolved" that comes with a deploy (a
 GitHub success, a Vercel preview, a Dokploy deploy) is best effort and never holds the deploy back: the deploy work
 is queued and done, a failure that may clear is an `error` line and its own inbox job (`incident.resolve`), retried
 alone while the deploy is done once, any other — the incident project missing, a 4xx — one `warn` line per cause.
@@ -259,7 +259,7 @@ Two traps of Grafana's env substitution in provisioning files:
 - Grafana re-parses a substituted value as YAML, so a token made only of digits turns into an integer. The
   mandatory `ph_` prefix keeps the token a string (`ph_$(openssl rand -hex 24)`).
 
-`disableResolveMessage: false` is required for «Погас»: with `true` Grafana never sends the resolution.
+`disableResolveMessage: false` is required for "Resolved": with `true` Grafana never sends the resolution.
 
 ### Dokploy
 
@@ -293,8 +293,12 @@ the real one before you run `/plane/setup`; `appInstallationId` may stay `"place
 ```
 
 Optional keys: `github` (without it no GitHub App is served), `delivery` (no status rules, no deploys),
-`incidents` (no incidents; required when the Grafana token is set), `dokploy` and `silenceHours`. The [full example with every key](https://github.com/alxwlw/plane-bridge/blob/main/apps/plane-hooks/tenants.example.json)
-is in the repository. The file is read only at start: every change needs a restart. This one is a fuller tenant:
+`incidents` (no incidents; required when the Grafana token is set), `dokploy`, `silenceHours` and `locale`. The [full example with every key](https://github.com/alxwlw/plane-bridge/blob/main/apps/plane-hooks/tenants.example.json)
+is in the repository. The file is read only at start: every change needs a restart.
+
+`locale` is `en` (the default) or `ru`. Every text the hub writes (Plane comments, incidents and the setup pages) is in the tenant's language; logs, startup errors and the operator scripts are English, except the titles in the `annotation: "incident"` log lines, which follow the tenant's language. A request whose tenant is unknown is answered in English. A change takes effect after a restart.
+
+This one is a fuller tenant:
 
 ```json
 {
@@ -388,15 +392,15 @@ silently, and a wrong state name appears only as a later `warning` line:
 
 - **Status comments.** Every move writes a comment naming its cause (the PR or the deploy); a repeated event adds
   nothing (`external_id` per work item, state and cause).
-- **«Выкачено».** One per work item, repository, environment and sha, with the PRs of that work item in the
+- **"Deployed".** One per work item, repository, environment and sha, with the PRs of that work item in the
   deploy. The commits of a deploy are counted from the previous deploy the hub handled for that repository and
   environment (the cursor), so a lost event is caught up by the next one; the first deploy asks GitHub for the
   one before. A deploy whose status time is older than the cursor's (a late redelivery) is ignored.
-- **Rollback.** A deploy of a commit behind the previous one writes «Откачено» on the work items of the PRs that
+- **Rollback.** A deploy of a commit behind the previous one writes "Rolled back" on the work items of the PRs that
   left the environment; their status does not go back. A Vercel instant rollback carries no commit in Vercel's
   documented payload (only `fromDeploymentId` / `toDeploymentId`; not captured live) and the hub holds no Vercel API
   key to resolve it, so it logs one `vercel.rollback.unresolved` warn line (tenant, project, target deployment id)
-  and changes nothing in Plane: the work items get «Откачено» only with the next deploy.
+  and changes nothing in Plane: the work items get "Rolled back" only with the next deploy.
 - **Promote.** A Vercel promote is the production deploy of its sha through the common deploy path, in the
   environment where `vercel[bot]` recorded that sha (`Production` or `Production – <project>`).
 - **Releases.** A deploy of a `release: true` environment creates one Plane release per `repository@sha` (named
@@ -420,7 +424,7 @@ Each incident has a key: for Grafana the alert fingerprint; for a failed GitHub 
 - A repeated firing signal adds a comment.
 - If the work item is closed, it is reopened to the project's default state.
 - If it is archived, it is unarchived first, then reopened.
-- A resolution adds the comment «Погас» (resolved). It never closes the work item and never unarchives it: closing
+- A resolution adds the comment "Resolved". It never closes the work item and never unarchives it: closing
   stays a human decision.
 - A repeated delivery of the same event is a no-op (deduplicated by `external_id`).
 

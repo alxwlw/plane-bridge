@@ -1,4 +1,4 @@
-import { LOCALES } from '@alxwlw/plane-kit/locale';
+import { DEFAULT_LOCALE, LOCALES } from '@alxwlw/plane-kit/locale';
 import { describe, expect, test } from 'bun:test';
 
 import { messages } from '../src/i18n.ts';
@@ -22,7 +22,8 @@ describe('createInteractionHandler: враждебный ввод', () => {
 	test('поля неверных типов, пустые, огромные — обработчик отвечает, не падает', async () => {
 		const w = await setup();
 		const huge = 'z'.repeat(200_000);
-		const BROKEN = 'Не удалось разобрать запрос Discord.';
+		// Replies made before a tenant is resolved (no usable guild_id) come from the default locale.
+		const DEFAULT = messages(DEFAULT_LOCALE);
 		const UNKNOWN = 'Неизвестная команда.';
 		const NO_MESSAGE = 'Не удалось прочитать сообщение.';
 		const NO_CHANNEL = 'Не удалось определить канал.';
@@ -43,12 +44,12 @@ describe('createInteractionHandler: враждебный ввод', () => {
 			...over,
 		});
 		const bad: Array<[unknown, string]> = [
-			[{}, BROKEN],
-			[{ type: 'x' }, BROKEN],
-			[{ type: 2 }, BROKEN],
-			[{ type: 2, id: 5 }, BROKEN],
-			[{ type: 2, id: 'abc' }, BROKEN],
-			[{ type: 2, id: '1'.repeat(40) }, BROKEN],
+			[{}, DEFAULT.brokenRequest],
+			[{ type: 'x' }, DEFAULT.brokenRequest],
+			[{ type: 2 }, DEFAULT.brokenRequest],
+			[{ type: 2, id: 5 }, DEFAULT.brokenRequest],
+			[{ type: 2, id: 'abc' }, DEFAULT.brokenRequest],
+			[{ type: 2, id: '1'.repeat(40) }, DEFAULT.brokenRequest],
 			[command(null), UNKNOWN],
 			[command(undefined), UNKNOWN],
 			[command([]), UNKNOWN],
@@ -71,7 +72,7 @@ describe('createInteractionHandler: враждебный ввод', () => {
 			[command(target({}), { channel: 'x' }), NO_CHANNEL],
 			[command(target({}), { channel: { id: 'abc' } }), NO_CHANNEL],
 			[command(target({}), { channel: undefined }), NO_CHANNEL],
-			[command(target({}), { guild_id: 7 }), 'Этот сервер не настроен.'],
+			[command(target({}), { guild_id: 7 }), DEFAULT.notConfigured],
 			[command(target({}), { type: 3 }), UNKNOWN],
 			[{ type: 5, id: w.ids.next(), guild_id: GUILD, data: 'x' }, EXPIRED],
 			[

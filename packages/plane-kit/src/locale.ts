@@ -1,7 +1,7 @@
 /** The languages the Plane apps speak in the texts they send. */
 export type Locale = 'en' | 'ru';
 export const LOCALES: readonly Locale[] = ['en', 'ru'];
-export const DEFAULT_LOCALE: Locale = 'ru';
+export const DEFAULT_LOCALE: Locale = 'en';
 
 export function isLocale(value: unknown): value is Locale {
 	return typeof value === 'string' && (LOCALES as readonly string[]).includes(value);

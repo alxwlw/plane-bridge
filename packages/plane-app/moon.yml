@@ -3,7 +3,7 @@ $schema: 'https://moonrepo.dev/schemas/project.json'
 language: 'typescript'
 layer: 'library'
 
-# Канон смотрит в src/ и tests/; здесь каталог тестов — test/.
+# The canon looks at src/ and tests/; here the test directory is test/.
 fileGroups:
   tests:
     - 'test/**/*'

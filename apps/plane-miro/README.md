@@ -6,7 +6,7 @@ SQLite file and serves its own front end: `web/*.ts` is bundled by `Bun.build` a
 
 What it does:
 
-- **Stickers become work items.** In the Miro panel the user picks a Plane project and presses «В Plane»: each
+- **Stickers become work items.** In the Miro panel the user picks a Plane project and presses "To Plane": each
   selected sticker (also a card, a shape or a text) becomes a work item with `external_source=miro` and
   `external_id=<board>:<item>`, and a card of the work item appears next to it. A second press on the same
   sticker creates nothing new, and a conversion cut short is finished by the repeat.
@@ -15,7 +15,7 @@ What it does:
   of that place in its description.
 - **Status on the cards.** A change of state, title or assignees in Plane updates the cards of the work item on
   every board; a deleted work item turns its cards `disabled`. A card deleted by hand on the board is forgotten.
-- **A Miro link in a comment or in «Ссылки»** puts the work item's card on that board, if the board belongs to the
+- **A Miro link in a comment or in "Links"** puts the work item's card on that board, if the board belongs to the
   tenant's Miro team; a board of another team gets nothing (`link.board_other_team` in the log).
 
 A sticker can also be bound to an existing work item (search by key or text) instead of creating one.
@@ -27,17 +27,18 @@ before its project was hidden is refused (`unknown_project`).
 
 ## Routes
 
-| Path                                                                | Purpose                                                               |
-| ------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `POST /plane/webhook`                                               | Plane App webhook, signed with the app's webhook secret               |
-| `GET /plane/setup`                                                  | `?tenant=<id>`: redirects to the Plane consent screen of the app      |
-| `GET /plane/oauth/callback`                                         | Prints the `app_installation_id` for `tenants.json`                   |
-| `GET /miro/setup`                                                   | `?tenant=<id>`: the link that connects the service account to Miro    |
-| `GET /miro/oauth/callback`                                          | Miro OAuth redirect; stores the service account's token               |
-| `GET /miro/app`, `/miro/panel`, `/miro/card`, `/miro/assets/<n>.js` | The pages and bundles Miro loads (`frame-ancestors https://miro.com`) |
-| `GET /miro/api/projects`, `/search`, `/card`                        | The front's API (read)                                                |
-| `POST /miro/api/convert`, `/bind`                                   | The front's API (write); may run for minutes under the Plane limits   |
-| `GET /healthz`                                                      | `ok`                                                                  |
+| Path                                                                | Purpose                                                                                     |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `POST /plane/webhook`                                               | Plane App webhook, signed with the app's webhook secret                                     |
+| `GET /plane/setup`                                                  | `?tenant=<id>`: redirects to the Plane consent screen of the app                            |
+| `GET /plane/oauth/callback`                                         | Prints the `app_installation_id` for `tenants.json`                                         |
+| `GET /miro/setup`                                                   | `?tenant=<id>`: the link that connects the service account to Miro                          |
+| `GET /miro/oauth/callback`                                          | Miro OAuth redirect; stores the service account's token                                     |
+| `GET /miro/app`, `/miro/panel`, `/miro/card`, `/miro/assets/<n>.js` | The pages and bundles Miro loads (`frame-ancestors https://miro.com`)                       |
+| `GET /miro/api/projects`, `/search`, `/card`                        | The front's API (read)                                                                      |
+| `GET /miro/api/locale`                                              | The tenant's language for the panel and the card viewer, from the Miro team of the id token |
+| `POST /miro/api/convert`, `/bind`                                   | The front's API (write); may run for minutes under the Plane limits                         |
+| `GET /healthz`                                                      | `ok`                                                                                        |
 
 The API accepts only `Authorization: Bearer <id token>` (`miro.board.getIdToken()`), checks it against the
 Miro app's client secret and serves the tenant of the token's team. `POST /plane/webhook` always answers `200`,
@@ -79,8 +80,10 @@ every problem; the message names variables and JSON paths, never values. A faile
 
 Tenants: [`tenants.example.json`](tenants.example.json) shows every key (tenant id, Plane workspace and its UUID,
 the Plane App's client id and installation id, the Miro team id, `embed`, `keepSource`, `silenceHours`, hidden
-projects). The tenant id matches `^[a-z][a-z0-9]{0,15}$`; the Plane workspace and the Miro team of two tenants
+projects, `locale`). The tenant id matches `^[a-z][a-z0-9]{0,15}$`; the Plane workspace and the Miro team of two tenants
 must differ. UUIDs may be written in any case: they are read in lower case, as Plane sends them.
+
+`locale` is `en` (the default) or `ru`. Every text the app writes (Plane descriptions and comments, the panel, the card viewer and the OAuth replies) is in the tenant's language; logs, startup errors and the operator scripts are English. A request whose tenant is unknown is answered in English; the client pages learn the tenant's language from `GET /miro/api/locale`, so a `ru` tenant's card viewer shows the English `Loading…` for the moment before that answer. A change takes effect after a restart.
 
 ## Plane App
 

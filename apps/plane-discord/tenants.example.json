@@ -2,6 +2,7 @@
 	"tenants": [
 		{
 			"id": "acme",
+			"locale": "en",
 			"guildId": "111111111111111111",
 			"workspace": "example-ws",
 			"workspaceId": "00000000-0000-4000-8000-000000000001",

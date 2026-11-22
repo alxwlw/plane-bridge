@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 
-import { findCyrillic } from '@alxwlw/plane-kit/testing';
+import { findCyrillic, findCyrillicOutsideRu } from '@alxwlw/plane-kit/testing';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const CATALOG = 'src/i18n.ts';
@@ -11,6 +11,9 @@ test('no Cyrillic outside the catalog', () => {
 		.filter((h) => h.path !== CATALOG)
 		.filter((h) => !ALLOWED.some((a) => a.path === h.path && a.line === h.line));
 	expect(hits).toEqual([]);
+});
+test('in the catalog, Cyrillic only inside the ru object', () => {
+	expect(findCyrillicOutsideRu(ROOT)).toEqual([]);
 });
 test('the guard sees the Russian catalog', () => {
 	expect(findCyrillic(ROOT, ['src']).some((h) => h.path === CATALOG)).toBe(true);
