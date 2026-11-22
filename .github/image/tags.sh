@@ -2,6 +2,8 @@
 # Reads tag names (one per line) on stdin; prints "<image>:<tag>" per tag, in input order.
 # Usage: tags.sh <image>
 set -euo pipefail
+# the grammar is ASCII: a locale must not widen the ranges
+export LC_ALL=C
 
 if [ "$#" -ne 1 ] || [ -z "$1" ]; then
   echo "usage: tags.sh <image>" >&2

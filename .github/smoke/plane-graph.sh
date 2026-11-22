@@ -28,6 +28,7 @@ docker run -d --name pg -p 18080:8080 \
 for _ in $(seq 20); do curl -fs --max-time 2 localhost:18080/healthz && break; sleep 0.5; done
 curl -fs --max-time 5 localhost:18080/healthz | grep -qx ok
 docker exec pg wget -q --spider http://localhost:8080/healthz
-curl -fs --max-time 5 localhost:18080/assets/graph.js | grep -q .
+body=$(curl -fs --max-time 5 localhost:18080/assets/graph.js)
+grep -q . <<<"$body"
 docker logs pg | grep -F '"event":"listening"' | grep -F '"id":"ex"'
 docker exec pg test -f /data/plane-graph.sqlite
