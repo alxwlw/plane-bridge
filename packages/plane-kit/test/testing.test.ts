@@ -104,3 +104,7 @@ test('findCyrillicOutsideRu: a catalog path is relative to root', () => {
 		{ path: 'web/texts.ts', line: 1, text: "const z = 'В';" },
 	]);
 });
+test('findCyrillicOutsideRu: the ru object may start on line 1; its first line belongs to it', () => {
+	put('src/i18n.ts', "export const ru = { // а\n\ta: 'А',\n};\nconst z = 'В';\n");
+	expect(findCyrillicOutsideRu(root).map((h) => h.line)).toEqual([4]);
+});
