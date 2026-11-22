@@ -396,9 +396,13 @@ describe('createInteractionHandler: replies before the tenant is known', () => {
 		expect(await content({ type: 2, guild_id: NOCONF_GUILD })).toBe(
 			messages(DEFAULT_LOCALE).brokenRequest,
 		);
+		const stray = base(NOCONF_GUILD);
+		await w.ask(stray);
+		expect(await content(stray)).toBe(messages(DEFAULT_LOCALE).alreadyHandled);
 		w.store.claim = () => {
 			throw new Error('disk full');
 		};
+		expect(await content(base(NOCONF_GUILD))).toBe(messages(DEFAULT_LOCALE).internal);
 		expect(await content(base(GUILD))).toBe('Internal error, try again in a minute.');
 	});
 });
