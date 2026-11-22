@@ -1,5 +1,20 @@
 // Pure front-end logic: no DOM access, types from the contract only.
+import { DEFAULT_LOCALE, isLocale, type Locale } from '@alxwlw/plane-kit/locale';
+
 import type { Edge, GraphJson } from '../src/contract.ts';
+import { type Messages, messages } from '../src/i18n.ts';
+
+/** The client's language: `graph.json` first, then the page's `lang`, then the default. */
+export function pickLocale(dataLocale: unknown, pageLang: string): Locale {
+	if (isLocale(dataLocale)) return dataLocale;
+	if (isLocale(pageLang)) return pageLang;
+	return DEFAULT_LOCALE;
+}
+
+/** The one place the client picks its catalog; `data` is null before the first answer. */
+export function catalogFor(data: GraphJson | null, pageLang: string): Messages {
+	return messages(pickLocale(data?.locale, pageLang));
+}
 
 export type Filters = { showClosed: boolean; project: string | null; area: string | null };
 
@@ -96,8 +111,8 @@ export function fitBox(
 export type StartGroup = { area: string | null; items: string[]; notParallel: boolean };
 
 /**
- * «Можно сейчас» as the panel shows it: only ids that are drawn, empty groups dropped. Only a group
- * of a known area with two or more tasks is «не параллельно»; tasks without an area share no known code.
+ * “Can start now” as the panel shows it: only ids that are drawn, empty groups dropped. Only a group
+ * of a known area with two or more tasks is not parallel; tasks without an area share no known code.
  */
 export function startGroups(
 	canStart: GraphJson['canStart'],

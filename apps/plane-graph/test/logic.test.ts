@@ -1,7 +1,20 @@
 import { describe, expect, test } from 'bun:test';
 
 import type { Edge, GraphJson } from '../src/contract.ts';
-import { clickAction, columnX, fitBox, projectColor, startGroups, visible } from '../web/logic.ts';
+import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
+import { readFileSync } from 'node:fs';
+
+import { en, messages, ru } from '../src/i18n.ts';
+import {
+	catalogFor,
+	clickAction,
+	columnX,
+	fitBox,
+	pickLocale,
+	projectColor,
+	startGroups,
+	visible,
+} from '../web/logic.ts';
 
 type Item = GraphJson['items'][number];
 
@@ -237,4 +250,29 @@ describe('clickAction', () => {
 	test('Ctrl-касание не ждёт подсветки', () => {
 		expect(clickAction({ ...base, pointer: 'touch', ctrl: true })).toBe('follow');
 	});
+});
+
+test('pickLocale prefers graph.json, then the page', () => {
+	expect(pickLocale('en', 'ru')).toBe('en');
+	expect(pickLocale('ru', '')).toBe('ru');
+	expect(pickLocale(undefined, 'en')).toBe('en');
+	expect(pickLocale('fr', 'ru')).toBe('ru');
+	expect(pickLocale(null, 'en-US')).toBe(DEFAULT_LOCALE);
+	expect(pickLocale(undefined, '')).toBe(DEFAULT_LOCALE);
+});
+
+test('catalogFor follows the answer, then the page, then the default', () => {
+	const g = (locale: unknown) => ({ ...graph([], []), locale }) as unknown as GraphJson;
+	expect(catalogFor(g('en'), 'ru')).toBe(en);
+	expect(catalogFor(g('ru'), 'en')).toBe(ru);
+	expect(catalogFor(null, 'en')).toBe(en);
+	expect(catalogFor(g('fr'), 'en')).toBe(en);
+	expect(catalogFor(null, '')).toBe(messages(DEFAULT_LOCALE));
+});
+
+test('the client takes its catalog only from catalogFor', () => {
+	const source = readFileSync(new URL('../web/graph.ts', import.meta.url), 'utf8');
+	expect(source).toContain('catalogFor(data, document.documentElement.lang)');
+	expect(source).not.toMatch(/\bmessages\(/);
+	expect(source).not.toMatch(/\bpickLocale\(/);
 });

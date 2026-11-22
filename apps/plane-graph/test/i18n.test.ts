@@ -34,7 +34,49 @@ test('plain entries are HTML-safe', () => {
 
 test('English copy', () => {
 	const plain = Object.fromEntries(Object.entries(en).filter(([, v]) => typeof v === 'string'));
-	expect(plain).toEqual({ title: 'Work item graph' });
+	expect(plain).toEqual({
+		title: 'Work item graph',
+		allProjects: 'All projects',
+		allAreas: 'All areas',
+		showClosed: 'Show closed',
+		fit: 'Fit',
+		cycle: 'Cycle in “blocks”, the order is undefined:',
+		canStart: 'Can start now',
+		noArea: 'no area',
+		notParallel: 'not in parallel',
+		offline: 'No connection to plane-graph',
+		d3Failed: 'The graph library did not load (cdnjs)',
+		noMatches: 'No work items match the selected filters',
+		canStartColumn: 'CAN START NOW',
+		hintMouse: 'Ctrl/⌘+click or middle mouse button — open in a new tab',
+		hintTouch: 'long press — open in a new tab',
+		agentNotRun: 'the agent has not run yet',
+	});
+});
+
+test('count sentences in English', () => {
+	expect(en.hiddenOpen(1)).toBe('1 more open work item without relations');
+	expect(en.hiddenOpen(3)).toBe('3 more open work items without relations');
+	expect(en.agentRun('12:30', 1, 0)).toBe('agent: 12:30, +1 relation, +0 labels');
+	expect(en.agentRun('12:30', 2, 1)).toBe('agent: 12:30, +2 relations, +1 label');
+});
+
+test('Russian templates are unchanged', () => {
+	expect(ru.hiddenOpen(1)).toBe('ещё 1 открытых задач без связей');
+	expect(ru.agentRun('12:30', 1, 0)).toBe('агент: 12:30, +1 связей, +0 меток');
+	expect(ru.dataAsOf('12:30')).toBe('данные на 12:30');
+});
+
+test('tooltip and wave column in both languages', () => {
+	expect(en.tooltip('LAB-1', 'x', true)).toBe('LAB-1 · x (closed)');
+	expect(ru.tooltip('LAB-1', 'x', true)).toBe('LAB-1 · x (закрыта)');
+	expect(en.tooltip('LAB-1', 'x', false)).toBe('LAB-1 · x');
+	expect(ru.tooltip('LAB-1', 'x', false)).toBe('LAB-1 · x');
+	expect(en.waveColumn(2)).toBe('WAVE 2');
+	expect(ru.waveColumn(2)).toBe('ВОЛНА 2');
+	expect(en.offlineSince('12:30:05')).toBe('No connection to plane-graph, data as of 12:30:05');
+	expect(ru.offlineSince('12:30:05')).toBe('Нет связи с plane-graph, данные на 12:30:05');
+	expect(en.dataAsOf('12:30')).toBe('data as of 12:30');
 });
 
 test('Russian title is today’s literal', () => {

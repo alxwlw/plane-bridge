@@ -8,7 +8,7 @@ dependsOn:
   - 'plane-app'
   - 'plane-kit'
 
-# Канон смотрит в src/ и tests/; здесь каталог тестов — test/, плюс scripts/ и web/.
+# The canon looks at src/ and tests/; here the tests live in test/, plus scripts/ and web/.
 fileGroups:
   tests:
     - 'test/**/*'

@@ -9,6 +9,8 @@ import { Store } from '../src/store.ts';
 import { buildWeb } from '../src/web.ts';
 
 const PORT = 8099;
+// The labels of test/fixtures/demo-copy.json are Russian, so the demo tenant matches them.
+const DEMO_AREA_PREFIX = 'код:';
 const ROOT = join(import.meta.dir, '..');
 
 const config: Config = {
@@ -31,7 +33,7 @@ const config: Config = {
 				readKey: 'demo',
 				agentKey: 'demo-agent-key',
 				locale: 'ru',
-				areaPrefix: 'код:',
+				areaPrefix: DEMO_AREA_PREFIX,
 			},
 		],
 	]),
@@ -49,7 +51,7 @@ store.putRun(
 		startedAt: new Date(now.getTime() - 60_000).toISOString(),
 		finishedAt: now.toISOString(),
 		relationsAdded: [{ fromId: 'demo:INF-2', toId: 'demo:ABC-5' }],
-		labelsAdded: [{ itemId: 'demo:ABC-5', label: 'код:api' }],
+		labelsAdded: [{ itemId: 'demo:ABC-5', label: `${DEMO_AREA_PREFIX}api` }],
 		skipped: 0,
 		costUsd: null,
 	},
