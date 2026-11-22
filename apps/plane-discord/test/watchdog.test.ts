@@ -13,6 +13,7 @@ const tenantOf = (id: string, over: Partial<Tenant> = {}): Tenant => ({
 	id,
 	guildId: '111111111111111111',
 	workspace: 'example-ws',
+	locale: 'ru',
 	workspaceId: '00000000-0000-4000-8000-000000000001',
 	auth: { clientId: 'c', clientSecret: 's', appInstallationId: 'i' },
 	webhookSecret: 'h',

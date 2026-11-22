@@ -1,3 +1,4 @@
+import { DEFAULT_LOCALE, isLocale, type Locale, LOCALES } from '@alxwlw/plane-kit/locale';
 export type EventKind = 'created' | 'closed' | 'mention';
 export type ChannelRoute = {
 	channelId: string;
@@ -13,6 +14,7 @@ export type Tenant = {
 	guildId: string;
 	workspace: string;
 	workspaceId: string;
+	locale: Locale;
 	auth: PlaneAuthConfig;
 	webhookSecret: string;
 	serviceChannelId: string | null;
@@ -179,6 +181,7 @@ function parseTenant(
 			'guildId',
 			'workspace',
 			'workspaceId',
+			'locale',
 			'plane',
 			'serviceChannelId',
 			'silenceHours',
@@ -192,6 +195,11 @@ function parseTenant(
 	const guildId = str(raw, 'guildId', at, SNOWFLAKE, 'a snowflake (17-20 digits)');
 	const workspace = str(raw, 'workspace', at);
 	const workspaceId = str(raw, 'workspaceId', at, UUID, 'a UUID');
+	let locale: Locale = DEFAULT_LOCALE;
+	if (raw.locale !== undefined) {
+		if (isLocale(raw.locale)) locale = raw.locale;
+		else fail(`${at}.locale must be one of ${LOCALES.join(', ')}`);
+	}
 
 	let clientId = '';
 	let appInstallationId = '';
@@ -297,6 +305,7 @@ function parseTenant(
 		workspace,
 		workspaceId,
 		auth: { clientId, clientSecret, appInstallationId },
+		locale,
 		webhookSecret,
 		serviceChannelId,
 		silenceHours,
@@ -309,9 +318,10 @@ function parseTenant(
 
 export function describeTenants(
 	config: Config,
-): Array<{ id: string; channels: number; users: number }> {
+): Array<{ id: string; locale: Locale; channels: number; users: number }> {
 	return config.tenants.map((t) => ({
 		id: t.id,
+		locale: t.locale,
 		channels: t.channels.length,
 		users: t.users.length,
 	}));

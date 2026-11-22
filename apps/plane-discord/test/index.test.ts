@@ -50,7 +50,7 @@ describe('startService', () => {
 		expect(await res.text()).toBe('ok');
 		const listening = w.entries().find((e) => e.event === 'listening');
 		expect(listening).toMatchObject({
-			tenants: [{ id: 'acme', channels: 1, users: 1 }],
+			tenants: [{ id: 'acme', locale: 'ru', channels: 1, users: 1 }],
 		});
 		expect(typeof listening?.port).toBe('number');
 		for (const secret of ['client-secret-value', 'bot-token-value', SECRET])

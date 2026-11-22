@@ -49,6 +49,7 @@ export const tenantOf = (channels: ChannelRoute[], id = 'initech'): Tenant => ({
 	id,
 	guildId: GUILD,
 	workspace: 'example-ws',
+	locale: 'ru',
 	workspaceId: ID(900),
 	auth: { clientId: 'client', clientSecret: 'secret', appInstallationId: ID(901) },
 	webhookSecret: 'hook',
