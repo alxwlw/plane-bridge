@@ -2,7 +2,7 @@ import type { Locale } from '@alxwlw/plane-kit/locale';
 import { type LogEntry } from '@alxwlw/plane-kit/log';
 
 import type { Tenant } from '../src/config.ts';
-import { CREATE_COMMAND } from '../src/discord/commands.ts';
+import { messages } from '../src/i18n.ts';
 import { createInteractionHandler } from '../src/discord/interactions.ts';
 import type { TenantRuntime } from '../src/notify.ts';
 import { type PlaneApi, type ProjectSummary } from '../src/plane/client.ts';
@@ -171,7 +171,7 @@ export async function open(
 			id: w.ids.next(),
 			guildId: GUILD,
 			channel: opts.channel ?? { id: MAPPED, type: 0 },
-			name: opts.name ?? CREATE_COMMAND,
+			name: opts.name ?? messages('ru').createCommand,
 			message: opts.message ?? msg(),
 		}),
 	);

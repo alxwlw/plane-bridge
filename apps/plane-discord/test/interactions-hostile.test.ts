@@ -1,7 +1,7 @@
 import { LOCALES } from '@alxwlw/plane-kit/locale';
 import { describe, expect, test } from 'bun:test';
 
-import { CREATE_COMMAND } from '../src/discord/commands.ts';
+import { messages } from '../src/i18n.ts';
 import { createInteractionHandler } from '../src/discord/interactions.ts';
 import { commandPayload, makeSigner, submitPayload } from './discord-harness.ts';
 import {
@@ -37,7 +37,7 @@ describe('createInteractionHandler: враждебный ввод', () => {
 		});
 		const target = (over: Record<string, unknown>) => ({
 			type: 3,
-			name: CREATE_COMMAND,
+			name: messages('ru').createCommand,
 			target_id: MSG,
 			resolved: { messages: { [MSG]: { id: MSG } } },
 			...over,
@@ -93,7 +93,7 @@ describe('createInteractionHandler: враждебный ввод', () => {
 			id: w.ids.next(),
 			guildId: GUILD,
 			channel: { id: MAPPED, type: 'x', parent_id: 5 },
-			name: CREATE_COMMAND,
+			name: messages('ru').createCommand,
 			message: msg({
 				content: huge,
 				author: 'nobody',

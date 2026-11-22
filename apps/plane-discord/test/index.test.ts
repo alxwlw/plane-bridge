@@ -13,7 +13,7 @@ import {
 	type Service,
 	startService,
 } from '../src/index.ts';
-import { CREATE_COMMAND } from '../src/discord/commands.ts';
+import { messages as catalog } from '../src/i18n.ts';
 import { commandPayload, submitPayload } from './discord-harness.ts';
 import { Store } from '../src/store.ts';
 import { fixture } from './fixtures.ts';
@@ -344,7 +344,7 @@ const command = (channelId: string, id: string) =>
 		id,
 		guildId: GUILD,
 		channel: { id: channelId, type: 0 },
-		name: CREATE_COMMAND,
+		name: catalog('ru').createCommand,
 		message: {
 			id: '444444444444444441',
 			content: 'Починить вход',

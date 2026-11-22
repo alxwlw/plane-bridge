@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 
-import { CREATE_COMMAND } from '../src/discord/commands.ts';
+import { messages } from '../src/i18n.ts';
 import { commandPayload, submitPayload } from './discord-harness.ts';
 import {
 	GUILD,
@@ -19,7 +19,7 @@ describe('createInteractionHandler: ix.refused', () => {
 			id,
 			guildId: GUILD,
 			channel: over.channel ?? { id: UNMAPPED, type: 0 },
-			name: over.name ?? CREATE_COMMAND,
+			name: over.name ?? messages('ru').createCommand,
 			message: msg({ content: SECRET_TEXT }),
 		});
 
@@ -51,7 +51,7 @@ describe('createInteractionHandler: ix.refused', () => {
 		{
 			reason: 'no_message',
 			world: {},
-			payload: (id) => ({ ...command(id), data: { type: 3, name: CREATE_COMMAND } }),
+			payload: (id) => ({ ...command(id), data: { type: 3, name: messages('ru').createCommand } }),
 		},
 		{
 			reason: 'expired_form',
@@ -102,12 +102,15 @@ describe('createInteractionHandler: refusals in English', () => {
 				id,
 				guildId: GUILD,
 				channel: over.channel ?? { id: UNMAPPED, type: 0 },
-				name: over.name ?? CREATE_COMMAND,
+				name: over.name ?? messages('ru').createCommand,
 				message: msg(),
 			});
 		expect(await answer({}, (id) => command(id, { name: 'other' }))).toBe('Unknown command.');
 		expect(
-			await answer({}, (id) => ({ ...command(id), data: { type: 3, name: CREATE_COMMAND } })),
+			await answer({}, (id) => ({
+				...command(id),
+				data: { type: 3, name: messages('ru').createCommand },
+			})),
 		).toBe('Could not read the message.');
 		expect(
 			await answer({}, (id) => ({ ...command(id), channel: undefined, channel_id: undefined })),

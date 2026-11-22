@@ -3,6 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 
 import { commandDefinitions } from '../src/discord/commands.ts';
+import { messages } from '../src/i18n.ts';
 import { DiscordApiError } from '../src/discord/rest.ts';
 import { PlaneApiError } from '../src/plane/client.ts';
 import { chatInputPayload, commandPayload } from './discord-harness.ts';
@@ -356,7 +357,7 @@ describe('/plane KEY', () => {
 	});
 
 	test('commandDefinitions: plane с обязательной опцией key; обе MESSAGE-команды на месте', () => {
-		const defs = commandDefinitions() as { name: string; type: number }[];
+		const defs = commandDefinitions(messages('ru')) as { name: string; type: number }[];
 		expect(defs.map((d) => [d.name, d.type])).toEqual([
 			['Создать задачу в Plane', 3],
 			['Добавить в задачу', 3],
@@ -376,7 +377,7 @@ describe('/plane KEY', () => {
 	});
 
 	test('commandDefinitions: плюс plane-link с обязательной опцией key, только гильдия', () => {
-		const defs = commandDefinitions();
+		const defs = commandDefinitions(messages('ru'));
 		expect(defs).toHaveLength(4);
 		expect(defs[3] as unknown).toEqual({
 			name: 'plane-link',

@@ -1,7 +1,7 @@
 import { type LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
 
-import { APPEND_COMMAND } from '../src/discord/commands.ts';
+import { messages } from '../src/i18n.ts';
 import { createInteractionHandler } from '../src/discord/interactions.ts';
 import { CYRILLIC } from '@alxwlw/plane-kit/testing';
 import { DiscordApiError } from '../src/discord/rest.ts';
@@ -53,7 +53,10 @@ describe('createInteractionHandler: «добавить в задачу»', () =>
 
 	test('модалка «Комментарий в задачу»: ключ и текст сообщения', async () => {
 		const w = await setup();
-		const { body } = await open(w, { name: APPEND_COMMAND, channel: { id: UNMAPPED, type: 0 } });
+		const { body } = await open(w, {
+			name: messages('ru').appendCommand,
+			channel: { id: UNMAPPED, type: 0 },
+		});
 		expect(body.type).toBe(9);
 		expect(body.data.custom_id).toBe('append:n1');
 		expect(body.data.title).toBe('Комментарий в задачу');
@@ -76,11 +79,14 @@ describe('createInteractionHandler: «добавить в задачу»', () =>
 	test('текст сообщения 5000 → value 4000; без текста → без value', async () => {
 		const w = await setup();
 		const long = await open(w, {
-			name: APPEND_COMMAND,
+			name: messages('ru').appendCommand,
 			message: msg({ content: 'щ'.repeat(5000) }),
 		});
 		expect(Array.from(field(long.body, 'text').value)).toHaveLength(4000);
-		const empty = await open(w, { name: APPEND_COMMAND, message: msg({ content: '' }) });
+		const empty = await open(w, {
+			name: messages('ru').appendCommand,
+			message: msg({ content: '' }),
+		});
 		expect(field(empty.body, 'text')).not.toHaveProperty('value');
 	});
 
@@ -88,7 +94,7 @@ describe('createInteractionHandler: «добавить в задачу»', () =>
 		const w = await setup();
 		seed(w);
 		const form = await open(w, {
-			name: APPEND_COMMAND,
+			name: messages('ru').appendCommand,
 			message: msg({ attachments: [{ url: 'https://cdn.example.com/f.png', filename: 'f.png' }] }),
 		});
 		const res = await submitCreate(w, form.customId, {
@@ -111,7 +117,7 @@ describe('createInteractionHandler: «добавить в задачу»', () =>
 			'→ комментарий в [`LAB-40`](<https://plane.example.com/example-ws/browse/LAB-40/>)',
 		]);
 
-		const again = await open(w, { name: APPEND_COMMAND });
+		const again = await open(w, { name: messages('ru').appendCommand });
 		await submitCreate(w, again.customId, { key: 'LAB-40', text: 'ещё раз' });
 		await w.settle();
 		expect(w.plane.createdComments).toHaveLength(1);
@@ -124,7 +130,7 @@ describe('createInteractionHandler: «добавить в задачу»', () =>
 		const w = await setup({ locale: 'en' });
 		seed(w);
 		const form = await open(w, {
-			name: APPEND_COMMAND,
+			name: messages('ru').appendCommand,
 			message: msg({ author: { id: '555555555555555559', username: 'mira' } }),
 		});
 		await submitCreate(w, form.customId, { key: 'LAB-40', text: 'quote' });
@@ -141,7 +147,7 @@ describe('createInteractionHandler: «добавить в задачу»', () =>
 		const w = await setup({ locale: 'en' });
 		seed(w);
 		const form = await open(w, {
-			name: APPEND_COMMAND,
+			name: messages('ru').appendCommand,
 			message: msg({ author: { id: '555555555555555559', username: 'mira' } }),
 		});
 		await submitCreate(w, form.customId, { key: 'LAB-40', text: 'hi <@777777777777777777>' });
@@ -154,11 +160,11 @@ describe('createInteractionHandler: «добавить в задачу»', () =>
 	test('a message redelivered after a language change finds its comment', async () => {
 		const w = await setup({ locale: 'ru' });
 		seed(w);
-		const first = await open(w, { name: APPEND_COMMAND });
+		const first = await open(w, { name: messages('ru').appendCommand });
 		await submitCreate(w, first.customId, { key: 'LAB-40', text: 'раз' });
 		await w.settle();
 		w.setLocale('en');
-		const again = await open(w, { name: APPEND_COMMAND });
+		const again = await open(w, { name: messages('ru').appendCommand });
 		await submitCreate(w, again.customId, { key: 'LAB-40', text: 'again' });
 		await w.settle();
 		expect(w.plane.createdComments).toHaveLength(1);
@@ -171,7 +177,10 @@ describe('createInteractionHandler: «добавить в задачу»', () =>
 	test('сообщение только с вложением: комментарий без цитаты', async () => {
 		const w = await setup();
 		seed(w);
-		const form = await open(w, { name: APPEND_COMMAND, message: msg({ content: '' }) });
+		const form = await open(w, {
+			name: messages('ru').appendCommand,
+			message: msg({ content: '' }),
+		});
 		await submitCreate(w, form.customId, { key: 'LAB-40', text: '   ' });
 		await w.settle();
 		expect(w.plane.createdComments[0]!.comment.comment_html).toBe(
@@ -193,14 +202,17 @@ describe('createInteractionHandler: «добавить в задачу»', () =>
 			'LAB-4x',
 		];
 		for (const key of keys) {
-			const form = await open(w, { name: APPEND_COMMAND, message: msg({ id: w.ids.next() }) });
+			const form = await open(w, {
+				name: messages('ru').appendCommand,
+				message: msg({ id: w.ids.next() }),
+			});
 			await submitCreate(w, form.customId, { key, text: 'x' });
 		}
 		await w.settle();
 		expect(edits(w)).toEqual(keys.map(() => 'Нужен ключ вида LAB-40.'));
 		expect(w.planeCalls.filter((c) => c === 'getWorkItemByKey')).toEqual([]);
 
-		const missing = await open(w, { name: APPEND_COMMAND });
+		const missing = await open(w, { name: messages('ru').appendCommand });
 		await submitCreate(w, missing.customId, { key: 'LAB-999', text: 'x' });
 		await w.settle();
 		expect(edits(w).at(-1)).toBe('Задача LAB-999 не найдена.');
@@ -210,7 +222,7 @@ describe('createInteractionHandler: «добавить в задачу»', () =>
 	test('задача скрытого проекта отвечает как несуществующая, комментария нет', async () => {
 		const w = await setup();
 		seed(w);
-		const form = await open(w, { name: APPEND_COMMAND });
+		const form = await open(w, { name: messages('ru').appendCommand });
 		await submitCreate(w, form.customId, { key: 'ZEN-7', text: 'x' });
 		await w.settle();
 		expect(edits(w)).toEqual(['Задача ZEN-7 не найдена.']);
@@ -225,7 +237,7 @@ describe('createInteractionHandler: «добавить в задачу»', () =>
 		w.plane.createComment = async () => {
 			throw new PlaneApiError(500, 'POST', '/comments/');
 		};
-		const form = await open(w, { name: APPEND_COMMAND });
+		const form = await open(w, { name: messages('ru').appendCommand });
 		await submitCreate(w, form.customId, { key: 'LAB-40', text: SECRET_TEXT });
 		await w.settle();
 		expect(edits(w)).toEqual(['Не получилось: Plane ответил 500.']);
@@ -255,7 +267,7 @@ describe('createInteractionHandler: append replies in English', () => {
 		const w = await setup({ locale: 'en' });
 		seedItem(w);
 		const run = async (key: string, id = MSG) => {
-			const form = await open(w, { name: APPEND_COMMAND, message: msg({ id }) });
+			const form = await open(w, { name: messages('ru').appendCommand, message: msg({ id }) });
 			await submitCreate(w, form.customId, { key, text: 'hi' });
 			await w.settle();
 			return (w.discord.callsOf('editOriginal').at(-1)?.[1] as { content: string }).content;
@@ -270,7 +282,7 @@ describe('createInteractionHandler: append replies in English', () => {
 		const w = await setup({ locale: 'en' });
 		seedItem(w);
 		w.discord.failOnce.set('editOriginal', new DiscordApiError(500, 'PATCH', '/x'));
-		const form = await open(w, { name: APPEND_COMMAND });
+		const form = await open(w, { name: messages('ru').appendCommand });
 		await submitCreate(w, form.customId, { key: 'LAB-40', text: 'hi' });
 		await w.settle();
 		expect(w.logs.find((l) => l.event === 'ix.failed')).toMatchObject({ status: 500 });

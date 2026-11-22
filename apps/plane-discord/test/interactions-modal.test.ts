@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 
-import { APPEND_COMMAND, commandDefinitions, CREATE_COMMAND } from '../src/discord/commands.ts';
+import { commandDefinitions } from '../src/discord/commands.ts';
+import { messages } from '../src/i18n.ts';
 import { createInteractionHandler } from '../src/discord/interactions.ts';
 import { type ProjectSummary } from '../src/plane/client.ts';
 import { commandPayload, makeSigner } from './discord-harness.ts';
@@ -68,7 +69,7 @@ describe('createInteractionHandler: подпись и служебные отв�
 				id: w.ids.next(),
 				guildId: NOCONF_GUILD,
 				channel: { id: MAPPED, type: 0 },
-				name: CREATE_COMMAND,
+				name: messages('ru').createCommand,
 				message: msg(),
 			}),
 		);
@@ -86,7 +87,7 @@ describe('createInteractionHandler: подпись и служебные отв�
 			id: w.ids.next(),
 			guildId: GUILD,
 			channel: { id: MAPPED, type: 0 },
-			name: CREATE_COMMAND,
+			name: messages('ru').createCommand,
 			message: msg(),
 		});
 		expect((await w.ask(payload)).body.type).toBe(9);
@@ -97,12 +98,12 @@ describe('createInteractionHandler: подпись и служебные отв�
 	});
 
 	test('commandDefinitions: две MESSAGE-команды с именами из констант, contexts [0]', () => {
-		expect(commandDefinitions().slice(0, 2)).toEqual([
-			{ name: CREATE_COMMAND, type: 3, contexts: [0], integration_types: [0] },
-			{ name: APPEND_COMMAND, type: 3, contexts: [0], integration_types: [0] },
+		expect(commandDefinitions(messages('ru')).slice(0, 2)).toEqual([
+			{ name: messages('ru').createCommand, type: 3, contexts: [0], integration_types: [0] },
+			{ name: messages('ru').appendCommand, type: 3, contexts: [0], integration_types: [0] },
 		]);
-		expect(CREATE_COMMAND).toBe('Создать задачу в Plane');
-		expect(APPEND_COMMAND).toBe('Добавить в задачу');
+		expect(messages('ru').createCommand).toBe('Создать задачу в Plane');
+		expect(messages('ru').appendCommand).toBe('Добавить в задачу');
 	});
 });
 
@@ -290,7 +291,7 @@ describe('createInteractionHandler: modals in English', () => {
 		});
 		expect(labels(unmapped.body)).toEqual(['Title', 'Description', 'Project']);
 		const append = await open(en, {
-			name: APPEND_COMMAND,
+			name: messages('ru').appendCommand,
 			message: msg({ id: '444444444444444443' }),
 		});
 		expect(append.body.data.title).toBe('Comment on a work item');
@@ -298,12 +299,46 @@ describe('createInteractionHandler: modals in English', () => {
 
 		const ruCreate = await open(ru);
 		const ruAppend = await open(ru, {
-			name: APPEND_COMMAND,
+			name: messages('ru').appendCommand,
 			message: msg({ id: '444444444444444443' }),
 		});
 		const ids = (body: any) => body.data.components.map((c: any) => c.component.custom_id);
 		expect(ids(create.body)).toEqual(ids(ruCreate.body));
 		expect(ids(append.body)).toEqual(ids(ruAppend.body));
 		expect(append.body.data.components[0].component.placeholder).toBe('LAB-40');
+	});
+});
+
+describe('createInteractionHandler: command names of every locale', () => {
+	test('a command registered in Russian opens an English modal for an English tenant', async () => {
+		const en = await setup({ locale: 'en' });
+		const create = await open(en, { name: 'Создать задачу в Plane' });
+		expect(create.body.data.title).toBe('Plane work item');
+		const append = await open(en, {
+			name: 'Добавить в задачу',
+			message: msg({ id: '444444444444444443' }),
+		});
+		expect(append.body.data.title).toBe('Comment on a work item');
+	});
+
+	test('a command registered in English opens a Russian modal for a Russian tenant', async () => {
+		const ru = await setup();
+		const create = await open(ru, { name: 'Create Plane work item' });
+		expect(create.body.data.title).toBe('Задача в Plane');
+		const append = await open(ru, {
+			name: 'Add to work item',
+			message: msg({ id: '444444444444444443' }),
+		});
+		expect(append.body.data.title).toBe('Комментарий в задачу');
+	});
+
+	test('an unknown message command is refused in the tenant language', async () => {
+		const en = await setup({ locale: 'en' });
+		const res = await open(en, { name: 'Do something' });
+		expect(res.body.data.content).toBe('Unknown command.');
+		const ru = await setup();
+		expect((await open(ru, { name: 'Do something' })).body.data.content).toBe(
+			'Неизвестная команда.',
+		);
 	});
 });

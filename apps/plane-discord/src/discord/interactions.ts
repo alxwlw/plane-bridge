@@ -12,7 +12,7 @@ import { PlaneApiError, type ProjectSummary, type WorkItem } from '../plane/clie
 import { readBounded } from '../server.ts';
 import type { Store } from '../store.ts';
 import { discordToPlaneHtml, planeMentionHtml, titleFrom, workItemUrl } from '../text.ts';
-import { APPEND_COMMAND, CREATE_COMMAND, PLANE_COMMAND, PLANE_LINK_COMMAND } from './commands.ts';
+import { messageCommandKind, PLANE_COMMAND, PLANE_LINK_COMMAND } from './commands.ts';
 import {
 	attachmentsHtml,
 	describe,
@@ -391,7 +391,7 @@ export function createInteractionHandler(
 			return slash.plane(rt, ix, id, data);
 		if (data !== null && data.type === CHAT_INPUT_COMMAND && name === PLANE_LINK_COMMAND)
 			return slash.link(rt, ix, id, data);
-		const kind = name === CREATE_COMMAND ? 'create' : name === APPEND_COMMAND ? 'append' : null;
+		const kind = messageCommandKind(name);
 		if (data === null || data.type !== MESSAGE_COMMAND || kind === null)
 			return refuse(tenant.id, id, 'unknown_command', m.unknownCommand);
 		const targetId = snowflake(data.target_id);

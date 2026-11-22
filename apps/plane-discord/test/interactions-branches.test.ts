@@ -1,7 +1,6 @@
 import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
 import { describe, expect, test } from 'bun:test';
 
-import { APPEND_COMMAND, CREATE_COMMAND } from '../src/discord/commands.ts';
 import { createInteractionHandler } from '../src/discord/interactions.ts';
 import { DiscordApiError } from '../src/discord/rest.ts';
 import { messages } from '../src/i18n.ts';
@@ -52,7 +51,7 @@ describe('createInteractionHandler: ветви, которые легко пот
 			'Описание',
 			'Проект',
 		]);
-		const append = await open(w, { name: APPEND_COMMAND });
+		const append = await open(w, { name: messages('ru').appendCommand });
 		expect(append.body.data.components.map((c: any) => c.label)).toEqual(['Ключ задачи', 'Текст']);
 		expect(field(append.body, 'key').required).toBe(true);
 		expect(field(append.body, 'text').required).toBe(false);
@@ -75,7 +74,7 @@ describe('createInteractionHandler: ветви, которые легко пот
 				id: w.ids.next(),
 				guildId: GUILD,
 				channel: {},
-				name: CREATE_COMMAND,
+				name: messages('ru').createCommand,
 				message: msg(),
 			}),
 			channel: undefined,
@@ -167,7 +166,7 @@ describe('createInteractionHandler: ветви, которые легко пот
 			'editOriginal',
 			new DiscordApiError(500, 'PATCH', '/webhooks/:app/:token/messages/@original'),
 		);
-		const { customId } = await open(w, { name: APPEND_COMMAND });
+		const { customId } = await open(w, { name: messages('ru').appendCommand });
 		await w.ask(
 			submitPayload({
 				id: '777000000000000003',
@@ -198,12 +197,12 @@ describe('createInteractionHandler: ветви, которые легко пот
 		const noTitle = await open(w);
 		await w.ask(submitPayload({ id: w.ids.next(), guildId: GUILD, customId: noTitle.customId }));
 		const noKey = await open(w, {
-			name: APPEND_COMMAND,
+			name: messages('ru').appendCommand,
 			message: msg({ id: '444444444444444446' }),
 		});
 		await w.ask(submitPayload({ id: w.ids.next(), guildId: GUILD, customId: noKey.customId }));
 		const noText = await open(w, {
-			name: APPEND_COMMAND,
+			name: messages('ru').appendCommand,
 			message: msg({ id: '444444444444444447' }),
 		});
 		await w.ask(
@@ -264,7 +263,7 @@ describe('createInteractionHandler: ветви, которые легко пот
 	test('«добавить в задачу» в канале скрытого проекта открывает модалку: решает ключ, а не канал', async () => {
 		const w = await setup();
 		w.rt.tenant.hiddenProjects = [P_LAB];
-		const { body } = await open(w, { name: APPEND_COMMAND });
+		const { body } = await open(w, { name: messages('ru').appendCommand });
 		expect(body.type).toBe(9);
 	});
 
@@ -313,7 +312,7 @@ describe('createInteractionHandler: ветви, которые легко пот
 		seedLab(w);
 		const text = `смотри <@${LINKED}> и <@${AUTHOR}>`;
 		const { customId } = await open(w, {
-			name: APPEND_COMMAND,
+			name: messages('ru').appendCommand,
 			message: msg({
 				content: text,
 				mentions: [{ id: AUTHOR, username: 'bob<b>', global_name: null }],
@@ -380,7 +379,7 @@ describe('createInteractionHandler: replies before the tenant is known', () => {
 				id: w.ids.next(),
 				guildId,
 				channel: { id: MAPPED, type: 0 },
-				name: CREATE_COMMAND,
+				name: messages('ru').createCommand,
 				message: msg(),
 			});
 		// A guild no tenant owns: the default language, whatever the tenants speak.
