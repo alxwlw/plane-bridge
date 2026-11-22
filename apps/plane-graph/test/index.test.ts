@@ -168,6 +168,23 @@ describe('startService', () => {
 			expect(w.lines.join('\n')).not.toContain(secret);
 	});
 
+	test('every Plane request of the real runtime goes to PLANE_URL when PLANE_WEB_URL is set', async () => {
+		const urls: string[] = [];
+		const w = world();
+		w.options.plane = undefined;
+		w.options.fetch = async (input) => {
+			urls.push(String(input));
+			if (String(input).endsWith('/auth/o/token/'))
+				return new Response(JSON.stringify({ access_token: 't', expires_in: 3600 }));
+			return new Response(JSON.stringify({ results: [], next_page_results: false }));
+		};
+		w.env.PLANE_GRAPH_PLANE_URL = 'https://api.example.com';
+		w.env.PLANE_GRAPH_PLANE_WEB_URL = 'https://app.example.com';
+		await start(w);
+		expect(urls.length).toBeGreaterThan(1);
+		expect(urls.filter((u) => !u.startsWith('https://api.example.com/'))).toEqual([]);
+	});
+
 	test('the listening line carries the locale and area prefix of an en tenant', async () => {
 		const w = world();
 		const en = JSON.stringify({

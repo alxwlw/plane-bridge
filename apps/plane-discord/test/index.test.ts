@@ -76,6 +76,23 @@ describe('startService', () => {
 		expect(w.entries().some((e) => e.event === 'plane.accepted')).toBe(true);
 	});
 
+	test('the notification links to PLANE_WEB_URL while every Plane request goes to PLANE_URL', async () => {
+		const { w, service, url } = start(world(), {
+			...ENV,
+			PLANE_DISCORD_PLANE_URL: 'https://api.example.com',
+			PLANE_DISCORD_PLANE_WEB_URL: 'https://app.example.com/',
+		});
+		expect((await post(url(''), delivery('00000000-0000-4000-8000-0000000000a2'))).status).toBe(
+			200,
+		);
+		await service.idle();
+		const content = String(messages(w)[0]?.body?.content);
+		expect(content).toContain('<https://app.example.com/example-ws/browse/LAB-57/>');
+		expect(content).not.toContain('api.example.com');
+		expect(w.planeHosts.length).toBeGreaterThan(0);
+		expect(new Set(w.planeHosts)).toEqual(new Set(['api.example.com']));
+	});
+
 	test('комментарий Plane по задаче с тредом → webhook приложения из списка канала, сообщение в тред', async () => {
 		const dir = mkdtempSync(join(tmpdir(), 'plane-discord-'));
 		try {
@@ -410,6 +427,32 @@ describe('startService: Discord interactions', () => {
 			external_id: '444444444444444441',
 		});
 		expect(messages(w)[0]?.body?.content).toContain('`LAB-7`');
+	});
+
+	test('a created work item is linked on PLANE_WEB_URL while every Plane request goes to PLANE_URL', async () => {
+		const { w, service, url } = start(world(), {
+			...ENV,
+			PLANE_DISCORD_PLANE_URL: 'https://api.example.com',
+			PLANE_DISCORD_PLANE_WEB_URL: 'https://app.example.com',
+		});
+		const opened = await ask(url(''), command(CHANNEL, '800000000000000014'));
+		expect(opened.body.type).toBe(9);
+		await ask(
+			url(''),
+			submitPayload({
+				id: '800000000000000015',
+				guildId: GUILD,
+				customId: opened.body.data.custom_id as string,
+				texts: { title: 'Fix login', description: 'text' },
+			}),
+		);
+		await w.until(() => w.entries().some((e) => e.event === 'ix.done'));
+		await service.idle();
+		const content = String(messages(w)[0]?.body?.content);
+		expect(content).toContain('(<https://app.example.com/example-ws/browse/');
+		expect(content).not.toContain('api.example.com');
+		expect(w.planeHosts.length).toBeGreaterThan(0);
+		expect(new Set(w.planeHosts)).toEqual(new Set(['api.example.com']));
 	});
 });
 

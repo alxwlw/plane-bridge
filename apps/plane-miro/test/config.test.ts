@@ -22,6 +22,29 @@ const errorOf = (fn: () => unknown): string => {
 	throw new Error('expected loadConfig to throw');
 };
 
+describe('loadConfig: PLANE_MIRO_PLANE_WEB_URL', () => {
+	const WEB = 'PLANE_MIRO_PLANE_WEB_URL';
+	test('PLANE_MIRO_PLANE_WEB_URL defaults to PLANE_MIRO_PLANE_URL', () => {
+		const config = load(EXAMPLE);
+		expect(config.planeWebUrl).toBe('https://plane.example.com');
+		expect(config.planeWebUrl).toBe(config.planeUrl);
+	});
+	test('an empty PLANE_MIRO_PLANE_WEB_URL falls back to PLANE_MIRO_PLANE_URL', () => {
+		expect(load(EXAMPLE, { ...env(), [WEB]: '  ' }).planeWebUrl).toBe('https://plane.example.com');
+		expect(load(EXAMPLE, { ...env(), [WEB]: '' }).planeWebUrl).toBe('https://plane.example.com');
+	});
+	test('PLANE_MIRO_PLANE_WEB_URL is read without the trailing slash', () => {
+		const config = load(EXAMPLE, { ...env(), [WEB]: 'https://app.example.com/' });
+		expect(config.planeWebUrl).toBe('https://app.example.com');
+		expect(config.planeUrl).toBe('https://plane.example.com');
+	});
+	test('PLANE_MIRO_PLANE_WEB_URL without a scheme is rejected', () => {
+		expect(errorOf(() => load(EXAMPLE, { ...env(), [WEB]: 'app.example.com' }))).toContain(
+			'PLANE_MIRO_PLANE_WEB_URL must start with http(s)://',
+		);
+	});
+});
+
 describe('loadConfig', () => {
 	test('два тенанта читаются, секреты из env', () => {
 		const c = loadConfig(env(), read(twoTenants));
@@ -227,6 +250,7 @@ describe('loadConfig', () => {
 		expect(load(file, e)).toEqual({
 			port: 9090,
 			planeUrl: 'https://plane.example.com',
+			planeWebUrl: 'https://plane.example.com',
 			publicUrl: 'https://plane-miro.example.com',
 			configPath: '/cfg/t.json',
 			dbPath: '/tmp/x.sqlite',

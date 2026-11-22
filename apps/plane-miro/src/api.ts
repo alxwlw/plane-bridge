@@ -1,3 +1,4 @@
+import { workItemUrl } from '@alxwlw/plane-kit/links';
 import type { Log } from '@alxwlw/plane-kit/log';
 
 import type { Config } from './config.ts';
@@ -178,7 +179,7 @@ export function createApi(deps: ApiDeps): (req: Request, url: URL) => Promise<Re
 			name: workItem.name,
 			state: state?.name ?? '—',
 			assignees,
-			url: `${deps.config.planeUrl}/${rt.tenant.workspace}/browse/${key}/`,
+			url: workItemUrl(deps.config.planeWebUrl, rt.tenant.workspace, key),
 		});
 	}
 

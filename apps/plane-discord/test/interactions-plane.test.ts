@@ -43,6 +43,20 @@ function seed(w: World, assignees: string[] = []) {
 	});
 }
 
+describe('/plane KEY: two hosts', () => {
+	test('the card links to the web address', async () => {
+		const w = await setup({ planeWebUrl: 'https://app.example.com' });
+		seed(w);
+		await slash(w, 'lab-40');
+		await w.settle();
+		const [, reply] = w.discord.callsOf('editOriginal')[0] as [
+			string,
+			{ embeds: { url: string }[] },
+		];
+		expect(reply.embeds[0]?.url).toBe('https://app.example.com/example-ws/browse/LAB-40/');
+	});
+});
+
 describe('/plane KEY', () => {
 	test('/plane lab-40 → публичный deferred (без flags 64), затем editOriginal с карточкой', async () => {
 		const w = await setup();

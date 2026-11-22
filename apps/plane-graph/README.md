@@ -69,17 +69,18 @@ now, if that was longer ago); asking again while one is queued or running change
 
 Environment:
 
-| Variable                          | Required | Meaning                                                            |
-| --------------------------------- | -------- | ------------------------------------------------------------------ |
-| `PLANE_GRAPH_PLANE_URL`           | yes      | Plane base URL, e.g. `https://plane.example.com`                   |
-| `PLANE_GRAPH_PUBLIC_URL`          | yes      | Public URL of this service, e.g. `https://plane-graph.example.com` |
-| `PLANE_GRAPH_<ID>_PLANE_SECRET`   | yes      | Per tenant: client secret of the Plane App                         |
-| `PLANE_GRAPH_<ID>_WEBHOOK_SECRET` | yes      | Per tenant: webhook secret of the Plane App                        |
-| `PLANE_GRAPH_<ID>_READ_KEY`       | yes      | Per tenant: the key of the graph URLs (`openssl rand -hex 32`)     |
-| `PLANE_GRAPH_<ID>_AGENT_KEY`      | yes      | Per tenant: the agent's bearer key; must differ from the read key  |
-| `PLANE_GRAPH_CONFIG`              | no       | Tenants file, default `/config/tenants.json`                       |
-| `PLANE_GRAPH_DB`                  | no       | SQLite file, default `/data/plane-graph.sqlite`                    |
-| `PORT`                            | no       | Listen port, default `8080`                                        |
+| Variable                          | Required | Meaning                                                                                                       |
+| --------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------- |
+| `PLANE_GRAPH_PLANE_URL`           | yes      | Plane API base URL, e.g. `https://plane.example.com`; on Plane Cloud `https://api.plane.so`                   |
+| `PLANE_GRAPH_PLANE_WEB_URL`       | no       | Plane web address for work-item links; default `PLANE_GRAPH_PLANE_URL`; on Plane Cloud `https://app.plane.so` |
+| `PLANE_GRAPH_PUBLIC_URL`          | yes      | Public URL of this service, e.g. `https://plane-graph.example.com`                                            |
+| `PLANE_GRAPH_<ID>_PLANE_SECRET`   | yes      | Per tenant: client secret of the Plane App                                                                    |
+| `PLANE_GRAPH_<ID>_WEBHOOK_SECRET` | yes      | Per tenant: webhook secret of the Plane App                                                                   |
+| `PLANE_GRAPH_<ID>_READ_KEY`       | yes      | Per tenant: the key of the graph URLs (`openssl rand -hex 32`)                                                |
+| `PLANE_GRAPH_<ID>_AGENT_KEY`      | yes      | Per tenant: the agent's bearer key; must differ from the read key                                             |
+| `PLANE_GRAPH_CONFIG`              | no       | Tenants file, default `/config/tenants.json`                                                                  |
+| `PLANE_GRAPH_DB`                  | no       | SQLite file, default `/data/plane-graph.sqlite`                                                               |
+| `PORT`                            | no       | Listen port, default `8080`                                                                                   |
 
 `<ID>` is the tenant id in upper case. A missing or malformed value stops the start with one message listing
 every problem; the message names variables and JSON paths, never values. A failed build of `web/` stops it too.

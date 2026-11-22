@@ -219,6 +219,23 @@ test('без env — код 2 и список недостающих; --help —
 	expect(logs.join('\n')).toContain('PROBE_SCOPES');
 });
 
+test('PROBE_PLANE_WEB_URL is the address of the browse-url row; the API calls stay on PROBE_PLANE_URL', async () => {
+	const stub = stubPlane();
+	try {
+		expect(
+			await main([], { ...appEnv(stub.url), PROBE_PLANE_WEB_URL: ' https://app.example.com/ ' }),
+		).toBe(0);
+	} finally {
+		stub.server.stop(true);
+	}
+	const out = logs.join('\n');
+	expect(out).toContain(
+		'✓ browse-url — open and confirm: https://app.example.com/example-ws/browse/DX-7/',
+	);
+	expect(out).not.toContain(`${stub.url}/example-ws/browse`);
+	expect(stub.seen.length).toBeGreaterThan(0);
+});
+
 test('PROBE_SCOPES уходит в запрос token, по умолчанию — список плана', async () => {
 	const seen: string[] = [];
 	const fetchFn = async (_url: string, init?: RequestInit): Promise<Response> => {

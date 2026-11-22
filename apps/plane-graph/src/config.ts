@@ -20,6 +20,8 @@ export type TenantConfig = {
 };
 export type Config = {
 	planeUrl: string;
+	/** The Plane web address work-item links point to; `planeUrl` is the API and OAuth base. */
+	planeWebUrl: string;
 	publicUrl: string;
 	dbPath: string;
 	port: number;
@@ -70,6 +72,7 @@ export function loadConfig(
 		return value;
 	};
 	const planeUrl = url('PLANE_GRAPH_PLANE_URL');
+	const planeWebUrl = url('PLANE_GRAPH_PLANE_WEB_URL') || planeUrl;
 	const publicUrl = url('PLANE_GRAPH_PUBLIC_URL');
 
 	const port = env.PORT?.trim() ? Number(env.PORT) : 8080;
@@ -80,7 +83,7 @@ export function loadConfig(
 	const tenants = parseTenants(env, readFile, configPath, bad);
 
 	if (problems.length > 0) throw new Error(`plane-graph: ${problems.join('; ')}`);
-	return { planeUrl, publicUrl, dbPath, port, tenants };
+	return { planeUrl, planeWebUrl, publicUrl, dbPath, port, tenants };
 }
 
 function parseTenants(

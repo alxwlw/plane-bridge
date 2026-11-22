@@ -66,18 +66,19 @@ Without a `serviceChannelId` only the log lines are written.
 
 Environment:
 
-| Variable                               | Required | Meaning                                                              |
-| -------------------------------------- | -------- | -------------------------------------------------------------------- |
-| `PLANE_DISCORD_PLANE_URL`              | yes      | Plane base URL, e.g. `https://plane.example.com`                     |
-| `PLANE_DISCORD_PUBLIC_URL`             | yes      | Public URL of this service, e.g. `https://plane-discord.example.com` |
-| `PLANE_DISCORD_DISCORD_APPLICATION_ID` | yes      | Discord application id                                               |
-| `PLANE_DISCORD_DISCORD_PUBLIC_KEY`     | yes      | Discord public key, 64 hex digits                                    |
-| `PLANE_DISCORD_DISCORD_BOT_TOKEN`      | yes      | Discord bot token                                                    |
-| `PLANE_DISCORD_<ID>_PLANE_SECRET`      | yes      | Per tenant: client secret of the Plane App                           |
-| `PLANE_DISCORD_<ID>_WEBHOOK_SECRET`    | yes      | Per tenant: webhook secret of the Plane App                          |
-| `PLANE_DISCORD_CONFIG`                 | no       | Tenants file, default `/config/tenants.json`                         |
-| `PLANE_DISCORD_DB`                     | no       | SQLite file, default `/data/plane-discord.sqlite`                    |
-| `PORT`                                 | no       | Listen port, default `8080`                                          |
+| Variable                               | Required | Meaning                                                                                                         |
+| -------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------- |
+| `PLANE_DISCORD_PLANE_URL`              | yes      | Plane API base URL, e.g. `https://plane.example.com`; on Plane Cloud `https://api.plane.so`                     |
+| `PLANE_DISCORD_PLANE_WEB_URL`          | no       | Plane web address for work-item links; default `PLANE_DISCORD_PLANE_URL`; on Plane Cloud `https://app.plane.so` |
+| `PLANE_DISCORD_PUBLIC_URL`             | yes      | Public URL of this service, e.g. `https://plane-discord.example.com`                                            |
+| `PLANE_DISCORD_DISCORD_APPLICATION_ID` | yes      | Discord application id                                                                                          |
+| `PLANE_DISCORD_DISCORD_PUBLIC_KEY`     | yes      | Discord public key, 64 hex digits                                                                               |
+| `PLANE_DISCORD_DISCORD_BOT_TOKEN`      | yes      | Discord bot token                                                                                               |
+| `PLANE_DISCORD_<ID>_PLANE_SECRET`      | yes      | Per tenant: client secret of the Plane App                                                                      |
+| `PLANE_DISCORD_<ID>_WEBHOOK_SECRET`    | yes      | Per tenant: webhook secret of the Plane App                                                                     |
+| `PLANE_DISCORD_CONFIG`                 | no       | Tenants file, default `/config/tenants.json`                                                                    |
+| `PLANE_DISCORD_DB`                     | no       | SQLite file, default `/data/plane-discord.sqlite`                                                               |
+| `PORT`                                 | no       | Listen port, default `8080`                                                                                     |
 
 `<ID>` is the tenant id in upper case. A missing or malformed value stops the start with one message
 listing every problem; the message names variables and JSON paths, never values.

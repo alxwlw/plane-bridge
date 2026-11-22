@@ -7,7 +7,6 @@ import {
 	titleFrom,
 	userMap,
 	workItemKey,
-	workItemUrl,
 } from '../src/text.ts';
 import { messages } from '../src/i18n.ts';
 import { fixture } from './fixtures.ts';
@@ -256,18 +255,9 @@ describe('discordToPlaneHtml', () => {
 	});
 });
 
-describe('workItemKey / workItemUrl / titleFrom', () => {
-	test('workItemKey LAB + 41 → LAB-41; workItemUrl без двойных слэшей', () => {
+describe('workItemKey / titleFrom', () => {
+	test('workItemKey LAB + 41 → LAB-41', () => {
 		expect(workItemKey('LAB', 41)).toBe('LAB-41');
-		expect(workItemUrl('https://plane.example.com', 'example-ws', 'LAB-41')).toBe(
-			'https://plane.example.com/example-ws/browse/LAB-41/',
-		);
-		expect(workItemUrl('https://plane.example.com//', 'example-ws', 'LAB-41')).toBe(
-			'https://plane.example.com/example-ws/browse/LAB-41/',
-		);
-		expect(workItemUrl('https://plane.example.com', 'a/b', 'K 1')).toBe(
-			'https://plane.example.com/a%2Fb/browse/K%201/',
-		);
 	});
 
 	test('titleFrom: первая непустая строка; 300 символов → 255; одни пробелы → пустая строка', () => {

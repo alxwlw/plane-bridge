@@ -213,10 +213,6 @@ export function workItemKey(identifier: string, sequenceId: number): string {
 	return `${identifier}-${sequenceId}`;
 }
 
-export function workItemUrl(planeUrl: string, workspace: string, key: string): string {
-	return `${planeUrl.replace(/\/+$/, '')}/${encodeURIComponent(workspace)}/browse/${encodeURIComponent(key)}/`;
-}
-
 /** First non-blank line, trimmed, at most 255 code points; '' when the text has none. */
 export function titleFrom(text: string): string {
 	const line = text.split(/\r?\n/).find((l) => l.trim() !== '');

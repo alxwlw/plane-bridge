@@ -11,6 +11,7 @@
 		"./log": "./src/log.ts",
 		"./capture": "./src/capture.ts",
 		"./locale": "./src/locale.ts",
+		"./links": "./src/links.ts",
 		"./testing": "./src/testing.ts"
 	},
 	"devDependencies": {

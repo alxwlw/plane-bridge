@@ -28,6 +28,33 @@ const errorOf = (fn: () => unknown): string => {
 	throw new Error('expected loadConfig to throw');
 };
 
+describe('loadConfig: PLANE_GRAPH_PLANE_WEB_URL', () => {
+	const WEB = 'PLANE_GRAPH_PLANE_WEB_URL';
+	test('PLANE_GRAPH_PLANE_WEB_URL defaults to PLANE_GRAPH_PLANE_URL', () => {
+		const config = load(EXAMPLE);
+		expect(config.planeWebUrl).toBe('https://plane.example.com');
+		expect(config.planeWebUrl).toBe(config.planeUrl);
+	});
+	test('an empty PLANE_GRAPH_PLANE_WEB_URL falls back to PLANE_GRAPH_PLANE_URL', () => {
+		expect(load(EXAMPLE, { ...baseEnv(), [WEB]: '  ' }).planeWebUrl).toBe(
+			'https://plane.example.com',
+		);
+		expect(load(EXAMPLE, { ...baseEnv(), [WEB]: '' }).planeWebUrl).toBe(
+			'https://plane.example.com',
+		);
+	});
+	test('PLANE_GRAPH_PLANE_WEB_URL is read without the trailing slash', () => {
+		const config = load(EXAMPLE, { ...baseEnv(), [WEB]: 'https://app.example.com/' });
+		expect(config.planeWebUrl).toBe('https://app.example.com');
+		expect(config.planeUrl).toBe('https://plane.example.com');
+	});
+	test('PLANE_GRAPH_PLANE_WEB_URL without a scheme is rejected', () => {
+		expect(errorOf(() => load(EXAMPLE, { ...baseEnv(), [WEB]: 'app.example.com' }))).toContain(
+			'PLANE_GRAPH_PLANE_WEB_URL must start with http(s)://',
+		);
+	});
+});
+
 describe('loadConfig', () => {
 	test('читает тенанта и умолчания', () => {
 		const paths: string[] = [];

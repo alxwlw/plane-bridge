@@ -102,6 +102,22 @@ describe('createInteractionHandler: отправка формы «создать
 		);
 	});
 
+	test('the public reply and the repeat-submit answer link to the web address', async () => {
+		const w = await setup({ planeWebUrl: 'https://app.example.com' });
+		const first = await open(w);
+		await submitCreate(w, first.customId, { title: 'Fix login' });
+		await w.settle();
+		expect(w.discord.callsOf('sendMessage')[0]?.[1]).toMatchObject({
+			content: expect.stringContaining('(<https://app.example.com/example-ws/browse/LAB-1/>)'),
+		});
+		const again = await open(w);
+		await submitCreate(w, again.customId, { title: 'Fix login' });
+		await w.settle();
+		expect(
+			(w.discord.callsOf('editOriginal').at(-1)?.[1] as { content: string }).content,
+		).toContain('(<https://app.example.com/example-ws/browse/LAB-1/>)');
+	});
+
 	test('публичный ответ — reply на исходное сообщение «→ `LAB-1` «Название»», ephemeral удалён', async () => {
 		const w = await setup();
 		const { customId } = await open(w);

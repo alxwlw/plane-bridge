@@ -32,7 +32,7 @@ export interface GraphJson {
 		closed: boolean;
 		/** Names of labels with the area prefix, alphabetical. */
 		areas: string[];
-		/** <PLANE_URL>/<workspaceSlug>/browse/<KEY>/ */
+		/** <PLANE_WEB_URL>/<workspaceSlug>/browse/<KEY>/ (PLANE_WEB_URL defaults to PLANE_URL) */
 		url: string;
 		/** Open items in "blocks" outside a cycle only; 0 = can start now. */
 		wave: number | null;
