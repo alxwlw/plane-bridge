@@ -343,14 +343,15 @@ describe('parseGrafanaWebhook by locale', () => {
 		}
 	});
 
-	test('an alert without links has no empty links paragraph in either language', () => {
+	test('an alert without links has no empty links paragraph and an alert without labels no list, in either language', () => {
 		for (const l of LOCALES) {
 			const [signal] = parseGrafanaWebhook(
-				{ alerts: [{ status: 'firing', fingerprint: 'f', startsAt: T, labels: { team: 'x' } }] },
+				{ alerts: [{ status: 'firing', fingerprint: 'f', startsAt: T }] },
 				DEFAULT_PRIORITY,
 				messages(l),
 			) as Firing[];
 			expect(signal?.bodyHtml).not.toContain('<p></p>');
+			expect(signal?.bodyHtml).not.toContain('<ul>');
 		}
 	});
 
