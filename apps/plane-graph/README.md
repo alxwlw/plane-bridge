@@ -132,12 +132,14 @@ a plain click on a task therefore shows a hint; Ctrl/⌘+click or the middle mou
 
 ## Image
 
-`ghcr.io/alxwlw/plane-graph`, built by `.github/workflows/plane-graph-image.yml` on every push to `main` that touches
-this directory or anything under `packages/`; deploy by digest. The workflow smoke-tests the image first (`/healthz`,
-the bundle, the `listening` line, the SQLite file in `/data`).
+`ghcr.io/alxwlw/plane-graph` for `linux/amd64` and `linux/arm64`, built by `.github/workflows/plane-graph-image.yml`
+(through `.github/workflows/image.yml`) on every push to `main` that touches this directory or anything under
+`packages/`; deploy by digest. Each platform is smoke-tested on its own runner by `.github/smoke/plane-graph.sh` before
+publishing (`/healthz`, the bundle, the `listening` line, the SQLite file in `/data`).
 
 The build context is the repository root: the image carries `packages/plane-app` and `packages/plane-kit` as source and installs nothing.
 
 ```bash
 docker build -f apps/plane-graph/Dockerfile -t plane-graph:local .
+.github/smoke/plane-graph.sh plane-graph:local
 ```

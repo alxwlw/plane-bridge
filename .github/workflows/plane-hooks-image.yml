@@ -5,78 +5,31 @@ on:
       - 'apps/plane-hooks/**'
       - 'packages/**'
       - '.github/workflows/plane-hooks-image.yml'
+      - '.github/workflows/image.yml'
+      - '.github/smoke/plane-hooks.sh'
+      - '.github/image/**'
   push:
     branches: [main]
     paths:
       - 'apps/plane-hooks/**'
       - 'packages/**'
       - '.github/workflows/plane-hooks-image.yml'
+      - '.github/workflows/image.yml'
+      - '.github/smoke/plane-hooks.sh'
+      - '.github/image/**'
 permissions:
   contents: read
   packages: write
-env:
-  IMAGE: ghcr.io/alxwlw/plane-hooks
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   image:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
-      - name: Build
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
-        with:
-          context: .
-          file: apps/plane-hooks/Dockerfile
-          platforms: linux/amd64
-          load: true
-          tags: plane-hooks:smoke
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      - name: Smoke
-        run: |
-          set -euo pipefail
-          cp apps/plane-hooks/tenants.example.json "$RUNNER_TEMP/tenants.json"
-          chmod 644 "$RUNNER_TEMP/tenants.json"
-          key="$(openssl genrsa 2048 2>/dev/null | base64 -w0)"
-          docker run -d --name ph -p 18080:8080 \
-            -v "$RUNNER_TEMP/tenants.json:/config/tenants.json:ro" -v phsmoke:/data \
-            -e PLANE_HOOKS_PLANE_URL=https://plane.example.com \
-            -e PLANE_HOOKS_PUBLIC_URL=https://hooks.example.com \
-            -e PLANE_HOOKS_ACME_PLANE_SECRET=x \
-            -e PLANE_HOOKS_ACME_GRAFANA_TOKEN="ph_$(printf '0a%.0s' $(seq 24))" \
-            -e PLANE_HOOKS_ACME_VERCEL_SECRET=x \
-            -e PLANE_HOOKS_ACME_DOKPLOY_SECRET=x \
-            -e PLANE_HOOKS_GH_ACME_PRIVATE_KEY="$key" \
-            -e PLANE_HOOKS_GH_ACME_WEBHOOK_SECRET=x plane-hooks:smoke
-          for _ in $(seq 20); do curl -fs localhost:18080/healthz && break; sleep 0.5; done
-          curl -fs localhost:18080/healthz | grep -qx ok
-          docker exec ph wget -q --spider http://localhost:8080/healthz
-          docker logs ph | grep -F '"event":"listening"' | grep -F '"id":"acme"'
-          docker exec ph test -f /data/plane-hooks.sqlite
-          docker rm -f ph
-      - name: Log in to ghcr.io
-        if: github.event_name == 'push'
-        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push
-        id: push
-        if: github.event_name == 'push'
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
-        with:
-          context: .
-          file: apps/plane-hooks/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ${{ env.IMAGE }}:${{ github.sha }}
-            ${{ env.IMAGE }}:main
-          labels: org.opencontainers.image.source=https://github.com/alxwlw/plane-bridge
-          cache-from: type=gha
-      - name: Digest
-        if: github.event_name == 'push'
-        run: echo "${IMAGE}@${DIGEST}" >> "$GITHUB_STEP_SUMMARY"
-        env:
-          DIGEST: ${{ steps.push.outputs.digest }}
+    uses: ./.github/workflows/image.yml
+    with:
+      app: plane-hooks
+      version: main
+      tags: |
+        main
+        ${{ github.sha }}
+      push: ${{ github.event_name == 'push' }}

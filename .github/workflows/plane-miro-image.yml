@@ -5,78 +5,31 @@ on:
       - 'apps/plane-miro/**'
       - 'packages/**'
       - '.github/workflows/plane-miro-image.yml'
+      - '.github/workflows/image.yml'
+      - '.github/smoke/plane-miro.sh'
+      - '.github/image/**'
   push:
     branches: [main]
     paths:
       - 'apps/plane-miro/**'
       - 'packages/**'
       - '.github/workflows/plane-miro-image.yml'
+      - '.github/workflows/image.yml'
+      - '.github/smoke/plane-miro.sh'
+      - '.github/image/**'
 permissions:
   contents: read
   packages: write
-env:
-  IMAGE: ghcr.io/alxwlw/plane-miro
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   image:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
-      - name: Build
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
-        with:
-          context: .
-          file: apps/plane-miro/Dockerfile
-          platforms: linux/amd64
-          load: true
-          tags: plane-miro:smoke
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      - name: Smoke
-        run: |
-          set -euo pipefail
-          cp apps/plane-miro/tenants.example.json "$RUNNER_TEMP/tenants.json"
-          docker run -d --name pm -p 18080:8080 \
-            -v "$RUNNER_TEMP/tenants.json:/config/tenants.json:ro" -v pmsmoke:/data \
-            -e PLANE_MIRO_PLANE_URL=https://plane.example.com \
-            -e PLANE_MIRO_PUBLIC_URL=https://plane-miro.example.com \
-            -e PLANE_MIRO_MIRO_CLIENT_ID=3458764500000000099 \
-            -e PLANE_MIRO_MIRO_CLIENT_SECRET=x \
-            -e PLANE_MIRO_ACME_PLANE_SECRET=x \
-            -e PLANE_MIRO_ACME_WEBHOOK_SECRET=x \
-            -e PLANE_MIRO_BETA_PLANE_SECRET=x \
-            -e PLANE_MIRO_BETA_WEBHOOK_SECRET=x plane-miro:smoke
-          for _ in $(seq 20); do curl -fs localhost:18080/healthz && break; sleep 0.5; done
-          curl -fs localhost:18080/healthz | grep -qx ok
-          docker exec pm wget -q --spider http://localhost:8080/healthz
-          # The pages answer GET only (a HEAD is 405), so the headers come from a GET with the body dropped.
-          curl -fsD - -o /dev/null localhost:18080/miro/panel | grep -i '^content-security-policy: frame-ancestors https://miro.com'
-          docker logs pm | grep -F '"event":"listening"' | grep -F '"id":"acme"'
-          docker exec pm test -f /data/plane-miro.sqlite
-          docker rm -f pm
-      - name: Log in to ghcr.io
-        if: github.event_name == 'push'
-        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Push
-        id: push
-        if: github.event_name == 'push'
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
-        with:
-          context: .
-          file: apps/plane-miro/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ${{ env.IMAGE }}:${{ github.sha }}
-            ${{ env.IMAGE }}:main
-          labels: org.opencontainers.image.source=https://github.com/alxwlw/plane-bridge
-          cache-from: type=gha
-      - name: Digest
-        if: github.event_name == 'push'
-        run: echo "${IMAGE}@${DIGEST}" >> "$GITHUB_STEP_SUMMARY"
-        env:
-          DIGEST: ${{ steps.push.outputs.digest }}
+    uses: ./.github/workflows/image.yml
+    with:
+      app: plane-miro
+      version: main
+      tags: |
+        main
+        ${{ github.sha }}
+      push: ${{ github.event_name == 'push' }}

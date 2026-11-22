@@ -16,3 +16,5 @@ jobs:
       - name: gitleaks по всей истории
         run: gitleaks git --redact --no-banner .
       - run: proto run actionlint -- -color
+      - run: git ls-files -z '*.sh' | xargs -0 proto run shellcheck --
+      - run: .github/image/test.sh

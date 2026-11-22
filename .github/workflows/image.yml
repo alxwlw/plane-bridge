@@ -1,0 +1,171 @@
+name: image
+on:
+  workflow_call:
+    inputs:
+      app:
+        description: Directory under apps/, e.g. plane-hooks
+        type: string
+        required: true
+      version:
+        description: Value of the org.opencontainers.image.version label and annotation
+        type: string
+        required: true
+      tags:
+        description: Tag names, one per line, without the image name
+        type: string
+        required: true
+      push:
+        description: Publish the image (otherwise build and smoke-test only)
+        type: boolean
+        required: true
+jobs:
+  build:
+    name: build ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            arch: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Check inputs
+        env:
+          APP: ${{ inputs.app }}
+          TAGS: ${{ inputs.tags }}
+          IMAGE: ghcr.io/alxwlw/${{ inputs.app }}
+        run: |
+          test -f "apps/$APP/Dockerfile"
+          test -x ".github/smoke/$APP.sh"
+          printf '%s\n' "$TAGS" | .github/image/tags.sh "$IMAGE" >/dev/null
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - name: Build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          file: apps/${{ inputs.app }}/Dockerfile
+          platforms: ${{ matrix.platform }}
+          load: true
+          tags: ${{ inputs.app }}:smoke
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ inputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=${{ inputs.app }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ inputs.app }}-${{ matrix.arch }}
+      - name: Check the platform
+        env:
+          SMOKE_IMAGE: ${{ inputs.app }}:smoke
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          actual=$(docker image inspect -f '{{.Os}}/{{.Architecture}}' "$SMOKE_IMAGE")
+          echo "image platform: $actual"
+          test "$actual" = "$PLATFORM"
+      - name: Smoke
+        env:
+          APP: ${{ inputs.app }}
+          SMOKE_IMAGE: ${{ inputs.app }}:smoke
+        run: .github/smoke/"$APP".sh "$SMOKE_IMAGE"
+      - name: Log in to ghcr.io
+        if: inputs.push
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push by digest
+        id: push
+        if: inputs.push
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          file: apps/${{ inputs.app }}/Dockerfile
+          platforms: ${{ matrix.platform }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ inputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=${{ inputs.app }}-${{ matrix.arch }}
+          outputs: type=image,name=ghcr.io/alxwlw/${{ inputs.app }},push-by-digest=true,name-canonical=true,push=true
+      - name: Export digest
+        if: inputs.push
+        env:
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+      - name: Upload digest
+        if: inputs.push
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: digests-${{ inputs.app }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+  merge:
+    if: inputs.push
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Download digests
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: digests-${{ inputs.app }}-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/digests
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - name: Log in to ghcr.io
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Merge
+        env:
+          IMAGE: ghcr.io/alxwlw/${{ inputs.app }}
+          TAGS: ${{ inputs.tags }}
+          VERSION: ${{ inputs.version }}
+          SOURCE: ${{ github.server_url }}/${{ github.repository }}
+          REVISION: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          digests=("$RUNNER_TEMP"/digests/*)
+          if [ "${#digests[@]}" -ne 2 ] || [ ! -e "${digests[0]}" ]; then
+            echo "expected exactly two digest files, got: ${digests[*]}" >&2
+            exit 1
+          fi
+          refs=$(printf '%s\n' "$TAGS" | .github/image/tags.sh "$IMAGE")
+          args=()
+          while IFS= read -r ref; do
+            args+=(-t "$ref")
+          done <<<"$refs"
+          sources=()
+          for file in "${digests[@]}"; do
+            sources+=("$IMAGE@sha256:$(basename "$file")")
+          done
+          docker buildx imagetools create "${args[@]}" \
+            --annotation "index:org.opencontainers.image.source=$SOURCE" \
+            --annotation "index:org.opencontainers.image.version=$VERSION" \
+            --annotation "index:org.opencontainers.image.revision=$REVISION" \
+            "${sources[@]}"
+          first=$(head -n 1 <<<"$refs")
+          index=$(.github/image/platforms.sh "$first")
+          {
+            echo "$IMAGE@$index"
+            echo
+            while IFS= read -r ref; do
+              echo "- $ref"
+            done <<<"$refs"
+          } >> "$GITHUB_STEP_SUMMARY"
