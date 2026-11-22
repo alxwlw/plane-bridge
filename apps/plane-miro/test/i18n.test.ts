@@ -100,4 +100,8 @@ test("Russian copy is today's text", () => {
 	expect(ru.fromBoardByHtml('Аня')).toBe('С доски Miro (Аня):');
 	expect(ru.fromBoardHtml('Аня')).toBe('С доски Miro: Аня');
 	expect(ru.miroTagsHtml('a, b')).toBe('Теги Miro: a, b');
+	expect(ru.done('LAB-1')).toBe('Готово: LAB-1.');
+	expect(ru.failed(2, 'пустой стикер')).toBe('Не вышло: 2 — пустой стикер.');
+	expect(ru.selected(3)).toBe('Выделено для Plane: 3');
+	expect(ru.converting(4, 10)).toBe('Переношу: 4 из 10…');
 });
