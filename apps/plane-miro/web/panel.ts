@@ -1,9 +1,6 @@
 /// <reference lib="dom" />
-import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
-
-import { messages } from '../src/i18n.ts';
 import { api } from './api.ts';
-import { applyTexts } from './apply-texts.ts';
+import { DEFAULT_MESSAGES, loadTenantTexts } from './apply-texts.ts';
 import {
 	bindableId,
 	convertibleIds,
@@ -13,7 +10,6 @@ import {
 	type Outcome,
 	summary,
 } from './logic.ts';
-import { tenantLocale } from './texts.ts';
 
 type Project = { id: string; identifier: string; name: string };
 type Hit = { id: string; projectId: string; key: string; name: string };
@@ -36,7 +32,7 @@ let updatedSelection: { id: string; type: string }[] | null = null;
 let hits: Hit[] = [];
 let picked: Hit | null = null;
 // The tenant's catalog; the default until the locale answer arrives.
-let m = messages(DEFAULT_LOCALE);
+let m = DEFAULT_MESSAGES;
 let busy = false;
 let searchSeq = 0;
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
@@ -196,13 +192,12 @@ miro.board.ui.on('selection:update', ({ items }) => {
 	refresh();
 });
 
-const [locale, projects, current] = await Promise.all([
-	tenantLocale(),
+const [loaded, projects, current] = await Promise.all([
+	loadTenantTexts(() => api('/miro/api/locale'), document),
 	api<{ projects: Project[] }>('/miro/api/projects'),
 	miro.board.getSelection(),
 ]);
-m = messages(locale);
-applyTexts(document, m, locale);
+m = loaded;
 selection = currentSelection(updatedSelection, current);
 if (projects.ok) {
 	projectEl.replaceChildren(

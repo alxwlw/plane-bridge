@@ -1,9 +1,11 @@
-import { describe, expect, test } from 'bun:test';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
+import { describe, expect, test } from 'bun:test';
+
 import { en, messages } from '../src/i18n.ts';
-import { applyTexts, type SlotDocument } from '../web/apply-texts.ts';
+import { applyTexts, loadTenantTexts, type SlotDocument } from '../web/apply-texts.ts';
 
 type Slot = { dataset: Record<string, string>; textContent: string; placeholder: string };
 
@@ -81,5 +83,47 @@ describe('the pages', () => {
 		])
 			expect(panel).toContain(slotAttr);
 		expect(read('card.html')).toContain('<title data-text="cardTitle"></title>');
+	});
+});
+
+describe('loadTenantTexts', () => {
+	const run = async (answer: unknown) => {
+		const button = slot({ text: 'toPlane' });
+		const { doc, documentElement } = fakeDoc([button], []);
+		const m = await loadTenantTexts(async () => answer as never, doc);
+		return { m, button, lang: documentElement.lang };
+	};
+
+	test('the catalog and the slots follow the answered locale', async () => {
+		const en = await run({ ok: true, data: { locale: 'en' } });
+		expect(en.m.selected(1)).toBe('Selected for Plane: 1');
+		expect(en.button.textContent).toBe('To Plane');
+		expect(en.lang).toBe('en');
+		const ru = await run({ ok: true, data: { locale: 'ru' } });
+		expect(ru.m.selected(1)).toBe('Выделено для Plane: 1');
+		expect(ru.button.textContent).toBe('В Plane');
+		expect(ru.lang).toBe('ru');
+	});
+
+	test('a failed or unusable answer is the default locale', async () => {
+		for (const answer of [
+			{ ok: false, error: 'network' },
+			{ ok: true, data: { locale: 'fr' } },
+		]) {
+			const out = await run(answer);
+			expect(out.m).toBe(messages(DEFAULT_LOCALE));
+			expect(out.lang).toBe(DEFAULT_LOCALE);
+		}
+	});
+});
+
+describe('the entry scripts', () => {
+	test('panel and card take their catalog only from loadTenantTexts', () => {
+		for (const name of ['panel', 'card']) {
+			const source = readFileSync(new URL(`../web/${name}.ts`, import.meta.url), 'utf8');
+			expect(source, name).toContain("loadTenantTexts(() => api('/miro/api/locale'), document)");
+			expect(source, name).not.toMatch(/\bmessages\(/);
+			expect(source, name).not.toContain('../src/i18n.ts');
+		}
 	});
 });

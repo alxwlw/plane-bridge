@@ -1,7 +1,11 @@
 // DOM-free on purpose (a structural document type): the root tsconfig and the tests reach it without the browser SDK.
-import { type Locale } from '@alxwlw/plane-kit/locale';
+import { DEFAULT_LOCALE, type Locale } from '@alxwlw/plane-kit/locale';
 
-import { type Messages } from '../src/i18n.ts';
+import { type Messages, messages } from '../src/i18n.ts';
+import { type ApiResult, localeFrom } from './logic.ts';
+
+/** The catalog a page uses until its tenant's locale arrives. */
+export const DEFAULT_MESSAGES: Messages = messages(DEFAULT_LOCALE);
 
 /** The part of a DOM element a text slot needs. */
 export type Slot = {
@@ -34,4 +38,18 @@ export function applyTexts(doc: SlotDocument, m: Messages, locale: Locale): void
 		if (text !== null) el.placeholder = text;
 	}
 	doc.documentElement.lang = locale;
+}
+
+/**
+ * The one place a client picks its catalog: asks the server for the tenant's locale (`call`), fills the
+ * page's slots and returns the catalog. A failed call gives the default locale.
+ */
+export async function loadTenantTexts(
+	call: () => Promise<ApiResult<unknown>>,
+	doc: SlotDocument,
+): Promise<Messages> {
+	const locale = localeFrom(await call());
+	const m = messages(locale);
+	applyTexts(doc, m, locale);
+	return m;
 }
