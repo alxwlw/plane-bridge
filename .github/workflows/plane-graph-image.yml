@@ -5,12 +5,14 @@ on:
       - 'apps/plane-graph/**'
       - 'packages/**'
       - '.github/workflows/plane-graph-image.yml'
+      - '.github/smoke/plane-graph.sh'
   push:
     branches: [main]
     paths:
       - 'apps/plane-graph/**'
       - 'packages/**'
       - '.github/workflows/plane-graph-image.yml'
+      - '.github/smoke/plane-graph.sh'
 permissions:
   contents: read
   packages: write
@@ -33,25 +35,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Smoke
-        run: |
-          set -euo pipefail
-          cp apps/plane-graph/tenants.example.json "$RUNNER_TEMP/tenants.json"
-          chmod 644 "$RUNNER_TEMP/tenants.json"
-          docker run -d --name pg -p 18080:8080 \
-            -v "$RUNNER_TEMP/tenants.json:/config/tenants.json:ro" -v pgsmoke:/data \
-            -e PLANE_GRAPH_PLANE_URL=https://plane.example.com \
-            -e PLANE_GRAPH_PUBLIC_URL=https://plane-graph.example.com \
-            -e PLANE_GRAPH_EX_PLANE_SECRET=x \
-            -e PLANE_GRAPH_EX_WEBHOOK_SECRET=x \
-            -e PLANE_GRAPH_EX_READ_KEY=read-x \
-            -e PLANE_GRAPH_EX_AGENT_KEY=agent-x plane-graph:smoke
-          for _ in $(seq 20); do curl -fs localhost:18080/healthz && break; sleep 0.5; done
-          curl -fs localhost:18080/healthz | grep -qx ok
-          docker exec pg wget -q --spider http://localhost:8080/healthz
-          curl -fs localhost:18080/assets/graph.js | grep -q .
-          docker logs pg | grep -F '"event":"listening"' | grep -F '"id":"ex"'
-          docker exec pg test -f /data/plane-graph.sqlite
-          docker rm -f pg
+        run: .github/smoke/plane-graph.sh plane-graph:smoke
       - name: Log in to ghcr.io
         if: github.event_name == 'push'
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4

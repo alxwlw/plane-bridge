@@ -5,12 +5,14 @@ on:
       - 'apps/plane-hooks/**'
       - 'packages/**'
       - '.github/workflows/plane-hooks-image.yml'
+      - '.github/smoke/plane-hooks.sh'
   push:
     branches: [main]
     paths:
       - 'apps/plane-hooks/**'
       - 'packages/**'
       - '.github/workflows/plane-hooks-image.yml'
+      - '.github/smoke/plane-hooks.sh'
 permissions:
   contents: read
   packages: write
@@ -33,27 +35,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Smoke
-        run: |
-          set -euo pipefail
-          cp apps/plane-hooks/tenants.example.json "$RUNNER_TEMP/tenants.json"
-          chmod 644 "$RUNNER_TEMP/tenants.json"
-          key="$(openssl genrsa 2048 2>/dev/null | base64 -w0)"
-          docker run -d --name ph -p 18080:8080 \
-            -v "$RUNNER_TEMP/tenants.json:/config/tenants.json:ro" -v phsmoke:/data \
-            -e PLANE_HOOKS_PLANE_URL=https://plane.example.com \
-            -e PLANE_HOOKS_PUBLIC_URL=https://hooks.example.com \
-            -e PLANE_HOOKS_ACME_PLANE_SECRET=x \
-            -e PLANE_HOOKS_ACME_GRAFANA_TOKEN="ph_$(printf '0a%.0s' $(seq 24))" \
-            -e PLANE_HOOKS_ACME_VERCEL_SECRET=x \
-            -e PLANE_HOOKS_ACME_DOKPLOY_SECRET=x \
-            -e PLANE_HOOKS_GH_ACME_PRIVATE_KEY="$key" \
-            -e PLANE_HOOKS_GH_ACME_WEBHOOK_SECRET=x plane-hooks:smoke
-          for _ in $(seq 20); do curl -fs localhost:18080/healthz && break; sleep 0.5; done
-          curl -fs localhost:18080/healthz | grep -qx ok
-          docker exec ph wget -q --spider http://localhost:8080/healthz
-          docker logs ph | grep -F '"event":"listening"' | grep -F '"id":"acme"'
-          docker exec ph test -f /data/plane-hooks.sqlite
-          docker rm -f ph
+        run: .github/smoke/plane-hooks.sh plane-hooks:smoke
       - name: Log in to ghcr.io
         if: github.event_name == 'push'
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4

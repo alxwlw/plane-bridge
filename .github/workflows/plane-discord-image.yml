@@ -5,12 +5,14 @@ on:
       - 'apps/plane-discord/**'
       - 'packages/**'
       - '.github/workflows/plane-discord-image.yml'
+      - '.github/smoke/plane-discord.sh'
   push:
     branches: [main]
     paths:
       - 'apps/plane-discord/**'
       - 'packages/**'
       - '.github/workflows/plane-discord-image.yml'
+      - '.github/smoke/plane-discord.sh'
 permissions:
   contents: read
   packages: write
@@ -33,25 +35,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Smoke
-        run: |
-          set -euo pipefail
-          cp apps/plane-discord/tenants.example.json "$RUNNER_TEMP/tenants.json"
-          key="$(printf '0a%.0s' $(seq 32))"
-          docker run -d --name pd -p 18080:8080 \
-            -v "$RUNNER_TEMP/tenants.json:/config/tenants.json:ro" -v pdsmoke:/data \
-            -e PLANE_DISCORD_PLANE_URL=https://plane.example.com \
-            -e PLANE_DISCORD_PUBLIC_URL=https://plane-discord.example.com \
-            -e PLANE_DISCORD_DISCORD_APPLICATION_ID=123456789012345678 \
-            -e PLANE_DISCORD_DISCORD_PUBLIC_KEY="$key" \
-            -e PLANE_DISCORD_DISCORD_BOT_TOKEN=x \
-            -e PLANE_DISCORD_ACME_PLANE_SECRET=x \
-            -e PLANE_DISCORD_ACME_WEBHOOK_SECRET=x plane-discord:smoke
-          for _ in $(seq 20); do curl -fs localhost:18080/healthz && break; sleep 0.5; done
-          curl -fs localhost:18080/healthz | grep -qx ok
-          docker exec pd wget -q --spider http://localhost:8080/healthz
-          docker logs pd | grep -F '"event":"listening"' | grep -F '"id":"acme"'
-          docker exec pd test -f /data/plane-discord.sqlite
-          docker rm -f pd
+        run: .github/smoke/plane-discord.sh plane-discord:smoke
       - name: Log in to ghcr.io
         if: github.event_name == 'push'
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
