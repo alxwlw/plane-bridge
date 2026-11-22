@@ -44,7 +44,11 @@ export type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
 
 // ---------------------------------------------------------------- token
 
-export type TokenAttempt = { variant: 'без scope' | 'со scope'; status: number; error?: string };
+export type TokenAttempt = {
+	variant: 'without scope' | 'with scope';
+	status: number;
+	error?: string;
+};
 export type TokenResult = {
 	attempts: TokenAttempt[];
 	token?: string;
@@ -82,12 +86,12 @@ export async function requestToken(
 ): Promise<TokenResult> {
 	const result: TokenResult = { attempts: [] };
 	const basic = Buffer.from(`${creds.clientId}:${creds.clientSecret}`).toString('base64');
-	for (const variant of ['без scope', 'со scope'] as const) {
+	for (const variant of ['without scope', 'with scope'] as const) {
 		const form = new URLSearchParams({
 			grant_type: 'client_credentials',
 			app_installation_id: creds.installationId,
 		});
-		if (variant === 'со scope') form.set('scope', scopes.join(' '));
+		if (variant === 'with scope') form.set('scope', scopes.join(' '));
 		const res = await fetchFn(`${url}/auth/o/token/`, {
 			method: 'POST',
 			headers: {
@@ -112,7 +116,7 @@ export async function requestToken(
 		result.attempts.push({
 			variant,
 			status: res.status,
-			error: errorField(body) ?? (res.ok ? 'нет access_token' : undefined),
+			error: errorField(body) ?? (res.ok ? 'no access_token' : undefined),
 		});
 	}
 	return result;
@@ -196,10 +200,10 @@ export function verifyDir(dir: string, secrets: { name: string; value: string }[
 export function formatVerifyRow(r: VerifyRow): string {
 	const sig =
 		r.signature === 'absent'
-			? 'подписи нет'
+			? 'no signature'
 			: r.matched.length > 0
-				? `подпись сошлась: ${r.matched.join(', ')}`
-				: 'подпись не сошлась ни с одним секретом';
+				? `signature matched: ${r.matched.join(', ')}`
+				: 'signature matched no secret';
 	return `${r.matched.length > 0 ? '✓' : '·'} ${r.name} ${r.method} ${r.path} event=${r.event} family=${r.family} — ${sig}`;
 }
 
@@ -253,7 +257,7 @@ function rowsOf(body: any): any[] {
 }
 
 const shape = (body: any): string =>
-	Array.isArray(body) ? 'массив' : Array.isArray(body?.results) ? 'страница' : typeof body;
+	Array.isArray(body) ? 'array' : Array.isArray(body?.results) ? 'page' : typeof body;
 
 const keysOf = (o: unknown): string =>
 	o !== null && typeof o === 'object' ? Object.keys(o).sort().join(',') : typeof o;
@@ -297,8 +301,8 @@ async function authenticate(
 			'token',
 			ok,
 			ok
-				? `сработал вариант «${r.variant}», префикс ${prefix(r.token as string)}, expires_in=${String(r.expiresIn)}`
-				: 'ни один вариант не выдал токен',
+				? `variant «${r.variant}» worked, prefix ${prefix(r.token as string)}, expires_in=${String(r.expiresIn)}`
+				: 'no variant issued a token',
 		);
 		if (r.token) p.auth = { Authorization: `Bearer ${r.token}` };
 	});
@@ -308,7 +312,7 @@ async function authenticate(
 async function liveRows(p: Probe, env: Env, creds: Creds, keep: boolean): Promise<void> {
 	const projectId = env.PROBE_PROJECT_ID;
 	if (!projectId) {
-		p.row('env', false, 'PROBE_PROJECT_ID не задан');
+		p.row('env', false, 'PROBE_PROJECT_ID is not set');
 		return;
 	}
 	const project = `${p.base}/projects/${projectId}`;
@@ -329,7 +333,7 @@ async function liveRows(p: Probe, env: Env, creds: Creds, keep: boolean): Promis
 			p.row(
 				'installation',
 				r.status === 200 && inst !== undefined,
-				`${r.status}, workspace=${inst?.workspace ?? '—'}, slug=${inst?.workspace_detail?.slug ?? '—'}, app_bot=${botId ?? '—'}, status=${inst?.status ?? '—'}, webhook=${hook === undefined ? 'нет поля' : `${typeof hook}${hook !== null && typeof hook === 'object' ? ` {${keysOf(hook)}}` : ''}`}`,
+				`${r.status}, workspace=${inst?.workspace ?? '—'}, slug=${inst?.workspace_detail?.slug ?? '—'}, app_bot=${botId ?? '—'}, status=${inst?.status ?? '—'}, webhook=${hook === undefined ? 'no field' : `${typeof hook}${hook !== null && typeof hook === 'object' ? ` {${keysOf(hook)}}` : ''}`}`,
 			);
 		});
 
@@ -357,7 +361,7 @@ async function liveRows(p: Probe, env: Env, creds: Creds, keep: boolean): Promis
 					: await p.call('GET', `${project}/work-items/${itemId}/comments/${commentId}/`);
 			const actors = ['actor', 'created_by'].map((k) => {
 				const v = read?.body?.[k];
-				return `${k}=${v === undefined ? 'нет поля' : v === botId ? 'app_bot' : 'не app_bot'}`;
+				return `${k}=${v === undefined ? 'no field' : v === botId ? 'app_bot' : 'not app_bot'}`;
 			});
 			const members = await p.call('GET', `${project}/members/`);
 			const list = rowsOf(members.body);
@@ -366,9 +370,9 @@ async function liveRows(p: Probe, env: Env, creds: Creds, keep: boolean): Promis
 			p.row(
 				'bot-write',
 				created.status === 201 && comment.status === 201 && read?.status === 200,
-				`задача ${created.status}, комментарий ${comment.status}, чтение ${read?.status ?? '—'}, ${actors.join(', ')}; ` +
-					`GET /members/ ${members.status} ${shape(members.body)} (${list.length}), ключи строки: ${keysOf(list[0])}, ` +
-					`бот в списке: ${bot ? `да, display_name=${who?.display_name ?? '—'}` : botId ? 'нет' : 'app_bot неизвестен'}`,
+				`item ${created.status}, comment ${comment.status}, read ${read?.status ?? '—'}, ${actors.join(', ')}; ` +
+					`GET /members/ ${members.status} ${shape(members.body)} (${list.length}), row keys: ${keysOf(list[0])}, ` +
+					`bot in list: ${bot ? `yes, display_name=${who?.display_name ?? '—'}` : botId ? 'no' : 'app_bot unknown'}`,
 			);
 		});
 
@@ -379,23 +383,23 @@ async function liveRows(p: Probe, env: Env, creds: Creds, keep: boolean): Promis
 			p.row(
 				'browse-url',
 				proj.status === 200 && item?.status === 200,
-				`открыть и подтвердить: ${p.url}/${p.slug}/browse/${key}/`,
+				`open and confirm: ${p.url}/${p.slug}/browse/${key}/`,
 			);
 		});
 
 		await p.guard('modules', async () => {
 			if (itemId === null) {
-				p.row('modules', false, 'нет задачи пробы');
+				p.row('modules', false, 'no probe item');
 				return;
 			}
 			const modules = await p.call('GET', `${project}/modules/`);
 			const first = rowsOf(modules.body)[0]?.id as string | undefined;
-			let added = 'модулей нет';
+			let added = 'no modules';
 			if (first) {
 				const add = await p.call('POST', `${project}/modules/${first}/module-issues/`, {
 					issues: [itemId],
 				});
-				added = `добавление в модуль ${add.status}`;
+				added = `added to module ${add.status}`;
 			}
 			const detail = await p.call('GET', `${project}/work-items/${itemId}/`);
 			const expanded = await p.call('GET', `${project}/work-items/${itemId}/?expand=modules`);
@@ -411,9 +415,9 @@ async function liveRows(p: Probe, env: Env, creds: Creds, keep: boolean): Promis
 			p.row(
 				'modules',
 				modules.status === 200 && detail.status === 200,
-				`${added}; GET /modules/ ${modules.status}; деталь: module_ids=${Array.isArray(detail.body?.module_ids) ? `массив(${detail.body.module_ids.length})` : typeof detail.body?.module_ids}; ` +
-					`?expand=modules ${expanded.status}: modules=${Array.isArray(expanded.body?.modules) ? `массив(${expanded.body.modules.length})` : typeof expanded.body?.modules}, module_ids=${Array.isArray(expanded.body?.module_ids) ? `массив(${expanded.body.module_ids.length})` : typeof expanded.body?.module_ids}; ` +
-					`GET /modules/{m}/module-issues/ ${viaModule?.status ?? '—'}, задача в списке: ${viaModule ? (listed ? 'да' : 'нет') : '—'}`,
+				`${added}; GET /modules/ ${modules.status}; detail: module_ids=${Array.isArray(detail.body?.module_ids) ? `array(${detail.body.module_ids.length})` : typeof detail.body?.module_ids}; ` +
+					`?expand=modules ${expanded.status}: modules=${Array.isArray(expanded.body?.modules) ? `array(${expanded.body.modules.length})` : typeof expanded.body?.modules}, module_ids=${Array.isArray(expanded.body?.module_ids) ? `array(${expanded.body.module_ids.length})` : typeof expanded.body?.module_ids}; ` +
+					`GET /modules/{m}/module-issues/ ${viaModule?.status ?? '—'}, item in list: ${viaModule ? (listed ? 'yes' : 'no') : '—'}`,
 			);
 		});
 
@@ -424,7 +428,7 @@ async function liveRows(p: Probe, env: Env, creds: Creds, keep: boolean): Promis
 			p.row(
 				'webhook-status',
 				r.status === 200,
-				`${r.status}, ${shape(r.body)} (${list.length}), ключи: ${keysOf(list[0])}, is_active: ${list.map((w) => String(w?.is_active)).join(',') || '—'}`,
+				`${r.status}, ${shape(r.body)} (${list.length}), keys: ${keysOf(list[0])}, is_active: ${list.map((w) => String(w?.is_active)).join(',') || '—'}`,
 			);
 		});
 
@@ -440,7 +444,7 @@ async function liveRows(p: Probe, env: Env, creds: Creds, keep: boolean): Promis
 					limited++;
 					if (firstLimited === 0) firstLimited = i;
 					const wait = r.headers.get('retry-after');
-					if (wait !== null) console.log(`  rate 429 на запросе ${i}: Retry-After=${wait}`);
+					if (wait !== null) console.log(`  rate 429 on request ${i}: Retry-After=${wait}`);
 				}
 			}
 			const limits = [...(last?.headers ?? [])]
@@ -449,19 +453,19 @@ async function liveRows(p: Probe, env: Env, creds: Creds, keep: boolean): Promis
 			p.row(
 				'rate',
 				true,
-				`70 запросов за ${Date.now() - started} мс, 429: ${limited}${limited ? ` (первый на ${firstLimited})` : ''}, последний ответ ${last?.status}, ${limits.join(' ') || 'X-RateLimit-* нет'}`,
+				`70 requests in ${Date.now() - started} ms, 429: ${limited}${limited ? ` (first at ${firstLimited})` : ''}, last response ${last?.status}, ${limits.join(' ') || 'no X-RateLimit-*'}`,
 			);
 		});
 	} finally {
 		if (itemId !== null && keep) {
-			p.row('cleanup', true, `--keep: задача пробы оставлена, id=${itemId}`);
+			p.row('cleanup', true, `--keep: probe item kept, id=${itemId}`);
 		} else if (itemId !== null) {
 			await p.guard('cleanup', async () => {
 				const del = await p.call('DELETE', `${project}/work-items/${itemId}/`);
 				p.row('cleanup', del.status === 204, `DELETE → ${del.status}`);
 			});
 		} else {
-			p.row('cleanup', true, 'нечего удалять');
+			p.row('cleanup', true, 'nothing to delete');
 		}
 	}
 }
@@ -482,12 +486,12 @@ export async function main(argv: string[], env: Env, fetchFn: Fetch = fetch): Pr
 		}
 		const unset = names.filter((n) => !env[n]);
 		const secrets = names.filter((n) => env[n]).map((n) => ({ name: n, value: env[n] as string }));
-		if (unset.length > 0) console.log(`env не задан: ${unset.join(', ')}`);
+		if (unset.length > 0) console.log(`env not set: ${unset.join(', ')}`);
 		if (secrets.length === 0) return 2;
 		const rows = verifyDir(dir, secrets);
 		for (const r of rows) console.log(formatVerifyRow(r));
 		const signed = rows.filter((r) => r.matched.length > 0).length;
-		console.log(`пар: ${rows.length}, подпись сошлась: ${signed}`);
+		console.log(`pairs: ${rows.length}, signature matched: ${signed}`);
 		return rows.length > 0 ? 0 : 1;
 	}
 
@@ -509,7 +513,7 @@ export async function main(argv: string[], env: Env, fetchFn: Fetch = fetch): Pr
 		fetchFn,
 	);
 	if (!(await authenticate(p, creds, scopesFromEnv(env)))) {
-		console.log('нет авторизации — дальше идти нельзя');
+		console.log('no authorization — cannot continue');
 		return 1;
 	}
 
@@ -541,13 +545,13 @@ export async function main(argv: string[], env: Env, fetchFn: Fetch = fetch): Pr
 			p.row(
 				'comment-get',
 				res.status === 200,
-				`${res.status}, ${text.length} байт${res.status === 200 ? ` → ${outFile}` : ''}`,
+				`${res.status}, ${text.length} bytes${res.status === 200 ? ` → ${outFile}` : ''}`,
 			);
 		});
 	} else {
 		await liveRows(p, env, creds.creds, argv.includes('--keep'));
 	}
-	console.log(p.failed === 0 ? 'контракт подтверждён' : `расхождений: ${p.failed}`);
+	console.log(p.failed === 0 ? 'contract confirmed' : `mismatches: ${p.failed}`);
 	return p.failed === 0 ? 0 : 1;
 }
 

@@ -34,10 +34,10 @@ test('token: без scope сработало — второй запрос не 
 		{ status: 200, body: { access_token: 'abcdef123456', expires_in: 86400 } },
 	]);
 	const r = await requestToken(fetchFn, 'https://plane.example.com', creds, ['a:read']);
-	expect(r.variant).toBe('без scope');
+	expect(r.variant).toBe('without scope');
 	expect(r.token).toBe('abcdef123456');
 	expect(r.expiresIn).toBe(86400);
-	expect(r.attempts).toEqual([{ variant: 'без scope', status: 200 }]);
+	expect(r.attempts).toEqual([{ variant: 'without scope', status: 200 }]);
 	expect(seen).toHaveLength(1);
 	expect(seen[0]?.url).toBe('https://plane.example.com/auth/o/token/');
 	expect(seen[0]?.auth).toBe(`Basic ${Buffer.from('cid:csecret').toString('base64')}`);
@@ -52,11 +52,11 @@ test('token: отказ без scope → повтор со scope списком 
 		{ status: 200, body: { access_token: 'zzzzzz999999', expires_in: 3600 } },
 	]);
 	const r = await requestToken(fetchFn, 'https://plane.example.com', creds, ['a:read', 'b:write']);
-	expect(r.variant).toBe('со scope');
+	expect(r.variant).toBe('with scope');
 	expect(r.token).toBe('zzzzzz999999');
 	expect(r.attempts).toEqual([
-		{ variant: 'без scope', status: 400, error: 'invalid_scope' },
-		{ variant: 'со scope', status: 200 },
+		{ variant: 'without scope', status: 400, error: 'invalid_scope' },
+		{ variant: 'with scope', status: 200 },
 	]);
 	expect(seen[1]?.form.get('scope')).toBe('a:read b:write');
 });
@@ -70,8 +70,8 @@ test('token: оба варианта отказаны — токена нет, �
 	expect(r.token).toBeUndefined();
 	expect(r.variant).toBeUndefined();
 	expect(r.attempts).toEqual([
-		{ variant: 'без scope', status: 401, error: 'invalid_client' },
-		{ variant: 'со scope', status: 200, error: 'нет access_token' },
+		{ variant: 'without scope', status: 401, error: 'invalid_client' },
+		{ variant: 'with scope', status: 200, error: 'no access_token' },
 	]);
 });
 
@@ -140,12 +140,12 @@ test('formatVerifyRow: три исхода подписи', () => {
 		family: 'v1' as const,
 	};
 	expect(formatVerifyRow({ ...base, signature: 'present', matched: ['A', 'B'] })).toBe(
-		'✓ 1-aaaaaaaa POST /p event=issue family=v1 — подпись сошлась: A, B',
+		'✓ 1-aaaaaaaa POST /p event=issue family=v1 — signature matched: A, B',
 	);
 	expect(formatVerifyRow({ ...base, signature: 'present', matched: [] })).toContain(
-		'подпись не сошлась ни с одним секретом',
+		'signature matched no secret',
 	);
-	expect(formatVerifyRow({ ...base, signature: 'absent', matched: [] })).toContain('подписи нет');
+	expect(formatVerifyRow({ ...base, signature: 'absent', matched: [] })).toContain('no signature');
 });
 
 let logs: string[];
@@ -186,14 +186,14 @@ test('--verify: любое число env-имён, печатает имя се
 	);
 	const out = logs.join('\n');
 	expect(code).toBe(0);
-	expect(out).toContain('env не задан: PROBE_UNSET');
+	expect(out).toContain('env not set: PROBE_UNSET');
 	expect(out).toContain(
-		'✓ 10-aaaaaaaa POST /plane/webhook event=issue family=v1 — подпись сошлась: PROBE_WEBHOOK_SECRET',
+		'✓ 10-aaaaaaaa POST /plane/webhook event=issue family=v1 — signature matched: PROBE_WEBHOOK_SECRET',
 	);
 	expect(out).toContain(
-		'✓ 2-bbbbbbbb POST /plane/webhook event=workitem.created family=v2 — подпись сошлась: PROBE_V2_SECRET',
+		'✓ 2-bbbbbbbb POST /plane/webhook event=workitem.created family=v2 — signature matched: PROBE_V2_SECRET',
 	);
-	expect(out).toContain('пар: 4, подпись сошлась: 2');
+	expect(out).toContain('pairs: 4, signature matched: 2');
 	for (const secret of ['webhook-secret', 'v2-secret', 'client']) {
 		expect(out.replaceAll('PROBE_CLIENT_SECRET', '')).not.toContain(secret);
 	}
@@ -341,28 +341,26 @@ test('строки пробы: все ✓, что бот пишет и чита�
 		stub.server.stop(true);
 	}
 	const out = logs.join('\n');
-	expect(out).toContain('token без scope: 400 error=invalid_scope');
-	expect(out).toContain('✓ token — сработал вариант «со scope», префикс tok123…, expires_in=86400');
+	expect(out).toContain('token without scope: 400 error=invalid_scope');
+	expect(out).toContain('✓ token — variant «with scope» worked, prefix tok123…, expires_in=86400');
 	expect(out).toContain(
 		'✓ installation — 200, workspace=ws-uuid, slug=example-ws, app_bot=bot-1, status=installed, webhook=object {secret_key,url}',
 	);
 	expect(out).toContain(
-		'✓ bot-write — задача 201, комментарий 201, чтение 200, actor=нет поля, created_by=app_bot; GET /members/ 200 массив (1), ключи строки: member, бот в списке: да, display_name=Probe Bot',
+		'✓ bot-write — item 201, comment 201, read 200, actor=no field, created_by=app_bot; GET /members/ 200 array (1), row keys: member, bot in list: yes, display_name=Probe Bot',
+	);
+	expect(out).toContain(`✓ browse-url — open and confirm: ${stub.url}/example-ws/browse/DX-7/`);
+	expect(out).toContain(
+		'✓ modules — added to module 200; GET /modules/ 200; detail: module_ids=array(1); ?expand=modules 200: modules=array(1), module_ids=array(1); GET /modules/{m}/module-issues/ 200, item in list: yes',
 	);
 	expect(out).toContain(
-		`✓ browse-url — открыть и подтвердить: ${stub.url}/example-ws/browse/DX-7/`,
-	);
-	expect(out).toContain(
-		'✓ modules — добавление в модуль 200; GET /modules/ 200; деталь: module_ids=массив(1); ?expand=modules 200: modules=массив(1), module_ids=массив(1); GET /modules/{m}/module-issues/ 200, задача в списке: да',
-	);
-	expect(out).toContain(
-		'✓ webhook-status — 200, массив (1), ключи: id,is_active,secret_key, is_active: true',
+		'✓ webhook-status — 200, array (1), keys: id,is_active,secret_key, is_active: true',
 	);
 	expect(out).toMatch(
-		/✓ rate — 70 запросов за \d+ мс, 429: 0, последний ответ 200, x-ratelimit-limit=60/,
+		/✓ rate — 70 requests in \d+ ms, 429: 0, last response 200, x-ratelimit-limit=60/,
 	);
 	expect(out).toContain('✓ cleanup — DELETE → 204');
-	expect(out).toContain('контракт подтверждён');
+	expect(out).toContain('contract confirmed');
 	for (const leak of ['LEAK-WEBHOOK', 'SECRET-COMMENT', 'tok123456789', 'csecret']) {
 		expect(out).not.toContain(leak);
 	}
@@ -388,7 +386,7 @@ test('--keep: задача остаётся, id в строке cleanup, DELETE 
 	} finally {
 		stub.server.stop(true);
 	}
-	expect(logs.join('\n')).toContain('✓ cleanup — --keep: задача пробы оставлена, id=item-1');
+	expect(logs.join('\n')).toContain('✓ cleanup — --keep: probe item kept, id=item-1');
 	expect(
 		stub.seen.some((r) => r.method === 'DELETE' && r.path.endsWith('/work-items/item-1/')),
 	).toBe(false);
@@ -407,10 +405,10 @@ test('запись бота: 403 → ✗ без подсказки, код 1, 70
 	const out = logs.join('\n');
 	expect(out).toContain('✗ bot-write — POST /work-items/ → 403');
 	expect(out).not.toContain('не участник');
-	expect(out).toContain('rate 429 на запросе 1: Retry-After=9');
-	expect(out).toMatch(/✓ rate — 70 запросов за \d+ мс, 429: 70 \(первый на 1\)/);
-	expect(out).toContain('✓ cleanup — нечего удалять');
-	expect(out).toContain('расхождений: 3');
+	expect(out).toContain('rate 429 on request 1: Retry-After=9');
+	expect(out).toMatch(/✓ rate — 70 requests in \d+ ms, 429: 70 \(first at 1\)/);
+	expect(out).toContain('✓ cleanup — nothing to delete');
+	expect(out).toContain('mismatches: 3');
 });
 
 test('сеть упала в одной строке: ✗ с именем ошибки, следующие строки идут', async () => {
@@ -434,7 +432,7 @@ test('нет PROBE_PROJECT_ID: ✗ env, код 1', async () => {
 	} finally {
 		stub.server.stop(true);
 	}
-	expect(logs.join('\n')).toContain('✗ env — PROBE_PROJECT_ID не задан');
+	expect(logs.join('\n')).toContain('✗ env — PROBE_PROJECT_ID is not set');
 });
 
 test('token отказан в обоих вариантах: код 1, дальше не идём', async () => {
@@ -447,9 +445,9 @@ test('token отказан в обоих вариантах: код 1, даль�
 		stub.server.stop(true);
 	}
 	const out = logs.join('\n');
-	expect(out).toContain('✗ token — ни один вариант не выдал токен');
-	expect(out).toContain('token со scope: 401 error=invalid_client');
-	expect(out).toContain('нет авторизации');
+	expect(out).toContain('✗ token — no variant issued a token');
+	expect(out).toContain('token with scope: 401 error=invalid_client');
+	expect(out).toContain('no authorization');
 	expect(stub.seen.every((r) => r.path === '/auth/o/token/')).toBe(true);
 });
 
@@ -483,7 +481,7 @@ test('comment-get: сырой JSON в файл, в stdout только разм�
 		stub.server.stop(true);
 	}
 	const printed = logs.join('\n');
-	expect(printed).toContain(`✓ comment-get — 200, ${readFileSync(out).length} байт → ${out}`);
+	expect(printed).toContain(`✓ comment-get — 200, ${readFileSync(out).length} bytes → ${out}`);
 	expect(printed).toContain('✗ comment-get — 404');
 	expect(printed).not.toContain('SECRET-COMMENT');
 });

@@ -10,7 +10,7 @@ const EMPTY = '—';
 /** Embed field values must be non-empty and at most 1024 characters. */
 const fieldValue = (text: string): string => truncate(text, FIELD_MAX) || EMPTY;
 
-/** The public card of a work item (design §3 «Этап 2»). */
+/** The public card of a work item (design §3 stage 2). */
 export function workItemCard(
 	m: Messages,
 	input: {

@@ -1,4 +1,4 @@
-// Messages of a thread bound to a work item become Plane comments (design §3 «Этап 3», Discord → Plane).
+// Messages of a thread bound to a work item become Plane comments (design §3 stage 3, Discord → Plane).
 // Edits and deletions are not synced (design §9). Logs carry ids and reasons, never message text.
 import { esc, truncate } from '@alxwlw/plane-kit/html';
 import type { Log } from '@alxwlw/plane-kit/log';

@@ -1,4 +1,4 @@
-// Plane events → Discord topics and DMs (design §3 «1a», «1b», §5 «Шум»).
+// Plane events → Discord topics and DMs (design §3 1a, 1b, §5 noise).
 // The notifier does not send anything itself: Plane lookups happen in the returned promise (the caller retries
 // the event as a whole when one fails), every Discord send is its own Delivery (the queue retries only that one).
 import { truncate } from '@alxwlw/plane-kit/html';
