@@ -1,9 +1,10 @@
 // Sync layer: Plane reader -> SQLite store. Reconcile, webhook-driven refreshes, agent mark checks.
+import type { Log } from '@alxwlw/plane-kit/log';
+import type { SerialQueue } from '@alxwlw/plane-kit/queue';
+
 import type { AgentRunIn, CopyData, Edge, ItemRow, LabelRename, MarkKey } from './contract.ts';
-import type { Log } from './log.ts';
 import type { PlaneReader } from './plane/client.ts';
 import type { PlaneEvent } from './plane/webhook.ts';
-import type { SerialQueue } from './queue.ts';
 import type { Store } from './store.ts';
 
 export interface SyncDeps {

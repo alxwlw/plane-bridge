@@ -22,6 +22,8 @@ plane-bridge is a community project. It is not affiliated with, endorsed by or s
 
 - [`packages/plane-app`](packages/plane-app) — shared Plane App code: bot-token auth (`botTokenAuth`) and the
   install redirect and callback (`planeSetupRedirect`, `planeOauthCallback`).
+- [`packages/plane-kit`](packages/plane-kit) — modules the Plane apps share: `html`, `queue`, `rate`, `ttl`, `log`
+  and `capture` (the request-capture script behind each app's `scripts/capture.ts`).
 
 ## Development
 

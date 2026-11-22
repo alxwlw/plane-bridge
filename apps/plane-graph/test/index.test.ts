@@ -1,10 +1,12 @@
 // Adapted from apps/plane-miro/test/index.test.ts.
-import { afterEach, describe, expect, test } from 'bun:test';
 import { createHmac } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+
+import type { LogEntry } from '@alxwlw/plane-kit/log';
+import { afterEach, describe, expect, test } from 'bun:test';
 
 import { PLANE_SCOPES } from '../src/config.ts';
 import type { CopyView } from '../src/contract.ts';
@@ -15,7 +17,6 @@ import {
 	type ServiceOptions,
 	startService,
 } from '../src/index.ts';
-import type { LogEntry } from '../src/log.ts';
 import { Store } from '../src/store.ts';
 import { copyOf, idOf } from './copy-builder.ts';
 import { FakePlane } from './fake-plane.ts';

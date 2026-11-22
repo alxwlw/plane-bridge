@@ -1,8 +1,9 @@
 import { createHmac } from 'node:crypto';
 
+import type { LogEntry } from '@alxwlw/plane-kit/log';
+
 import { createApi } from '../src/api.ts';
 import type { Tenant } from '../src/config.ts';
-import type { LogEntry } from '../src/log.ts';
 import { createRuntime } from '../src/runtime.ts';
 import { Store } from '../src/store.ts';
 import { configOf } from './config-fixture.ts';

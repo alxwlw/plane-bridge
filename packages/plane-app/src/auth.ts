@@ -1,4 +1,3 @@
-// Adapted from apps/plane-miro/src/plane/auth.ts: the scopes are a parameter, not a module constant.
 export type Fetch = (input: string, init: RequestInit) => Promise<Response>;
 
 export interface PlaneAuth {

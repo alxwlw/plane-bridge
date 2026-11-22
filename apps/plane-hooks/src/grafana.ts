@@ -1,5 +1,6 @@
+import { esc, link, p, truncate, utc } from '@alxwlw/plane-kit/html';
+
 import { DEFAULT_PRIORITY, type PriorityTable } from './config.ts';
-import { esc, link, p, truncate, utc } from './html.ts';
 import type { IncidentSignal } from './incident.ts';
 import { BadPayload, isRecord, isTimestamp, optString, stringMap } from './payload.ts';
 

@@ -1,5 +1,6 @@
+import type { Log } from '@alxwlw/plane-kit/log';
+
 import type { Config, Tenant } from './config.ts';
-import type { Log } from './log.ts';
 import { oauthCallback, setupRedirect } from './plane/setup.ts';
 import {
 	BadDelivery,

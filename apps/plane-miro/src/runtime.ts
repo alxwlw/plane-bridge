@@ -1,4 +1,6 @@
 // Adapted from apps/plane-discord/src/runtime.ts.
+import { ttl } from '@alxwlw/plane-kit/ttl';
+
 import type { Tenant } from './config.ts';
 import { type MiroApi, MiroClient } from './miro/rest.ts';
 import { botTokenAuth, type Fetch } from './plane/auth.ts';
@@ -10,7 +12,6 @@ import {
 	type StateSummary,
 } from './plane/client.ts';
 import type { Store } from './store.ts';
-import { ttl } from './ttl.ts';
 
 export const CACHE_TTL_MS = 10 * 60_000;
 

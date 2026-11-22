@@ -1,8 +1,8 @@
+import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
 
 import type { Tenant } from '../src/config.ts';
 import { DiscordApiError } from '../src/discord/rest.ts';
-import type { LogEntry } from '../src/log.ts';
 import { Store } from '../src/store.ts';
 import { checkSilence } from '../src/watchdog.ts';
 import { FakeDiscord } from './fake-discord.ts';

@@ -1,5 +1,6 @@
+import { esc, link, p } from '@alxwlw/plane-kit/html';
+
 import type { Pull } from '../github/client.ts';
-import { esc, link, p } from '../html.ts';
 import type { DeployFact } from './deploy.ts';
 
 /** `<repo> → <environment> · <sha7>` in code tags, then the run link when the deploy has one. */

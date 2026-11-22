@@ -1,5 +1,8 @@
 import { createHmac } from 'node:crypto';
+
+import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
+
 import {
 	miroOauthCallback,
 	miroOauthHandler,
@@ -7,7 +10,6 @@ import {
 	readState,
 	signState,
 } from '../src/miro/oauth.ts';
-import type { LogEntry } from '../src/log.ts';
 import { Store } from '../src/store.ts';
 import { configOf } from './config-fixture.ts';
 

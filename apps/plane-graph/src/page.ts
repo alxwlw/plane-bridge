@@ -1,4 +1,4 @@
-import { esc } from './html.ts';
+import { esc } from '@alxwlw/plane-kit/html';
 
 type Urls = { scriptUrl: string; dataUrl: string };
 

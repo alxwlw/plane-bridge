@@ -1,9 +1,10 @@
 // Messages of a thread bound to a work item become Plane comments (design §3 «Этап 3», Discord → Plane).
 // Edits and deletions are not synced (design §9). Logs carry ids and reasons, never message text.
+import { esc, truncate } from '@alxwlw/plane-kit/html';
+import type { Log } from '@alxwlw/plane-kit/log';
+
 import type { GatewayMessage } from './discord/gateway.ts';
 import { attachmentsHtml, isHidden, messageLinkHtml } from './discord/ix-common.ts';
-import { esc, truncate } from './html.ts';
-import type { Log } from './log.ts';
 import type { TenantRuntime } from './notify.ts';
 import { PlaneApiError } from './plane/client.ts';
 import type { Store } from './store.ts';

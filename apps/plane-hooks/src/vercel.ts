@@ -1,6 +1,7 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 
-import { esc, link, p, truncate } from './html.ts';
+import { esc, link, p, truncate } from '@alxwlw/plane-kit/html';
+
 import type { IncidentSignal } from './incident.ts';
 import { BadPayload, isRecord, optString } from './payload.ts';
 

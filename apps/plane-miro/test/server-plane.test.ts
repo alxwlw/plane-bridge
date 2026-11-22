@@ -1,14 +1,16 @@
 // Adapted from apps/plane-discord/test/server-plane.test.ts.
 import { createHmac } from 'node:crypto';
+
+import { jsonLog, type LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
+
 import type { Tenant } from '../src/config.ts';
-import { jsonLog, type LogEntry } from '../src/log.ts';
+import { miroOauthHandler } from '../src/miro/oauth.ts';
 import type { PlaneEvent } from '../src/plane/webhook.ts';
 import { createHandler, MAX_PLANE_BODY, readBounded, type ServerDeps } from '../src/server.ts';
-import { miroOauthHandler } from '../src/miro/oauth.ts';
 import { Store } from '../src/store.ts';
-import { fixture } from './fixtures.ts';
 import { configOf } from './config-fixture.ts';
+import { fixture } from './fixtures.ts';
 import { jwt, world } from './world.ts';
 
 const WORKSPACE = '00000000-0000-4000-8000-000000000002';

@@ -1,6 +1,8 @@
+import { esc, truncate } from '@alxwlw/plane-kit/html';
+import type { Log } from '@alxwlw/plane-kit/log';
+import { ttl } from '@alxwlw/plane-kit/ttl';
+
 import { boardLink, cardFor, fieldsHash, linkTitle } from './card.ts';
-import { esc, truncate } from './html.ts';
-import type { Log } from './log.ts';
 import {
 	type Connector,
 	MiroApiError,
@@ -13,7 +15,6 @@ import type { WorkItem } from './plane/client.ts';
 import { embedBlock } from './plane/embed.ts';
 import type { TenantRuntime } from './runtime.ts';
 import type { Store } from './store.ts';
-import { ttl } from './ttl.ts';
 
 /** Item types that carry text a work item can be made of. */
 export const CONVERTIBLE: readonly string[] = ['sticky_note', 'card', 'shape', 'text'];

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
-import { truncate } from '../html.ts';
+import { truncate } from '@alxwlw/plane-kit/html';
+
 import type { Fetch } from '../plane/auth.ts';
 
 export type Embed = {

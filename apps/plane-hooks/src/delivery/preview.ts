@@ -1,5 +1,6 @@
+import { esc, link, p } from '@alxwlw/plane-kit/html';
+
 import type { GitHubApi } from '../github/client.ts';
-import { esc, link, p } from '../html.ts';
 import type { VercelHookEvent, VercelPreview } from '../vercel.ts';
 import type { DeployFact } from './deploy.ts';
 import { ownedKeys } from './keys.ts';

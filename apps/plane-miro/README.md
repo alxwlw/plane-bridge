@@ -1,7 +1,7 @@
 # plane-miro
 
 A [Bun](https://bun.sh) service that links [Plane](https://plane.so) and [Miro](https://miro.com) for one or
-more tenants (a Plane workspace plus a Miro team each). It has no runtime dependencies, keeps its state in one
+more tenants (a Plane workspace plus a Miro team each). It has no third-party runtime dependencies (it uses the workspace packages `@alxwlw/plane-app` and `@alxwlw/plane-kit`, which the image carries as source), keeps its state in one
 SQLite file and serves its own front end: `web/*.ts` is bundled by `Bun.build` at start.
 
 What it does:
@@ -136,9 +136,9 @@ Until the account is connected the API answers that Miro is not connected and th
 ## Image
 
 `ghcr.io/alxwlw/plane-miro`, built by `.github/workflows/plane-miro-image.yml` on every push to `main` that touches
-this directory; deploy by digest. The workflow smoke-tests the image first (`/healthz`, the headers of
+this directory or `packages/`; deploy by digest. The workflow smoke-tests the image first (`/healthz`, the headers of
 `/miro/panel`, the `listening` line, the SQLite file in `/data`).
 
 ```bash
-docker build -t plane-miro:local apps/plane-miro
+docker build -f apps/plane-miro/Dockerfile -t plane-miro:local .
 ```

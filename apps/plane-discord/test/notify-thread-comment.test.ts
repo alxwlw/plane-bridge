@@ -1,23 +1,23 @@
+import { SerialQueue } from '@alxwlw/plane-kit/queue';
 import { describe, expect, test } from 'bun:test';
 
-import { DiscordApiError } from '../src/discord/rest.ts';
 import type { GatewayMessage } from '../src/discord/gateway.ts';
-import { SerialQueue } from '../src/queue.ts';
+import { DiscordApiError } from '../src/discord/rest.ts';
 import { webhookAvatar, webhookUsername } from '../src/notify.ts';
-import { createThreadSync } from '../src/thread-sync.ts';
 import { userMap } from '../src/text.ts';
+import { createThreadSync } from '../src/thread-sync.ts';
 import {
 	agentMention,
 	ALICE,
 	BOB,
 	BOT,
 	CAROL,
+	clock,
 	comment,
 	D_ALICE,
 	D_BOB,
 	FORUM,
 	FORUM_2,
-	clock,
 	ID,
 	ITEM,
 	mentionHtml,

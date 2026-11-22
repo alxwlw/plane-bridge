@@ -1,9 +1,9 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import type { Fetch } from '@alxwlw/plane-app';
+import { esc } from '@alxwlw/plane-kit/html';
 
 import type { Tenant } from '../config.ts';
-import { esc } from '../html.ts';
 import { isRecord, optString } from '../payload.ts';
 
 const STATE_TTL_SECONDS = 3600;

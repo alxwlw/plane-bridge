@@ -8,7 +8,8 @@
 		"probe": "bun scripts/probe-plane.ts"
 	},
 	"dependencies": {
-		"@alxwlw/plane-app": "workspace:*"
+		"@alxwlw/plane-app": "workspace:*",
+		"@alxwlw/plane-kit": "workspace:*"
 	},
 	"devDependencies": {
 		"@alxwlw/tsconfig": "catalog:dev",

@@ -1,10 +1,12 @@
-import { afterEach, describe, expect, jest, test } from 'bun:test';
 import { createHmac } from 'node:crypto';
 import { EventEmitter } from 'node:events';
-import { cpSync, mkdtempSync, appendFileSync, rmSync } from 'node:fs';
+import { appendFileSync, cpSync, mkdtempSync, rmSync } from 'node:fs';
 import { connect } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+
+import type { LogEntry } from '@alxwlw/plane-kit/log';
+import { afterEach, describe, expect, jest, test } from 'bun:test';
 
 import { fieldsHash } from '../src/card.ts';
 import type { Tenant } from '../src/config.ts';
@@ -16,7 +18,6 @@ import {
 	type ServiceOptions,
 	startService,
 } from '../src/index.ts';
-import type { LogEntry } from '../src/log.ts';
 import { MiroNotConnected } from '../src/miro/rest.ts';
 import type { Fetch, PlaneAuth } from '../src/plane/auth.ts';
 import { PlaneClient } from '../src/plane/client.ts';

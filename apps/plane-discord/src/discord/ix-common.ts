@@ -1,6 +1,7 @@
 // Pieces shared by the interaction handler and the slash commands: payload parsing, reply shapes, error texts.
-import { esc, link, truncate } from '../html.ts';
-import type { Log } from '../log.ts';
+import { esc, link, truncate } from '@alxwlw/plane-kit/html';
+import type { Log } from '@alxwlw/plane-kit/log';
+
 import type { TenantRuntime } from '../notify.ts';
 import { PlaneApiError } from '../plane/client.ts';
 import { workItemKey, workItemUrl } from '../text.ts';

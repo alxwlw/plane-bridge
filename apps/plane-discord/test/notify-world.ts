@@ -1,6 +1,7 @@
+import type { LogEntry } from '@alxwlw/plane-kit/log';
+
 import type { ChannelRoute, Tenant } from '../src/config.ts';
 import { CHANNEL, type OutMessage } from '../src/discord/rest.ts';
-import type { LogEntry } from '../src/log.ts';
 import { createNotifier, type Delivery, type TenantRuntime } from '../src/notify.ts';
 import type { PlaneEvent, WorkItemSnapshot } from '../src/plane/webhook.ts';
 import { Store } from '../src/store.ts';

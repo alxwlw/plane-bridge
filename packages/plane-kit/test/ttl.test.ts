@@ -1,6 +1,5 @@
-// Copy of apps/plane-discord/test/ttl.test.ts; keep in sync with src/ttl.ts.
+import { ttl } from '@alxwlw/plane-kit/ttl';
 import { describe, expect, test } from 'bun:test';
-import { ttl } from '../src/ttl.ts';
 
 describe('ttl', () => {
 	test('в пределах TTL загрузчик вызывается один раз, после — снова', async () => {

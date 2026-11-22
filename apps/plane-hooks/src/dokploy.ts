@@ -1,8 +1,9 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 
+import { esc, link, p, truncate } from '@alxwlw/plane-kit/html';
+
 import type { Tenant } from './config.ts';
 import type { GitHubApi } from './github/client.ts';
-import { esc, link, p, truncate } from './html.ts';
 import type { IncidentSignal } from './incident.ts';
 import { BadPayload, isRecord, optString } from './payload.ts';
 

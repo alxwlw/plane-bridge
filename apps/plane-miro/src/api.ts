@@ -1,6 +1,7 @@
+import type { Log } from '@alxwlw/plane-kit/log';
+
 import type { Config } from './config.ts';
 import { bindItem, convertItems, MAX_ITEMS } from './convert.ts';
-import type { Log } from './log.ts';
 import { verifyIdToken } from './miro/jwt.ts';
 import { MiroApiError, MiroNotConnected } from './miro/rest.ts';
 import { PlaneAuthError } from './plane/auth.ts';

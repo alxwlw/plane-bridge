@@ -1,7 +1,7 @@
+import { describeError } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
 
 import type { IncidentResult } from '../src/incident.ts';
-import { describeError } from '../src/log.ts';
 import { PlaneApiError } from '../src/plane.ts';
 import { MAX_BODY_BYTES } from '../src/server.ts';
 import { fixtureBytes } from './fixtures.ts';

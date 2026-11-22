@@ -8,7 +8,7 @@ import {
 	limitsFromEnv,
 	MAX_BODY_BYTES,
 	parseLimit,
-} from '../scripts/capture.ts';
+} from '@alxwlw/plane-kit/capture';
 
 test('GET с query: путь и параметры, тела нет', async () => {
 	const line = await describeRequest(
@@ -31,6 +31,39 @@ test('POST: x-plane-* сохранены, Authorization нет, тело бай�
 	expect(line.headers['x-plane-signature']).toBe('ab');
 	expect(line.headers.authorization).toBeUndefined();
 	expect(Buffer.from(line.bodyBase64 as string, 'base64')).toEqual(Buffer.from(body));
+});
+
+test('POST: свой фильтр заголовков: GitHub и Vercel сохранены, по умолчанию нет', async () => {
+	const keep = /^(x-plane-.*|x-github-.*|x-hub-signature.*|x-vercel-.*|content-type|user-agent)$/;
+	const line = await describeRequest(
+		new Request('http://x/hooks/github', {
+			method: 'POST',
+			body: '{}',
+			headers: {
+				'x-github-event': 'installation',
+				'x-hub-signature-256': 'sha256=ab',
+				'x-github-hook-installation-target-id': '1',
+				'x-vercel-signature': 'cd',
+				Authorization: 'Bearer s',
+			},
+		}),
+		new Date(),
+		keep,
+	);
+	expect(line.headers['x-github-event']).toBe('installation');
+	expect(line.headers['x-hub-signature-256']).toBe('sha256=ab');
+	expect(line.headers['x-github-hook-installation-target-id']).toBe('1');
+	expect(line.headers['x-vercel-signature']).toBe('cd');
+	expect(line.headers.authorization).toBeUndefined();
+	const dflt = await describeRequest(
+		new Request('http://x/hooks/github', {
+			method: 'POST',
+			body: '{}',
+			headers: { 'x-github-event': 'push' },
+		}),
+		new Date(),
+	);
+	expect(dflt.headers['x-github-event']).toBeUndefined();
 });
 
 test('метаданные: ts, метод, sha256 тела; HEAD без тела', async () => {
@@ -171,4 +204,20 @@ test('перезапуск учитывает уже записанное: ли�
 	expect(listing(dir)).toEqual(before);
 	await post(createCaptureHandler(dir, { maxFiles: 100, maxBytes: 1e9 }));
 	expect(listing(dir)).toHaveLength(4);
+});
+
+test('обработчик передаёт свой фильтр заголовков в запись', async () => {
+	const dir = tmpDir();
+	const handle = createCaptureHandler(dir, { maxFiles: 10, maxBytes: 1e9 }, /^x-custom$/);
+	await handle(
+		new Request('http://x/p', {
+			method: 'POST',
+			body: 'a',
+			headers: { 'x-custom': '1', 'x-plane-event': 'e' },
+		}),
+	);
+	const json = JSON.parse(
+		readFileSync(join(dir, listing(dir).find((f) => f.endsWith('.json')) as string), 'utf8'),
+	);
+	expect(json.headers).toEqual({ 'x-custom': '1' });
 });

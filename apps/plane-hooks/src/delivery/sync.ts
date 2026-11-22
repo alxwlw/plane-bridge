@@ -1,7 +1,8 @@
+import { esc } from '@alxwlw/plane-kit/html';
+
 import type { DeliveryConfig, RepoRule, Tenant } from '../config.ts';
 import { matchRepo } from '../config.ts';
 import type { GitHubApi, Pull } from '../github/client.ts';
-import { esc } from '../html.ts';
 import type { PlaneApi, ProjectSummary, StateSummary } from '../plane.ts';
 import { ownedKeys, PULL_URL, pullUrl } from './keys.ts';
 import { missingSteps, pullPosition, resolveStep } from './position.ts';

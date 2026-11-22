@@ -3,7 +3,7 @@
 A [Bun](https://bun.sh) service that keeps [Plane](https://plane.so) work items in step with the code: it moves
 a work item along by the facts of its pull requests and deploys (GitHub, Vercel, Dokploy) and opens incidents
 from Grafana alerts and failed deploys, builds and backups. It is a Plane App for one or more tenants (a Plane
-workspace each, with their own GitHub Apps and secrets), has no runtime dependencies and keeps its state in one
+workspace each, with their own GitHub Apps and secrets), has no third-party runtime dependencies (it uses the workspace packages `@alxwlw/plane-app` and `@alxwlw/plane-kit`, which the image carries as source) and keeps its state in one
 SQLite file.
 
 What it does:
@@ -479,7 +479,7 @@ This version is not compatible with the single-project, API-key one:
 ## Image
 
 `ghcr.io/alxwlw/plane-hooks`, built from the repository root by `.github/workflows/plane-hooks-image.yml` on
-every push to `main` that touches this app or `packages/plane-app`; deploy by digest. Pull requests build it and
+every push to `main` that touches this app or anything under `packages/`; deploy by digest. Pull requests build it and
 run the smoke test without publishing: `tenants.example.json` in `/config`, a fresh RSA key, the `listening` line
 with the tenant, `/healthz`, the SQLite file in `/data`. The image runs as `bun`; `wget` (busybox) serves
 container healthchecks: `wget -q --spider http://localhost:8080/healthz`.

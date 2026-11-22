@@ -1,9 +1,9 @@
-import { afterEach, describe, expect, spyOn, test } from 'bun:test';
-
-import { SerialQueue } from '../src/queue.ts';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+
+import { SerialQueue } from '@alxwlw/plane-kit/queue';
+import { afterEach, describe, expect, spyOn, test } from 'bun:test';
 
 import { Store } from '../src/store.ts';
 import { CHANNEL, ENV, GUILD, PROJECT, running, start, world } from './index-world.ts';

@@ -1,7 +1,7 @@
 # plane-discord
 
 A [Bun](https://bun.sh) service that bridges [Plane](https://plane.so) and Discord for one or more
-tenants (a Discord server plus a Plane workspace each). It has no runtime dependencies and keeps its
+tenants (a Discord server plus a Plane workspace each). It has no third-party runtime dependencies (it uses the workspace packages `@alxwlw/plane-app` and `@alxwlw/plane-kit`, which the image carries as source) and keeps its
 state in one SQLite file.
 
 Phases 1 to 3 (this version; a bound thread and its work item are synced both ways):
@@ -147,9 +147,9 @@ docker exec <container> bun scripts/list-channels.ts       # id, type, parent an
 ## Image
 
 `ghcr.io/alxwlw/plane-discord`, built by `.github/workflows/plane-discord-image.yml` on every push to
-`main` that touches this directory; deploy by digest. The workflow smoke-tests the image first (`/healthz`,
+`main` that touches this directory or `packages/`; deploy by digest. The workflow smoke-tests the image first (`/healthz`,
 the `listening` line, the SQLite file in `/data`).
 
 ```bash
-docker build -t plane-discord:local apps/plane-discord
+docker build -f apps/plane-discord/Dockerfile -t plane-discord:local .
 ```

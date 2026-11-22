@@ -1,5 +1,6 @@
+import { truncate } from '@alxwlw/plane-kit/html';
+
 import type { Embed } from './discord/rest.ts';
-import { truncate } from './html.ts';
 
 const TITLE_MAX = 256;
 const FIELD_MAX = 1024;

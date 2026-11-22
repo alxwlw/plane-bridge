@@ -3,6 +3,11 @@ $schema: 'https://moonrepo.dev/schemas/project.json'
 language: 'typescript'
 layer: 'application'
 
+# The workspace packages the app imports: a change in them re-runs the app's test and typecheck.
+dependsOn:
+  - 'plane-app'
+  - 'plane-kit'
+
 # Канон смотрит в src/ и tests/; здесь каталог тестов — test/, плюс scripts/.
 fileGroups:
   tests:
@@ -10,3 +15,13 @@ fileGroups:
   sources:
     - 'src/**/*'
     - 'scripts/**/*'
+
+tasks:
+  test:
+    inputs:
+      - '/packages/plane-app/src/**/*'
+      - '/packages/plane-kit/src/**/*'
+  typecheck:
+    inputs:
+      - '/packages/plane-app/src/**/*'
+      - '/packages/plane-kit/src/**/*'

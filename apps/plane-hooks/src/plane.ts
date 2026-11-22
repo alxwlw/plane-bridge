@@ -1,7 +1,7 @@
 import type { PlaneAuth } from '@alxwlw/plane-app';
+import { SlidingWindow } from '@alxwlw/plane-kit/rate';
 
 import { isRecord } from './payload.ts';
-import { SlidingWindow } from './rate.ts';
 
 export type Priority = 'urgent' | 'high' | 'medium' | 'low' | 'none';
 

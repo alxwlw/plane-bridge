@@ -1,11 +1,11 @@
 // Adapted from apps/plane-miro/src/server.ts.
 import { planeOauthCallback, planeSetupRedirect } from '@alxwlw/plane-app';
+import type { Log } from '@alxwlw/plane-kit/log';
 
 import { agentKeyOk, parseAgentRun, readKeyOk } from './access.ts';
 import { type Config, PLANE_SCOPES, type TenantConfig } from './config.ts';
 import type { AgentRunIn } from './contract.ts';
 import { buildGraph, buildSnapshot } from './graph.ts';
-import type { Log } from './log.ts';
 import { graphPage, planeBlock } from './page.ts';
 import {
 	BadDelivery,

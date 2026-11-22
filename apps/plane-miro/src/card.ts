@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
-import { truncate } from './html.ts';
+import { truncate } from '@alxwlw/plane-kit/html';
+
 import type { AppCardInput } from './miro/rest.ts';
 import type { TenantRuntime } from './runtime.ts';
 

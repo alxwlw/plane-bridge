@@ -1,6 +1,6 @@
+import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
 
-import type { LogEntry } from '../src/log.ts';
 import { PLANE_SCOPES } from '../src/plane/auth.ts';
 import { oauthCallback, setupRedirect } from '../src/plane/setup.ts';
 import { configOf } from './config-fixture.ts';
@@ -29,6 +29,13 @@ describe('setupRedirect', () => {
 			expect(res.status).toBe(404);
 			expect(res.headers.get('location')).toBeNull();
 		}
+	});
+
+	test('setup: the 404 for an unknown tenant is plain text with nosniff', async () => {
+		const res = setupRedirect(configOf(), new URL('http://x/plane/setup?tenant=nobody'));
+		expect(await res.text()).toBe('not found');
+		expect(res.headers.get('content-type')).toBe('text/plain; charset=utf-8');
+		expect(res.headers.get('x-content-type-options')).toBe('nosniff');
 	});
 });
 

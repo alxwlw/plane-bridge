@@ -1,4 +1,5 @@
-import { esc, link, truncate } from './html.ts';
+import { esc, link, truncate } from '@alxwlw/plane-kit/html';
+
 import { type PlaneApi, RELEASE_ITEMS_MAX } from './plane.ts';
 
 /** A deployed commit: full sha (lower case) and message. */

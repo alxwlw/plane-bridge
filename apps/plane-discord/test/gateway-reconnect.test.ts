@@ -1,15 +1,16 @@
+import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { afterEach, describe, expect, test } from 'bun:test';
+
 import { Gateway } from '../src/discord/gateway.ts';
-import type { LogEntry } from '../src/log.ts';
 import {
-	READY,
-	TOKEN,
 	cleanup,
 	fakeGateway,
+	type Frame,
+	READY,
 	run,
 	setup,
+	TOKEN,
 	track,
-	type Frame,
 } from './gateway-harness.ts';
 
 afterEach(cleanup);

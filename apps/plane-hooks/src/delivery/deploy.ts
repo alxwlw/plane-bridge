@@ -1,6 +1,7 @@
+import { describeError } from '@alxwlw/plane-kit/log';
+
 import { matchRepo } from '../config.ts';
 import type { Commit, GitHubApi, Pull } from '../github/client.ts';
-import { describeError } from '../log.ts';
 import type { ReleaseDraft, ReleaseItem, ReleaseResult } from '../release.ts';
 import { ownedKeys } from './keys.ts';
 import { deployedHtml, rolledBackHtml } from './notes.ts';

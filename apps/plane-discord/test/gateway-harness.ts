@@ -1,6 +1,7 @@
+import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { expect } from 'bun:test';
-import { Gateway, INTENTS, type GatewayMessage } from '../src/discord/gateway.ts';
-import type { LogEntry } from '../src/log.ts';
+
+import { Gateway, type GatewayMessage, INTENTS } from '../src/discord/gateway.ts';
 
 export const TOKEN = 'tok-SECRET-9f3a';
 

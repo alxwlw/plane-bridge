@@ -1,16 +1,17 @@
+import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { afterEach, describe, expect, test } from 'bun:test';
+
 import { Gateway, INTENTS } from '../src/discord/gateway.ts';
-import type { LogEntry } from '../src/log.ts';
 import {
-	READY,
-	TOKEN,
 	cleanup,
 	fakeGateway,
 	heartbeats,
 	messageCreate,
 	probe,
+	READY,
 	run,
 	spyTimeouts,
+	TOKEN,
 	track,
 	validMessage,
 } from './gateway-harness.ts';

@@ -206,7 +206,7 @@ describe('startService', () => {
 		expect(w.entries().find((e) => e.event === 'warm.failed')).toMatchObject({
 			level: 'warn',
 			tenant: 'acme',
-			error: 'TypeError',
+			error: 'PlaneAuthError',
 		});
 	});
 

@@ -1,4 +1,4 @@
-import { esc } from '../html.ts';
+import { esc } from '@alxwlw/plane-kit/html';
 
 /**
  * The Embed block of Plane's editor for a Miro place (design §10, probe 2026-10-26): Plane itself fetches

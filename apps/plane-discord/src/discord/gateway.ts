@@ -1,4 +1,4 @@
-import type { Log } from '../log.ts';
+import type { Log } from '@alxwlw/plane-kit/log';
 
 export const INTENTS = { GUILDS: 1, GUILD_MESSAGES: 512, MESSAGE_CONTENT: 32768 } as const;
 

@@ -3,11 +3,13 @@ on:
   pull_request:
     paths:
       - 'apps/plane-miro/**'
+      - 'packages/**'
       - '.github/workflows/plane-miro-image.yml'
   push:
     branches: [main]
     paths:
       - 'apps/plane-miro/**'
+      - 'packages/**'
       - '.github/workflows/plane-miro-image.yml'
 permissions:
   contents: read
@@ -23,7 +25,8 @@ jobs:
       - name: Build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
-          context: apps/plane-miro
+          context: .
+          file: apps/plane-miro/Dockerfile
           platforms: linux/amd64
           load: true
           tags: plane-miro:smoke
@@ -63,7 +66,8 @@ jobs:
         if: github.event_name == 'push'
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
         with:
-          context: apps/plane-miro
+          context: .
+          file: apps/plane-miro/Dockerfile
           platforms: linux/amd64
           push: true
           tags: |

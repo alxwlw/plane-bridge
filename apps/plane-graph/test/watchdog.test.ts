@@ -1,8 +1,8 @@
 // Adapted from apps/plane-miro/test/watchdog.test.ts (silence rules); the stale-sync tests are new.
+import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
 
 import type { CopyData } from '../src/contract.ts';
-import type { LogEntry } from '../src/log.ts';
 import { Store } from '../src/store.ts';
 import { checkHealth, newWatchdogState } from '../src/watchdog.ts';
 

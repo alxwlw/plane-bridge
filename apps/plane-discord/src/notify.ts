@@ -1,6 +1,9 @@
 // Plane events → Discord topics and DMs (design §3 «1a», «1b», §5 «Шум»).
 // The notifier does not send anything itself: Plane lookups happen in the returned promise (the caller retries
 // the event as a whole when one fails), every Discord send is its own Delivery (the queue retries only that one).
+import { truncate } from '@alxwlw/plane-kit/html';
+import type { Log } from '@alxwlw/plane-kit/log';
+
 import type { ChannelRoute, EventKind, Tenant } from './config.ts';
 import {
 	CHANNEL,
@@ -11,8 +14,6 @@ import {
 	DiscordApiError,
 	type OutMessage,
 } from './discord/rest.ts';
-import { truncate } from './html.ts';
-import type { Log } from './log.ts';
 import type { MemberSummary, PlaneApi, ProjectSummary, StateSummary } from './plane/client.ts';
 import type { PlaneEvent } from './plane/webhook.ts';
 import type { Store } from './store.ts';

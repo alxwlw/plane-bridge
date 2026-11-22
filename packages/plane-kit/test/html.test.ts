@@ -1,5 +1,5 @@
+import { esc, link, p, truncate, utc } from '@alxwlw/plane-kit/html';
 import { describe, expect, test } from 'bun:test';
-import { esc, link, p, truncate, utc } from '../src/html.ts';
 
 describe('esc', () => {
 	test('экранирует все пять символов', () => {

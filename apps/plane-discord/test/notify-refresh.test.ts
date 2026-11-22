@@ -1,9 +1,9 @@
 // A project or state created after the cache was loaded: the lookup refreshes past the cache once, then gives up.
+import type { LogEntry } from '@alxwlw/plane-kit/log';
 import { describe, expect, test } from 'bun:test';
 
 import type { Tenant } from '../src/config.ts';
 import { CHANNEL, type OutMessage } from '../src/discord/rest.ts';
-import type { LogEntry } from '../src/log.ts';
 import { createNotifier, type Delivery, type TenantRuntime } from '../src/notify.ts';
 import type { ProjectSummary, StateSummary } from '../src/plane/client.ts';
 import type { PlaneEvent } from '../src/plane/webhook.ts';
