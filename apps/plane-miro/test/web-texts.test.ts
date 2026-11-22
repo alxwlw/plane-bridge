@@ -5,7 +5,12 @@ import { DEFAULT_LOCALE } from '@alxwlw/plane-kit/locale';
 import { describe, expect, test } from 'bun:test';
 
 import { en, messages } from '../src/i18n.ts';
-import { applyTexts, loadTenantTexts, type SlotDocument } from '../web/apply-texts.ts';
+import {
+	applyTexts,
+	DEFAULT_MESSAGES,
+	loadTenantTexts,
+	type SlotDocument,
+} from '../web/apply-texts.ts';
 
 type Slot = { dataset: Record<string, string>; textContent: string; placeholder: string };
 
@@ -118,12 +123,28 @@ describe('loadTenantTexts', () => {
 });
 
 describe('the entry scripts', () => {
+	const source = (name: string) =>
+		readFileSync(new URL(`../web/${name}.ts`, import.meta.url), 'utf8');
+
 	test('panel and card take their catalog only from loadTenantTexts', () => {
 		for (const name of ['panel', 'card']) {
-			const source = readFileSync(new URL(`../web/${name}.ts`, import.meta.url), 'utf8');
-			expect(source, name).toContain("loadTenantTexts(() => api('/miro/api/locale'), document)");
-			expect(source, name).not.toMatch(/\bmessages\(/);
-			expect(source, name).not.toContain('../src/i18n.ts');
+			expect(source(name), name).toContain(
+				"loadTenantTexts(() => api('/miro/api/locale'), document)",
+			);
+			expect(source(name), name).not.toMatch(/\bmessages\(/);
+			expect(source(name), name).not.toContain('../src/i18n.ts');
 		}
+	});
+
+	test('the panel keeps the loaded catalog and the card binds it first', () => {
+		expect(source('panel')).toMatch(/^m = loaded;$/m);
+		expect(source('panel')).toMatch(
+			/const \[loaded, projects, current\] = await Promise\.all\(\[\s*loadTenantTexts\(/,
+		);
+		expect(source('card')).toMatch(/const \[m, res\] = await Promise\.all\(\[\s*loadTenantTexts\(/);
+	});
+
+	test('the default catalog is the default locale', () => {
+		expect(DEFAULT_MESSAGES).toBe(messages(DEFAULT_LOCALE));
 	});
 });

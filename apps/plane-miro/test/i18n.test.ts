@@ -105,3 +105,39 @@ test("Russian copy is today's text", () => {
 	expect(ru.selected(3)).toBe('Выделено для Plane: 3');
 	expect(ru.converting(4, 10)).toBe('Переношу: 4 из 10…');
 });
+
+test('Russian plain copy is the text of f209417', () => {
+	const plain = Object.fromEntries(Object.entries(ru).filter(([, v]) => typeof v === 'string'));
+	expect(plain).toEqual({
+		defaultAuthor: 'участник Miro',
+		unknownTenant: 'Неизвестный тенант',
+		missingCode: 'Нет параметра code',
+		miroTokenFailed: 'Не удалось получить токен Miro',
+		wrongMiroTeam: 'Это не та команда Miro',
+		errorUnauthorized: 'Сессия Miro устарела — перезагрузите доску.',
+		errorUnknownTeam: 'Эта команда Miro не подключена к Plane.',
+		errorBoardNoAccess:
+			'Служебный аккаунт не может писать на эту доску. Откройте доступ к доске команде и повторите; на плане Free редактируются только три последние доски команды.',
+		errorMiroNotConnected: 'Сервис ещё не подключён к Miro. Напишите администратору.',
+		errorUnknownProject: 'Проект не найден или скрыт.',
+		errorUnknownCard: 'Карточка не связана с задачей.',
+		errorPlaneFailed: 'Plane не ответил — попробуйте ещё раз.',
+		errorMiroFailed: 'Miro не ответил — попробуйте ещё раз.',
+		errorNotFound: 'элемент не найден',
+		errorUnsupportedType: 'этот тип элемента не переносится',
+		errorEmptyText: 'пустой стикер',
+		errorAlreadyLinked: 'стикер уже связан с другой задачей',
+		errorFallback: 'Что-то пошло не так.',
+		nothingFound: 'Ничего не найдено.',
+		projectLabel: 'Проект',
+		toPlane: 'В Plane',
+		bindHeading: 'Привязать к задаче',
+		searchPlaceholder: 'Ключ или слова из названия',
+		bind: 'Привязать',
+		cardTitle: 'Задача Plane',
+		loading: 'Загрузка…',
+		openInPlane: 'Открыть в Plane',
+		stateField: 'Статус',
+		assigneesField: 'Исполнители',
+	});
+});

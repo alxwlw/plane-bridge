@@ -82,3 +82,25 @@ test('tooltip and wave column in both languages', () => {
 test('Russian title is today’s literal', () => {
 	expect(ru.title).toBe('Граф задач');
 });
+
+test('Russian plain copy is the text of f209417', () => {
+	const plain = Object.fromEntries(Object.entries(ru).filter(([, v]) => typeof v === 'string'));
+	expect(plain).toEqual({
+		title: 'Граф задач',
+		allProjects: 'Все проекты',
+		allAreas: 'Все области',
+		showClosed: 'Показать закрытые',
+		fit: 'Вписать',
+		cycle: 'Цикл в «блокирует», порядок не определён:',
+		canStart: 'Можно сейчас',
+		noArea: 'без области',
+		notParallel: 'не параллельно',
+		offline: 'Нет связи с plane-graph',
+		d3Failed: 'Не загрузилась библиотека графа (cdnjs)',
+		noMatches: 'Нет задач под выбранные фильтры',
+		canStartColumn: 'МОЖНО СЕЙЧАС',
+		hintMouse: 'Ctrl/⌘+клик или колёсико мыши — открыть в новой вкладке',
+		hintTouch: 'долгое нажатие — открыть в новой вкладке',
+		agentNotRun: 'агент ещё не работал',
+	});
+});

@@ -1,4 +1,4 @@
-// Pure front-end logic: no DOM access, types from the contract only.
+// Pure front-end logic: no DOM access; the imports from src/ are the contract types and the catalog (no server code).
 import { DEFAULT_LOCALE, isLocale, type Locale } from '@alxwlw/plane-kit/locale';
 
 import type { Edge, GraphJson } from '../src/contract.ts';

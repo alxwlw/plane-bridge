@@ -162,13 +162,13 @@ describe('startService', () => {
 			ts: expect.any(String),
 			event: 'listening',
 			port: service.port,
-			tenants: [{ id: 'acme', locale: 'ru' }],
+			tenants: [{ id: 'acme', locale: 'ru', areaPrefix: 'код:' }],
 		});
 		for (const secret of [WEBHOOK_SECRET, PLANE_SECRET, READ_KEY, AGENT_KEY, WORKSPACE])
 			expect(w.lines.join('\n')).not.toContain(secret);
 	});
 
-	test('the listening line carries the locale of an en tenant', async () => {
+	test('the listening line carries the locale and area prefix of an en tenant', async () => {
 		const w = world();
 		const en = JSON.stringify({
 			tenants: [{ ...JSON.parse(TENANTS).tenants[0], locale: 'en', areaPrefix: 'area:' }],
@@ -176,7 +176,7 @@ describe('startService', () => {
 		const { service } = await start({ ...w, options: { ...w.options, readFile: () => en } });
 		expect(w.entries().find((e) => e.event === 'listening')).toMatchObject({
 			port: service.port,
-			tenants: [{ id: 'acme', locale: 'en' }],
+			tenants: [{ id: 'acme', locale: 'en', areaPrefix: 'area:' }],
 		});
 	});
 
