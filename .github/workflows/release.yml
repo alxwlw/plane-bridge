@@ -22,6 +22,7 @@ defaults:
     shell: bash
 jobs:
   plan:
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
@@ -143,6 +144,9 @@ jobs:
           flags=()
           if [ "$PRERELEASE" = true ]; then
             flags+=(--prerelease)
+          fi
+          if ! grep -qx latest "$RUNNER_TEMP/floating"; then
+            flags+=(--latest=false)
           fi
           gh release create "$APP-v$VERSION" --target "$GITHUB_SHA" --title "$APP $VERSION" \
             --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}"
