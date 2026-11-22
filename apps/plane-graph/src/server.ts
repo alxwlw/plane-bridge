@@ -176,7 +176,7 @@ export function createHandler(deps: ServerDeps): (req: Request) => Promise<Respo
 		const nowDate = new Date(now());
 		if (name === 'graph.json') {
 			const body = buildGraph(store.copy(tenant.id), {
-				planeUrl: config.planeUrl,
+				webUrl: config.planeWebUrl,
 				workspaceSlug: tenant.workspaceSlug,
 				areaPrefix: tenant.areaPrefix,
 				locale: tenant.locale,

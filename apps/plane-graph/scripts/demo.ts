@@ -16,6 +16,7 @@ const ROOT = join(import.meta.dir, '..');
 const config: Config = {
 	// Item links point back at this server, so a click opens a tab without leaving the machine.
 	planeUrl: `http://localhost:${PORT}/plane-stub`,
+	planeWebUrl: `http://localhost:${PORT}/plane-stub`,
 	publicUrl: `http://localhost:${PORT}`,
 	dbPath: ':memory:',
 	port: PORT,

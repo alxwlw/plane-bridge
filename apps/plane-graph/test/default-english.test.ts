@@ -29,6 +29,7 @@ const tenant: TenantConfig = {
 function setup(spec: CopySpec) {
 	const config: Config = {
 		planeUrl: 'https://plane.example.com',
+		planeWebUrl: 'https://plane.example.com',
 		publicUrl: 'https://plane-graph.example.com',
 		dbPath: ':memory:',
 		port: 8080,

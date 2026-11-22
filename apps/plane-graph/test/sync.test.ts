@@ -452,7 +452,7 @@ describe('метки агента', () => {
 		await queue.idle();
 		const view = store.copy(TENANT);
 		const areas = buildGraph(view, {
-			planeUrl: 'https://plane.example',
+			webUrl: 'https://plane.example',
 			workspaceSlug: 'w',
 			areaPrefix: 'код:',
 			locale: 'ru',

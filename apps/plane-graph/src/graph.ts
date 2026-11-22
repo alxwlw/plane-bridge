@@ -1,4 +1,5 @@
 // Pure builders of the task-order graph and the agent snapshot from the local copy.
+import { workItemUrl } from '@alxwlw/plane-kit/links';
 import type { Locale } from '@alxwlw/plane-kit/locale';
 
 import type {
@@ -200,7 +201,7 @@ function computeWaves(copy: CopyView, nodes: Map<string, Node>): Waves {
 export function buildGraph(
 	copy: CopyView,
 	o: {
-		planeUrl: string;
+		webUrl: string;
 		workspaceSlug: string;
 		areaPrefix: string;
 		locale: Locale;
@@ -238,7 +239,6 @@ export function buildGraph(
 	}
 
 	const cycleIds = new Set(cycles.flat());
-	const base = o.planeUrl.replace(/\/+$/, '');
 	const shown = [...entered].map((id) => nodes.get(id)!).toSorted(byKey);
 	const items: GraphJson['items'] = shown.map((n) => ({
 		id: n.row.id,
@@ -248,7 +248,7 @@ export function buildGraph(
 		stateGroup: n.group,
 		closed: n.closed,
 		areas: n.labels.filter((l) => l.startsWith(o.areaPrefix)),
-		url: `${base}/${o.workspaceSlug}/browse/${n.key}/`,
+		url: workItemUrl(o.webUrl, o.workspaceSlug, n.key),
 		wave: wave.get(n.row.id) ?? null,
 		inCycle: cycleIds.has(n.row.id),
 	}));

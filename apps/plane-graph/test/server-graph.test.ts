@@ -31,6 +31,7 @@ const tenant = (id: string, readKey: string, agentKey: string): TenantConfig => 
 });
 const config = (): Config => ({
 	planeUrl: PLANE_URL,
+	planeWebUrl: PLANE_URL,
 	publicUrl: PUBLIC_URL,
 	dbPath: ':memory:',
 	port: 8080,
@@ -46,14 +47,17 @@ const COPY = copyOf({
 	edges: [['ABC-1', 'blocks', 'ABC-2']],
 });
 
-function setup(accept: (tenant: string, run: AgentRunIn) => Promise<boolean> = async () => true) {
+function setup(
+	accept: (tenant: string, run: AgentRunIn) => Promise<boolean> = async () => true,
+	override: Partial<Config> = {},
+) {
 	const store = new Store(':memory:');
 	const { syncedAt, ...data } = COPY;
 	store.replaceCopy('acme', data, syncedAt as string);
 	const logs: LogEntry[] = [];
 	const accepted: { tenant: string; run: AgentRunIn }[] = [];
 	const handler = createHandler({
-		config: config(),
+		config: { ...config(), ...override },
 		store,
 		log: (e) => logs.push(e),
 		now: () => NOW,
@@ -101,7 +105,7 @@ describe('graph.json', () => {
 			JSON.parse(
 				JSON.stringify(
 					buildGraph(store.copy('acme'), {
-						planeUrl: PLANE_URL,
+						webUrl: PLANE_URL,
 						workspaceSlug: 'acme-ws',
 						areaPrefix: 'код:',
 						locale: 'ru',
@@ -111,6 +115,19 @@ describe('graph.json', () => {
 				),
 			),
 		);
+	});
+
+	test('graph.json item links use planeWebUrl, not planeUrl', async () => {
+		const { handler } = setup(undefined, {
+			planeUrl: 'https://api.example.com',
+			planeWebUrl: 'https://app.example.com',
+		});
+		const res = await handler(get(`/t/acme/graph.json?k=${READ}`));
+		const urls = ((await res.json()) as GraphJson).items.map((i) => i.url);
+		expect(urls).toEqual([
+			'https://app.example.com/acme-ws/browse/ABC-1/',
+			'https://app.example.com/acme-ws/browse/ABC-2/',
+		]);
 	});
 
 	test('401 и 404 графа тоже с CORS', async () => {

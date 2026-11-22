@@ -11,7 +11,7 @@ const lastRun: RunSummary = {
 	labelsAdded: 2,
 };
 const opts = {
-	planeUrl: 'https://plane.example.com',
+	webUrl: 'https://plane.example.com',
 	workspaceSlug: 'example-ws',
 	areaPrefix: 'код:',
 	locale: 'ru' as const,
@@ -300,7 +300,7 @@ describe('buildGraph', () => {
 			copyOf({ tasks: [task('ABC-1'), task('ABC-2')], edges: [['ABC-1', 'relates', 'ABC-2']] }),
 			{
 				...opts,
-				planeUrl: 'https://plane.example.com/',
+				webUrl: 'https://plane.example.com/',
 			},
 		);
 		expect(slash.items[0]!.url).toBe('https://plane.example.com/example-ws/browse/ABC-1/');
