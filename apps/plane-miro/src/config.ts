@@ -23,6 +23,8 @@ export type Tenant = {
 export type Config = {
 	port: number;
 	planeUrl: string;
+	/** The Plane web address work-item links point to; `planeUrl` is the API and OAuth base. */
+	planeWebUrl: string;
 	publicUrl: string;
 	configPath: string;
 	dbPath: string;
@@ -66,6 +68,7 @@ export function loadConfig(
 		return value;
 	};
 	const planeUrl = url('PLANE_MIRO_PLANE_URL');
+	const planeWebUrl = url('PLANE_MIRO_PLANE_WEB_URL') || planeUrl;
 	const publicUrl = url('PLANE_MIRO_PUBLIC_URL');
 	const miro = {
 		clientId: read('PLANE_MIRO_MIRO_CLIENT_ID'),
@@ -80,7 +83,7 @@ export function loadConfig(
 	const tenants = parseTenants(env, readFile, configPath, bad);
 
 	if (problems.length > 0) throw new Error(`plane-miro: ${problems.join('; ')}`);
-	return { port, planeUrl, publicUrl, configPath, dbPath, miro, tenants };
+	return { port, planeUrl, planeWebUrl, publicUrl, configPath, dbPath, miro, tenants };
 }
 
 function parseTenants(

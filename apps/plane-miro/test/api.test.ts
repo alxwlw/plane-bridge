@@ -613,6 +613,14 @@ describe('GET /miro/api/card', () => {
 		});
 	});
 
+	test('the lookup links to the web address while the API call goes to PLANE_URL', async () => {
+		const w = setup();
+		w.config.planeUrl = 'https://api.example.com';
+		w.config.planeWebUrl = 'https://app.example.com';
+		const { body } = await json(await w.call('GET', path()));
+		expect((body as { url: string }).url).toBe('https://app.example.com/example-ws/browse/LAB-7/');
+	});
+
 	test('статус неизвестен → «—»', async () => {
 		const w = setup();
 		w.plane.items.get('w-ex')!.stateId = 'нет';

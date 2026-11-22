@@ -123,6 +123,34 @@ describe('startService', () => {
 			expect(w.lines.join('\n')).not.toContain(secret);
 	});
 
+	test('PLANE_WEB_URL only changes links: every Plane request of the real runtime goes to PLANE_URL', async () => {
+		const urls: string[] = [];
+		const w = world();
+		w.options.runtimeFor = undefined;
+		w.options.fetch = async (input) => {
+			urls.push(input);
+			if (input.endsWith('/auth/o/token/'))
+				return new Response(JSON.stringify({ access_token: 't', expires_in: 3600 }));
+			return new Response(
+				JSON.stringify({
+					results: [{ id: PROJECT, identifier: 'LAB', name: 'Лаборатория' }],
+					next_page_results: false,
+				}),
+			);
+		};
+		const { url } = await start(w, {
+			...ENV,
+			PLANE_MIRO_PLANE_URL: 'https://api.example.com',
+			PLANE_MIRO_PLANE_WEB_URL: 'https://app.example.com',
+		});
+		const res = await fetch(url('/miro/api/projects'), {
+			headers: { authorization: `Bearer ${token()}` },
+		});
+		expect(res.status).toBe(200);
+		expect(urls.length).toBeGreaterThan(1);
+		expect(urls.filter((u) => !u.startsWith('https://api.example.com/'))).toEqual([]);
+	});
+
 	test('the listening line carries the locale of each tenant', async () => {
 		const w = world();
 		w.options.readFile = read(TENANTS.replace('"locale":"ru"', '"locale":"en"'));

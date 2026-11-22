@@ -63,17 +63,18 @@ Once a day the deduplication keys older than 30 days are deleted.
 
 Environment:
 
-| Variable                         | Required | Meaning                                                           |
-| -------------------------------- | -------- | ----------------------------------------------------------------- |
-| `PLANE_MIRO_PLANE_URL`           | yes      | Plane base URL, e.g. `https://plane.example.com`                  |
-| `PLANE_MIRO_PUBLIC_URL`          | yes      | Public URL of this service, e.g. `https://plane-miro.example.com` |
-| `PLANE_MIRO_MIRO_CLIENT_ID`      | yes      | Client id of the Miro app                                         |
-| `PLANE_MIRO_MIRO_CLIENT_SECRET`  | yes      | Client secret of the Miro app (also signs the id tokens)          |
-| `PLANE_MIRO_<ID>_PLANE_SECRET`   | yes      | Per tenant: client secret of the Plane App                        |
-| `PLANE_MIRO_<ID>_WEBHOOK_SECRET` | yes      | Per tenant: webhook secret of the Plane App                       |
-| `PLANE_MIRO_CONFIG`              | no       | Tenants file, default `/config/tenants.json`                      |
-| `PLANE_MIRO_DB`                  | no       | SQLite file, default `/data/plane-miro.sqlite`                    |
-| `PORT`                           | no       | Listen port, default `8080`                                       |
+| Variable                         | Required | Meaning                                                                                                      |
+| -------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------ |
+| `PLANE_MIRO_PLANE_URL`           | yes      | Plane API base URL, e.g. `https://plane.example.com`; on Plane Cloud `https://api.plane.so`                  |
+| `PLANE_MIRO_PLANE_WEB_URL`       | no       | Plane web address for work-item links; default `PLANE_MIRO_PLANE_URL`; on Plane Cloud `https://app.plane.so` |
+| `PLANE_MIRO_PUBLIC_URL`          | yes      | Public URL of this service, e.g. `https://plane-miro.example.com`                                            |
+| `PLANE_MIRO_MIRO_CLIENT_ID`      | yes      | Client id of the Miro app                                                                                    |
+| `PLANE_MIRO_MIRO_CLIENT_SECRET`  | yes      | Client secret of the Miro app (also signs the id tokens)                                                     |
+| `PLANE_MIRO_<ID>_PLANE_SECRET`   | yes      | Per tenant: client secret of the Plane App                                                                   |
+| `PLANE_MIRO_<ID>_WEBHOOK_SECRET` | yes      | Per tenant: webhook secret of the Plane App                                                                  |
+| `PLANE_MIRO_CONFIG`              | no       | Tenants file, default `/config/tenants.json`                                                                 |
+| `PLANE_MIRO_DB`                  | no       | SQLite file, default `/data/plane-miro.sqlite`                                                               |
+| `PORT`                           | no       | Listen port, default `8080`                                                                                  |
 
 `<ID>` is the tenant id in upper case. A missing or malformed value stops the start with one message listing
 every problem; the message names variables and JSON paths, never values. A failed build of `web/` stops it too.

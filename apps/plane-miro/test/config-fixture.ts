@@ -7,6 +7,7 @@ export const TEAM_ID = '3458764500000000001';
 export const configOf = (): Config => ({
 	port: 8080,
 	planeUrl: 'https://plane.example.com',
+	planeWebUrl: 'https://plane.example.com',
 	publicUrl: 'https://plane-miro.example.com',
 	configPath: '/config/tenants.json',
 	dbPath: ':memory:',
