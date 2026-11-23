@@ -18,7 +18,7 @@ What it does:
 - **A block for Plane.** `plane-block.html` is a small file to put into an HTML block of a Plane page (pasted, or uploaded on Plane Cloud); it loads
   the graph from this service.
 - **Agent endpoints.** `snapshot.json` is the whole copy, with `wave` and `inCycle` on each item and `cycles`
-  computed the same way as in the graph (an item outside every «blocks» relation has `"wave": null`); `agent-runs` takes the list of relations and labels an
+  computed the same way as in the graph (an item outside every «blocks» relation, a closed one and one in a cycle have `"wave": null`); `agent-runs` takes the list of relations and labels an
   agent has just added. The service confirms each one once it sees it in Plane, and reports the ones that
   disappeared afterwards under `rejected`. A label renamed in Plane keeps its marks: the next sync moves them to the
   new name, so a rename is not reported as rejected.

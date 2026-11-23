@@ -46,9 +46,9 @@ the one the maintainer's own installations run every day.
 
 Do the steps in this order. The service does not start without the Miro app's client id and secret, so the Miro app
 (and the developer team it lives in) comes first; the Plane installation id exists only after the consent, so the
-first `tenants.json` carries a placeholder for it (and for the workspace UUID, which step 6 reads from the log, and
-for the Miro team id, which step 8 reads from the log); and boards change only after one Miro account is connected
-(step 8). Below, `acme` is the tenant id, `example-ws` the Plane workspace slug.
+first `tenants.json` carries a placeholder for it (and for the workspace UUID, which step 7 reads from the log, and
+for the Miro team id, which step 6 reads from the log of the Miro app's install); and boards change only after one
+Miro account is connected (step 9). Below, `acme` is the tenant id, `example-ws` the Plane workspace slug.
 
 1. **Register the Plane App** ([Plane App](#plane-app) below) with the service's URLs and **Enable App Mentions** off.
    In the form's Webhook Secret put a secret from `openssl rand -hex 32` and keep it for
@@ -60,7 +60,7 @@ for the Miro team id, which step 8 reads from the log); and boards change only a
    a board's apps panel. Copy the app's **Client ID** and **Client Secret**.
 3. **Write a first `tenants.json`** in `config/` (`mkdir config && $EDITOR config/tenants.json`). Replace every
    value; `tenants.example.json` stays the full reference. `workspaceId`, `appInstallationId` and `miro.teamId` are
-   placeholders until steps 6 and 8:
+   placeholders until steps 5 to 7:
 
    ```json
    {
@@ -79,9 +79,10 @@ for the Miro team id, which step 8 reads from the log); and boards change only a
 
    Where each value comes from:
    - `workspace`: the slug in the Plane URL (`https://app.plane.so/<slug>/…`).
-   - `plane.clientId`: step 1. `workspaceId` and `appInstallationId`: step 6 (the placeholders stay until then).
+   - `plane.clientId`: step 1. `appInstallationId`: step 5, `workspaceId`: step 7 (the placeholders stay until then).
    - `miro.teamId`: digits only. The Miro documentation names no page that shows a team's id, so start with the
-     placeholder `1`: step 8 logs the id of the team the token belongs to (`miro.wrong_team`, its `team` field).
+     placeholder `1`: step 6 logs the id of the team the app was installed in (`miro.installed`, its `team`
+     field).
    - The Miro app's client id and secret go to the environment, not to this file: step 2.
 
 4. **Start the service** with the Plane Cloud API address, the public URL and the secrets of steps 1 and 2. The
@@ -135,28 +136,31 @@ for the Miro team id, which step 8 reads from the log); and boards change only a
    admin. It redirects to the Plane consent screen. Plane's consent screen says the app "hasn't been reviewed or
    approved by Plane"; every private app shows it, so approve it. You land on a plain-text page that prints
    `app_installation_id=<uuid>`.
-6. **Find the workspace UUID and put both ids in.** Plane Cloud shows the workspace UUID nowhere in its pages, but the
-   service logs it: make any change in Plane (create a work item). On a new Plane Cloud workspace a product tour pops
-   up over the work-item dialog the first time: close it. The service does not know the workspace yet, so
+6. **Install the Miro app** in the team with the install link of the app settings: Miro asks you to **Select an
+   organization** (and the team), then to install. The install carries no tenant, so the service only logs it:
+   `docker logs plane-miro` shows a line with `"event":"miro.installed"` and `"team":"<id>"`, the Miro team id.
+7. **Find the workspace UUID.** Plane Cloud shows the workspace UUID nowhere in its pages, but the service logs it:
+   make any change in Plane (create a work item). On a new Plane Cloud workspace a product tour pops up over the
+   work-item dialog the first time: close it. The service does not know the workspace yet, so
    `docker logs plane-miro` shows a line with `"event":"plane.rejected"`, `"reason":"unknown_workspace"` and
    `"workspaceId":"<uuid>"`. (Plane's API gives it too: `GET https://api.plane.so/auth/o/app-installation/?id=<installation id>`
    with the bot token answers `"workspace": "<uuid>"`; see
-   [Plane's token flow](https://developers.plane.so/dev-tools/build-plane-app/choose-token-flow).) Put that UUID in
-   `workspaceId` and the printed id in `plane.appInstallationId`, then **restart** the container
+   [Plane's token flow](https://developers.plane.so/dev-tools/build-plane-app/choose-token-flow).)
+8. **Put the ids in and restart once.** Put the team id of step 6 in `miro.teamId`, the UUID of step 7 in
+   `workspaceId` and the id printed in step 5 in `plane.appInstallationId`, then **restart** the container
    (`docker rm -f plane-miro` and the command of step 4). The `listening` line appears again and `/healthz`
    answers `ok`.
-7. **Install the Miro app** in the team with the install link of the app settings: Miro asks you to **Select an
-   organization** (and the team), then to install.
-8. **Connect the service account** ([Connecting the service account](#connecting-the-service-account)): one Miro
-   account of the team opens `https://plane-miro.example.com/miro/setup?tenant=acme` and grants access. With the
-   placeholder `miro.teamId` the service answers an error and logs `miro.wrong_team` with `"team":"<id>"`, the id of
-   the team the token belongs to: put it in `miro.teamId`, restart as in step 6 and open the link again. The log
-   then shows `miro.service_connected`.
-9. **Check.** The minimal scenario: a sticky becomes a work item, and its state shows on the card.
-   - On a board of the team open the app from the apps panel, pick the Plane project and turn a sticky into a work
-     item with **To Plane**: the work item exists in Plane with the link to the board (and the embed).
-   - Change its state in Plane (close the product tour, as in step 6): the card on the board shows the new state
-     within seconds, and the log shows `plane.accepted`.
+9. **Connect the service account** ([Connecting the service account](#connecting-the-service-account)): one Miro
+   account of the team opens `https://plane-miro.example.com/miro/setup?tenant=acme` and grants access. The log
+   shows `miro.service_connected`. A token of another team than `miro.teamId` is refused with `miro.wrong_team`
+   and `"team":"<id>"`, the id the token belongs to: put that id in `miro.teamId`, restart as in step 8 and open
+   the link again.
+10. **Check.** The minimal scenario: a sticky becomes a work item, and its state shows on the card.
+
+- On a board of the team open the app from the apps panel, pick the Plane project and turn a sticky into a work
+  item with **To Plane**: the work item exists in Plane with the link to the board (and the embed).
+- Change its state in Plane (close the product tour, as in step 7): the card on the board shows the new state
+  within seconds, and the log shows `plane.accepted`.
 
 ## Routes
 
