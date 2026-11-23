@@ -111,6 +111,11 @@ Plane does not take the scopes from the registration, so the service sends them 
 Installing the app through the setup URL ends on the callback page, which prints
 `app_installation_id=<uuid>`; put it in `tenants.json`.
 
+The id exists only after that consent, but the service does not start without the key
+(`plane.appInstallationId must be a non-empty string`), and `/plane/setup` uses only `plane.clientId`. So start with the
+real `clientId` and `"appInstallationId": "placeholder"` (nothing checks the shape), run the setup URL, then replace the
+placeholder with the printed id and restart the container.
+
 ## Discord app
 
 Name it without `discord` or `clyde`. Invite the bot with the permission integer `309774601216`

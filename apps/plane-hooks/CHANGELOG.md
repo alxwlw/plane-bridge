@@ -18,3 +18,7 @@ The first versioned release; until now the image was published only as `:main` a
 ### Changed
 
 - **Breaking:** a tenant without `locale` now gets English, where every text was Russian before. To stay Russian, add `"locale": "ru"` to each such tenant in `tenants.json` before updating.
+
+### Fixed
+
+- `scripts/probe-plane.ts` no longer exits 1 when `POST /releases/` answers 403 (an App bot token has no releases scope, as on Plane Cloud): the release section is skipped with the reason, as it already was for 402.
