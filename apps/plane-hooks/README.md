@@ -65,7 +65,8 @@ and it does not check its shape). Below, `acme` is the tenant id, `example-ws` t
    `PLANE_HOOKS_ACME_PLANE_SECRET`. You should see the `listening` line with `"id":"acme"`, and
    `curl https://hooks.example.com/healthz` answers `ok`.
 4. **Open `https://hooks.example.com/plane/setup?tenant=acme`** in a browser logged in to Plane as a workspace
-   admin. It redirects to the Plane consent screen; approve it. You land on
+   admin. It redirects to the Plane consent screen. Plane's consent screen says the app "hasn't been reviewed or
+   approved by Plane"; every private app shows it, so approve it. You land on
    `https://hooks.example.com/plane/oauth/callback?…`, a plain-text page that prints
    `app_installation_id=<uuid>` (the hub also logs it as `plane.installed`).
 5. **Put the id in** `tenants.json` (`plane.appInstallationId`) and **restart** the container. Then check that
@@ -79,17 +80,30 @@ and it does not check its shape). Below, `acme` is the tenant id, `example-ws` t
    entry for `tenants.json` and two env values: copy them right away. Add the entry, set `PLANE_HOOKS_GH_ACME_PRIVATE_KEY` and `PLANE_HOOKS_GH_ACME_WEBHOOK_SECRET`,
    **restart**, then install the App on the repositories with the link on that page. The `listening` line now
    shows `"apps":["acme"]`.
-7. **Turn on the inputs you use** (each is off until its secret is set; restart after setting it): add `delivery`
-   and `incidents` to `tenants.json`, then [Vercel](#vercel), [Grafana](#grafana), [Dokploy](#dokploy). The
+7. **Turn on the inputs the check needs** (each is off until its secret is set; restart after setting it): add
+   `delivery` and `incidents` to `tenants.json`, then set up [Grafana](#grafana), which step 8 uses.
+   [Vercel](#vercel) and [Dokploy](#dokploy) are optional and not part of the check. A new Plane Cloud project
+   has no `In Review` state (its states are Backlog, Todo, In Progress, Done and Cancelled): add one in the
+   project's settings, or set `delivery.states.review` to a state the project has, for example `In Progress`. The
    `listening` line lists the inputs that are on (`github`, `grafana`, `vercel`, `dokploy`); `delivery` and
    `incidents` are not in it, so there is no marker that those rules loaded. `delivery` never moves the work items of
    the incident project, so `incidents.project` must name a second project in a single-project workspace (see
    [Inputs](#inputs)). State names in `delivery` must match the project's states by name (case-insensitive, otherwise exact: `In Review`, `Done`); a name the project lacks shows
    only later, as one `warn` line (`event: "warning"`, `reason: "state_missing:<project>:<name>"`) on the first PR
    that needs it.
-8. **Check.** Open a draft PR on `acme/api` whose title has a work item key such as `ENG-1`, and mark it ready for
-   review: the work item moves to the review state and gets a comment naming the PR. From a sender, a signed test
-   delivery can be posted with `scripts/replay.ts` (see [Development](#development)).
+8. **Check.** The minimal scenario is the Plane App and the GitHub App: a merged PR moves a work item, and a
+   Grafana test alert opens an incident.
+   - Create a work item in a project that `delivery` covers. On a new Plane Cloud workspace a product tour pops up
+     over the work-item dialog the first time: close it. You see the item with its key, for example `ENG-1`.
+   - Open a draft PR on `acme/api` whose title has the key (`ENG-1`) and mark it ready for review: the work item
+     moves to the review state and gets a comment naming the PR.
+   - Merge the PR: the work item moves to the done state and gets a second comment.
+   - In Grafana open **Alerting → Contact points**, find the `plane-hooks` contact point and press **Test** (see
+     [Grafana](#grafana)): a work item opens in `incidents.project`. The hub keys an incident by the alert's
+     fingerprint, so a second test of the same alert lands on that incident as a comment.
+
+   Vercel and Dokploy are not part of the check. From a sender, a signed test delivery can also be posted with
+   `scripts/replay.ts` (see [Development](#development)).
 
 ## Inputs
 
@@ -165,31 +179,38 @@ start with one message that names every JSON path and variable at fault (never a
 
 ### Plane App
 
-Register one app per Plane instance and install it in each workspace. In Plane open **Workspace settings** and click **Integrations** in the settings sidebar, then **Apps**, then the
-**Build your own** link
+Register one app per Plane instance and install it in each workspace
 ([Plane docs: create an OAuth application](https://developers.plane.so/dev-tools/build-plane-app/create-oauth-application)).
-Click through the sidebar: the direct URL `https://plane.example.com/example-ws/settings/integrations/` answered
-404 when typed into the address bar on Plane 2.6.5. The page exists in Plane Cloud and the Commercial Edition only
-(see [Compatibility](#compatibility)); a workspace admin sees it (per Plane docs; not verified on a live instance:
-only an admin was logged in on the test run). The form asks for these required fields:
+On Plane Cloud the form opens directly at `https://app.plane.so/<workspace-slug>/settings/integrations/create/`
+(`https://app.plane.so/example-ws/settings/integrations/create/` for the example workspace), titled "Build your own app".
+On the Commercial Edition click through the sidebar instead: in Plane open **Workspace settings** and click
+**Integrations** in the settings sidebar, then **Apps**, then the **Build your own** link; the direct URL
+`https://plane.example.com/example-ws/settings/integrations/` answered 404 when typed into the address bar on Plane 2.6.5.
+The page exists in Plane Cloud and the Commercial Edition only (see [Compatibility](#compatibility)); a workspace
+admin sees it (per Plane docs). The form asks for these fields, in this order (`*` is required on Plane Cloud):
 
-| Field                             | Value                                                                                         |
-| --------------------------------- | --------------------------------------------------------------------------------------------- |
-| App name                          | anything, for example `plane-hooks-acme`                                                      |
-| App slug                          | for example `plane-hooks-acme`                                                                |
-| App maker (company)               | your company or team, for example `acme`                                                      |
-| Short description                 | for example `Moves work items by pull requests and deploys`                                   |
-| Long description                  | a rich-text paragraph, for example the first paragraph of this README                         |
-| Connection type                   | workspace-level: leave **User-Level Connection** off (the hub acts as a bot, not as a person) |
-| Setup URL                         | `https://hooks.example.com/plane/setup?tenant=<id>`                                           |
-| Redirect URI                      | `https://hooks.example.com/plane/oauth/callback`                                              |
-| Webhook URL                       | `https://hooks.example.com/plane/webhook`                                                     |
-| Webhook secret                    | the hub reads no Plane webhook, so any value does (`openssl rand -hex 32`)                    |
-| Enable App Mentions               | off                                                                                           |
-| Scopes (**Scopes & Permissions**) | the grid below                                                                                |
+| Field                              | Value                                                                                                                                                                                                                                 |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Upload Logo                        | optional                                                                                                                                                                                                                              |
+| App Name \*                        | anything, for example `plane-hooks-acme`                                                                                                                                                                                              |
+| App slug \*                        | for example `plane-hooks-acme`                                                                                                                                                                                                        |
+| App Maker \*                       | the person or organization creating the app, for example `acme`                                                                                                                                                                       |
+| Short Description \*               | for example `Moves work items by pull requests and deploys`                                                                                                                                                                           |
+| Long Description \*                | a rich-text paragraph, for example the first paragraph of this README                                                                                                                                                                 |
+| Website                            | optional                                                                                                                                                                                                                              |
+| Connection Type                    | choose **Workspace-Level Connection** (Plane Cloud's form starts on User-Level Connection): the app is installed once per workspace and acts as a bot, not as a person. On the Commercial Edition leave **User-Level Connection** off |
+| Enable App Mentions                | off                                                                                                                                                                                                                                   |
+| Setup URL                          | `https://hooks.example.com/plane/setup?tenant=<id>`                                                                                                                                                                                   |
+| Webhook URL                        | `https://hooks.example.com/plane/webhook`                                                                                                                                                                                             |
+| Webhook Secret                     | optional, the form issues none; the hub reads no Plane webhook, so any value does (`openssl rand -hex 32`)                                                                                                                            |
+| Redirect URIs (space separated) \* | `https://hooks.example.com/plane/oauth/callback`                                                                                                                                                                                      |
+| Scopes (**Scopes & Permissions**)  | the grid below                                                                                                                                                                                                                        |
 
-The scopes are a grid, not machine names: open the collapsed **Projects** section and tick, per row, the Read
-and Write columns. Each name the hub requests (`PLANE_HOOKS_SCOPES` in `src/plane.ts`) is one cell:
+The collapsed sections (Categorisation, Supported Plans, Compliance & Support, Additional resources) are all
+optional: leave them as they are (Supported Plans: leave empty, which allows all plans).
+
+The scopes are a grid with a Read and a Write column, not machine names: tick, per row, the cells below. All six
+rows are in the grid's **Projects** section. Each name the hub requests (`PLANE_HOOKS_SCOPES` in `src/plane.ts`) is one cell:
 
 | Row in the grid    | Read | Write | Scope names                                             |
 | ------------------ | ---- | ----- | ------------------------------------------------------- |
