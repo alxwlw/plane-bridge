@@ -32,11 +32,11 @@ the self-hosted Commercial Edition, its Free plan included. The open-source Comm
 has none, so plane-miro cannot run against it. Check a self-hosted instance with
 `curl https://plane.example.com/api/instances/`: its `edition` must be `PLANE_COMMERCIAL`.
 
-| Plane                                       | Supported | Checked on                                                    |
-| ------------------------------------------- | --------- | ------------------------------------------------------------- |
-| Plane Cloud                                 | yes       | 2026-11-23, a workspace on a Business-plan trial              |
-| Commercial Edition, self-hosted, Free plan included | yes | v4.1.0                                                      |
-| Community Edition                           | no        | —                                                             |
+| Plane                                               | Supported | Checked on                                       |
+| --------------------------------------------------- | --------- | ------------------------------------------------ |
+| Plane Cloud                                         | yes       | 2026-11-23, a workspace on a Business-plan trial |
+| Commercial Edition, self-hosted, Free plan included | yes       | v4.1.0                                           |
+| Community Edition                                   | no        | —                                                |
 
 Plane Cloud publishes no version number. The Cloud Free plan was not checked. The Cloud check ran the app's install and
 its main flows with the 0.1.0 release candidates, whose code 0.1.0 ships unchanged. The Commercial Edition version is
