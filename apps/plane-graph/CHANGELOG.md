@@ -7,6 +7,8 @@ release is cut: [RELEASING.md](../../RELEASING.md).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-23
+
 The first versioned release; until now the image was published only as `:main` and `:<commit sha>`.
 
 ### Added
