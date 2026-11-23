@@ -86,7 +86,7 @@ and it does not check its shape). Below, `acme` is the tenant id, `example-ws` t
    [Vercel](#vercel) and [Dokploy](#dokploy) are optional and not part of the check. A new Plane Cloud project
    has no `In Review` state (its states are Backlog, Todo, In Progress, Done and Cancelled): add one in the
    project's settings, or set `delivery.states.review` to a state the project has, for example `In Progress`.
-   The `delivery` that step 8 needs is this one (`done` is the project's `Done`):
+   The `delivery` that step 8 needs is this one (`done` is the project's `Done`; `review` is the state you added or chose above):
 
    ```json
    "delivery": {
