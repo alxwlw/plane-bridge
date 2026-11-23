@@ -9,7 +9,8 @@ release is cut: [RELEASING.md](../../RELEASING.md).
 
 ## [0.1.0] - 2026-11-23
 
-The first versioned release; until now the image was published only as `:main` and `:<commit sha>`.
+The first stable release. Before it the image was published as `:main`, `:<commit sha>` and the pre-releases
+`0.1.0-rc.N`.
 
 ### Added
 

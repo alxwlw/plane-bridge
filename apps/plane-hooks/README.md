@@ -45,7 +45,7 @@ has none, so plane-hooks cannot run against it. Check a self-hosted instance wit
 | Community Edition                                   | no        | —                                                |
 
 Plane Cloud publishes no version number. The Cloud Free plan was not checked. The Cloud check ran the app's install and
-its main flows with the 0.1.0 release candidates, whose code 0.1.0 ships unchanged. The Commercial Edition version is
+its minimal scenario with the 0.1.0 release candidates, whose code 0.1.0 ships unchanged. The Commercial Edition version is
 the one the maintainer's own installations run every day.
 
 ## Install checklist

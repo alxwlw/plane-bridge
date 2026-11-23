@@ -20,14 +20,17 @@ has them. A pre-release (`X.Y.Z-rc.N`) gets only its own tag. Every push to `mai
 ships also publishes that app's `:main` and `:<commit sha>`. Users are pointed at `:X.Y`: each app's
 README names it in its `## Image` section.
 
-The GitHub Release is marked "Latest" only when it moves the app's `:latest` image tag: a pre-release, a
-backport or an older version never takes the badge.
+GitHub shows one "Latest" Release per repository. A Release that does not move its app's `:latest` image tag (a
+pre-release, a backport, an older version) is created with `--latest=false` and never takes the badge; among the
+Releases that do, the one created last holds it.
 
 ## Cutting a release
 
 1. A PR sets `version` and the notes. A pre-release keeps them under `## [Unreleased]`; a stable version
    renames `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` and opens a new empty `## [Unreleased]` above it.
    When the release was checked on another Plane version, the PR also updates the app's `## Compatibility` table.
+   A release that raises the minor or major version also updates the app's README: the recommended `:X.Y`, the exact
+   `:X.Y.Z` pin example and every `ghcr.io/alxwlw/<app>:` line.
 2. On the PR, `ci` runs `bun packages/release/src/cli.ts check`, and the `release` workflow does a dry run: it
    builds and smoke-tests the images without pushing and shows the notes it would publish in each `publish`
    job's summary.
