@@ -1,5 +1,7 @@
 # plane-graph
 
+![plane-graph's demo page: the work order in waves with blocking edges, the filter bar, the agent-run note and the Can start now list](../../docs/images/plane-graph.png)
+
 A [Bun](https://bun.sh) service that keeps a read-only copy of the work items and relations of one or more
 [Plane](https://plane.so) workspaces, draws the order in which the work can be done, and gives an agent the same
 data to put missing relations back into Plane. It has no third-party runtime dependencies (it uses the workspace packages `@alxwlw/plane-app`, with bot-token auth and the install redirect, and `@alxwlw/plane-kit`, which the image carries as source), keeps its state in one SQLite file and serves its own

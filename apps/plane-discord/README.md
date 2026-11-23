@@ -1,5 +1,7 @@
 # plane-discord
 
+![The Discord channel #acme-web: a "Work item created" post for WEB-30 "Sign-in: remember the last workspace" by the bot, and the /plane WEB-30 work item card under it](../../docs/images/plane-discord.png)
+
 A [Bun](https://bun.sh) service that bridges [Plane](https://plane.so) and Discord for one or more
 tenants (a Discord server plus a Plane workspace each). It has no third-party runtime dependencies (it uses the workspace packages `@alxwlw/plane-app` and `@alxwlw/plane-kit`, which the image carries as source) and keeps its
 state in one SQLite file.
