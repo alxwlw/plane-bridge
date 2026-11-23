@@ -165,7 +165,11 @@ Releases are published as `:<version>` (for example `:0.1.0`), `:0.1` and `:late
 changelog entry says how to upgrade. Pin `:0.1.0` (or its digest) to stay on one release. `:latest` follows every
 release, breaking ones included: do not use it for unattended updates.
 
-`ghcr.io/alxwlw/plane-graph` for `linux/amd64` and `linux/arm64`, built through `.github/workflows/image.yml`: releases by `.github/workflows/release.yml`, and `:main` plus `:<commit sha>` by `.github/workflows/plane-graph-image.yml` on every push to `main` that touches this directory or a package it ships (development builds, not releases). Each platform is smoke-tested on its own runner by `.github/smoke/plane-graph.sh` before publishing (`/healthz`, the bundle, the `listening` line, the SQLite file in `/data`).
+`ghcr.io/alxwlw/plane-graph` for `linux/amd64` and `linux/arm64`, built through `.github/workflows/image.yml`:
+releases by `.github/workflows/release.yml`, and development builds (the tags `main` and `<commit sha>`, not releases)
+by `.github/workflows/plane-graph-image.yml` on every push to `main` that touches this directory or a package it
+ships. Each platform is smoke-tested on its own runner by `.github/smoke/plane-graph.sh` before publishing
+(`/healthz`, the bundle, the `listening` line, the SQLite file in `/data`).
 
 The build context is the repository root: the image carries `packages/plane-app` and `packages/plane-kit` as source and installs nothing.
 

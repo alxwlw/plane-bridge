@@ -503,7 +503,14 @@ Releases are published as `:<version>` (for example `:0.1.0`), `:0.1` and `:late
 changelog entry says how to upgrade. Pin `:0.1.0` (or its digest) to stay on one release. `:latest` follows every
 release, breaking ones included: do not use it for unattended updates.
 
-`ghcr.io/alxwlw/plane-hooks` for `linux/amd64` and `linux/arm64`, built from the repository root through `.github/workflows/image.yml`: releases by `.github/workflows/release.yml`, and `:main` plus `:<commit sha>` by `.github/workflows/plane-hooks-image.yml` on every push to `main` that touches this app or a package it ships (development builds, not releases). Each platform is smoke-tested on its own runner by `.github/smoke/plane-hooks.sh` before publishing: `tenants.example.json` in `/config`, a fresh RSA key, the `listening` line with the tenant, `/healthz`, the SQLite file in `/data`. Pull requests build both platforms and run the smoke test without publishing. The image runs as `bun`; `wget` (busybox) serves container healthchecks: `wget -q --spider http://localhost:8080/healthz`.
+`ghcr.io/alxwlw/plane-hooks` for `linux/amd64` and `linux/arm64`, built from the repository root through
+`.github/workflows/image.yml`: releases by `.github/workflows/release.yml`, and development builds (the tags `main`
+and `<commit sha>`, not releases) by `.github/workflows/plane-hooks-image.yml` on every push to `main` that touches
+this app or a package it ships. Each platform is smoke-tested on its own runner by `.github/smoke/plane-hooks.sh`
+before publishing: `tenants.example.json` in `/config`, a fresh RSA key, the `listening` line with the tenant,
+`/healthz`, the SQLite file in `/data`. Pull requests build both platforms and run the smoke test without publishing.
+The image runs as `bun`; `wget` (busybox) serves container
+healthchecks: `wget -q --spider http://localhost:8080/healthz`.
 
 ```bash
 docker build -f apps/plane-hooks/Dockerfile -t plane-hooks:local .
