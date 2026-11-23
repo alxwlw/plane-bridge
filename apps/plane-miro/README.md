@@ -25,6 +25,23 @@ service account; the front only reads the selection and calls the service with t
 Hidden projects (`hiddenProjects`) are hidden completely: not offered, not found, never synced; a sticker converted
 before its project was hidden is refused (`unknown_project`).
 
+## Compatibility
+
+plane-miro is a Plane App (OAuth, a bot token per workspace, signed webhooks). Plane Apps exist in Plane Cloud and in
+the self-hosted Commercial Edition, its Free plan included. The open-source Community Edition (`makeplane/plane`)
+has none, so plane-miro cannot run against it. Check a self-hosted instance with
+`curl https://plane.example.com/api/instances/`: its `edition` must be `PLANE_COMMERCIAL`.
+
+| Plane                                               | Supported | Checked on                                       |
+| --------------------------------------------------- | --------- | ------------------------------------------------ |
+| Plane Cloud                                         | yes       | 2026-11-23, a workspace on a Business-plan trial |
+| Commercial Edition, self-hosted, Free plan included | yes       | v4.1.0                                           |
+| Community Edition                                   | no        | —                                                |
+
+Plane Cloud publishes no version number. The Cloud Free plan was not checked. The Cloud check ran the app's install and
+its minimal scenario with the 0.1.0 release candidates, whose code 0.1.0 ships unchanged. The Commercial Edition version is
+the one the maintainer's own installations run every day.
+
 ## Routes
 
 | Path                                                                | Purpose                                                                                     |
@@ -144,10 +161,17 @@ Until the account is connected the API answers that Miro is not connected and th
 
 ## Image
 
-`ghcr.io/alxwlw/plane-miro` for `linux/amd64` and `linux/arm64`, built by `.github/workflows/plane-miro-image.yml`
-(through `.github/workflows/image.yml`) on every push to `main` that touches this directory or a package it ships; deploy by
-digest. Each platform is smoke-tested on its own runner by `.github/smoke/plane-miro.sh` before publishing (`/healthz`,
-the headers of `/miro/panel`, the `listening` line, the SQLite file in `/data`).
+Releases are published as `:<version>` (for example `:0.1.0`), `:0.1` and `:latest`, each for `linux/amd64` and
+`linux/arm64`; the notes are in [CHANGELOG.md](CHANGELOG.md) and on the GitHub Release `plane-miro-v<version>`. Use
+`:0.1`: it takes patch releases only, because a breaking configuration change raises the minor version and its
+changelog entry says how to upgrade. Pin `:0.1.0` (or its digest) to stay on one release. `:latest` follows every
+release, breaking ones included: do not use it for unattended updates.
+
+`ghcr.io/alxwlw/plane-miro` for `linux/amd64` and `linux/arm64`, built through `.github/workflows/image.yml`: releases
+by `.github/workflows/release.yml`, and development builds (the tags `main` and `<commit sha>`, not releases) by
+`.github/workflows/plane-miro-image.yml` on every push to `main` that touches this directory or a package it ships.
+Each platform is smoke-tested on its own runner by `.github/smoke/plane-miro.sh` before publishing (`/healthz`, the
+headers of `/miro/panel`, the `listening` line, the SQLite file in `/data`).
 
 ```bash
 docker build -f apps/plane-miro/Dockerfile -t plane-miro:local .

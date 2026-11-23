@@ -23,6 +23,23 @@ What it does:
   disappeared afterwards under `rejected`. A label renamed in Plane keeps its marks: the next sync moves them to the
   new name, so a rename is not reported as rejected.
 
+## Compatibility
+
+plane-graph is a Plane App (OAuth, a bot token per workspace, signed webhooks). Plane Apps exist in Plane Cloud and in
+the self-hosted Commercial Edition, its Free plan included. The open-source Community Edition (`makeplane/plane`)
+has none, so plane-graph cannot run against it. Check a self-hosted instance with
+`curl https://plane.example.com/api/instances/`: its `edition` must be `PLANE_COMMERCIAL`.
+
+| Plane                                               | Supported | Checked on                                       |
+| --------------------------------------------------- | --------- | ------------------------------------------------ |
+| Plane Cloud                                         | yes       | 2026-11-23, a workspace on a Business-plan trial |
+| Commercial Edition, self-hosted, Free plan included | yes       | v4.1.0                                           |
+| Community Edition                                   | no        | —                                                |
+
+Plane Cloud publishes no version number. The Cloud Free plan was not checked. The Cloud check ran the app's install and
+its minimal scenario with the 0.1.0 release candidates, whose code 0.1.0 ships unchanged. The Commercial Edition version is
+the one the maintainer's own installations run every day.
+
 ## Routes
 
 | Path                                       | Purpose                                                                          |
@@ -143,10 +160,17 @@ a plain click on a task therefore shows a hint; Ctrl/⌘+click or the middle mou
 
 ## Image
 
-`ghcr.io/alxwlw/plane-graph` for `linux/amd64` and `linux/arm64`, built by `.github/workflows/plane-graph-image.yml`
-(through `.github/workflows/image.yml`) on every push to `main` that touches this directory or a package it
-ships; deploy by digest. Each platform is smoke-tested on its own runner by `.github/smoke/plane-graph.sh` before
-publishing (`/healthz`, the bundle, the `listening` line, the SQLite file in `/data`).
+Releases are published as `:<version>` (for example `:0.1.0`), `:0.1` and `:latest`, each for `linux/amd64` and
+`linux/arm64`; the notes are in [CHANGELOG.md](CHANGELOG.md) and on the GitHub Release `plane-graph-v<version>`. Use
+`:0.1`: it takes patch releases only, because a breaking configuration change raises the minor version and its
+changelog entry says how to upgrade. Pin `:0.1.0` (or its digest) to stay on one release. `:latest` follows every
+release, breaking ones included: do not use it for unattended updates.
+
+`ghcr.io/alxwlw/plane-graph` for `linux/amd64` and `linux/arm64`, built through `.github/workflows/image.yml`:
+releases by `.github/workflows/release.yml`, and development builds (the tags `main` and `<commit sha>`, not releases)
+by `.github/workflows/plane-graph-image.yml` on every push to `main` that touches this directory or a package it
+ships. Each platform is smoke-tested on its own runner by `.github/smoke/plane-graph.sh` before publishing
+(`/healthz`, the bundle, the `listening` line, the SQLite file in `/data`).
 
 The build context is the repository root: the image carries `packages/plane-app` and `packages/plane-kit` as source and installs nothing.
 

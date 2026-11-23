@@ -7,7 +7,10 @@ release is cut: [RELEASING.md](../../RELEASING.md).
 
 ## [Unreleased]
 
-The first versioned release; until now the image was published only as `:main` and `:<commit sha>`.
+## [0.1.0] - 2026-11-23
+
+The first stable release. Before it the image was published as `:main`, `:<commit sha>` and the pre-releases
+`0.1.0-rc.N`.
 
 ### Added
 
@@ -22,3 +25,4 @@ The first versioned release; until now the image was published only as `:main` a
 ### Fixed
 
 - `scripts/probe-plane.ts` no longer exits 1 when `POST /releases/` answers 403 (an App bot token has no releases scope, as on Plane Cloud): the release section is skipped with the reason, as it already was for 402.
+- The image labels `org.opencontainers.image.title`, `description`, `url` and `licenses` describe this app; they were inherited from the `oven/bun` base image.

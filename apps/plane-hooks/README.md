@@ -25,15 +25,28 @@ touched by the status rules.
 
 ## Requirements
 
-- **A Plane with Plane Apps.** plane-hooks is a Plane App (OAuth, a bot token per workspace). Plane Apps exist in
-  **Plane Cloud** and in the self-hosted **Commercial Edition** (its free plan included). They do **not** exist in
-  the open-source **Community Edition** (`makeplane/plane`), so the hub cannot run against it: there is no
-  API-key mode. Check a self-hosted instance with `curl https://plane.example.com/api/instances/`: the JSON has an
-  `edition` field, and it must be `PLANE_COMMERCIAL` (Cloud is fine as well).
+- **A Plane with Plane Apps**: Plane Cloud or the self-hosted Commercial Edition, not the Community Edition (see [Compatibility](#compatibility)).
 - A public HTTPS address for the hub (`PLANE_HOOKS_PUBLIC_URL`, below `https://hooks.example.com`) that Plane,
   GitHub, Vercel, Grafana and Dokploy can reach.
 - Docker. The hub runs from the image `ghcr.io/alxwlw/plane-hooks` (see [Image](#image)).
 - Workspace admin rights in Plane, and owner rights on the GitHub account that will own the GitHub App.
+
+## Compatibility
+
+plane-hooks is a Plane App (OAuth, a bot token per workspace, signed webhooks). Plane Apps exist in Plane Cloud and in
+the self-hosted Commercial Edition, its Free plan included. The open-source Community Edition (`makeplane/plane`)
+has none, so plane-hooks cannot run against it. Check a self-hosted instance with
+`curl https://plane.example.com/api/instances/`: its `edition` must be `PLANE_COMMERCIAL`.
+
+| Plane                                               | Supported | Checked on                                       |
+| --------------------------------------------------- | --------- | ------------------------------------------------ |
+| Plane Cloud                                         | yes       | 2026-11-23, a workspace on a Business-plan trial |
+| Commercial Edition, self-hosted, Free plan included | yes       | v4.1.0                                           |
+| Community Edition                                   | no        | —                                                |
+
+Plane Cloud publishes no version number. The Cloud Free plan was not checked. The Cloud check ran the app's install and
+its minimal scenario with the 0.1.0 release candidates, whose code 0.1.0 ships unchanged. The Commercial Edition version is
+the one the maintainer's own installations run every day.
 
 ## Install checklist
 
@@ -118,7 +131,7 @@ docker run -d --name plane-hooks --restart unless-stopped \
   -e PLANE_HOOKS_PLANE_URL=https://plane.example.com \
   -e PLANE_HOOKS_PUBLIC_URL=https://hooks.example.com \
   -e PLANE_HOOKS_ACME_PLANE_SECRET='<client secret of the Plane App>' \
-  ghcr.io/alxwlw/plane-hooks:main
+  ghcr.io/alxwlw/plane-hooks:0.1
 ```
 
 Adapt the command to your host: another host port is `-p 8091:8080` (the container still listens on 8080), and
@@ -131,7 +144,7 @@ state. The same as a compose service:
 ```yaml
 services:
   plane-hooks:
-    image: ghcr.io/alxwlw/plane-hooks:main
+    image: ghcr.io/alxwlw/plane-hooks:0.1
     restart: unless-stopped
     ports: ['8080:8080']
     volumes:
@@ -157,7 +170,7 @@ Register one app per Plane instance and install it in each workspace. In Plane o
 ([Plane docs: create an OAuth application](https://developers.plane.so/dev-tools/build-plane-app/create-oauth-application)).
 Click through the sidebar: the direct URL `https://plane.example.com/example-ws/settings/integrations/` answered
 404 when typed into the address bar on Plane 2.6.5. The page exists in Plane Cloud and the Commercial Edition only
-(see [Requirements](#requirements)); a workspace admin sees it (per Plane docs; not verified on a live instance:
+(see [Compatibility](#compatibility)); a workspace admin sees it (per Plane docs; not verified on a live instance:
 only an admin was logged in on the test run). The form asks for these required fields:
 
 | Field                             | Value                                                                                         |
@@ -485,13 +498,20 @@ This version is not compatible with the single-project, API-key one:
 
 ## Image
 
-`ghcr.io/alxwlw/plane-hooks` for `linux/amd64` and `linux/arm64`, built from the repository root by
-`.github/workflows/plane-hooks-image.yml` (through `.github/workflows/image.yml`) on every push to `main` that touches
-this app or a package it ships; deploy by digest. Each platform is smoke-tested on its own runner by
-`.github/smoke/plane-hooks.sh` before publishing: `tenants.example.json` in `/config`, a fresh RSA key, the `listening`
-line with the tenant, `/healthz`, the SQLite file in `/data`. Pull requests build both platforms and run the smoke test
-without publishing. The image runs as `bun`; `wget` (busybox) serves
-container healthchecks: `wget -q --spider http://localhost:8080/healthz`.
+Releases are published as `:<version>` (for example `:0.1.0`), `:0.1` and `:latest`, each for `linux/amd64` and
+`linux/arm64`; the notes are in [CHANGELOG.md](CHANGELOG.md) and on the GitHub Release `plane-hooks-v<version>`. Use
+`:0.1`: it takes patch releases only, because a breaking configuration change raises the minor version and its
+changelog entry says how to upgrade. Pin `:0.1.0` (or its digest) to stay on one release. `:latest` follows every
+release, breaking ones included: do not use it for unattended updates.
+
+`ghcr.io/alxwlw/plane-hooks` for `linux/amd64` and `linux/arm64`, built from the repository root through
+`.github/workflows/image.yml`: releases by `.github/workflows/release.yml`, and development builds (the tags `main`
+and `<commit sha>`, not releases) by `.github/workflows/plane-hooks-image.yml` on every push to `main` that touches
+this app or a package it ships. Each platform is smoke-tested on its own runner by `.github/smoke/plane-hooks.sh`
+before publishing: `tenants.example.json` in `/config`, a fresh RSA key, the `listening` line with the tenant,
+`/healthz`, the SQLite file in `/data`. Pull requests build both platforms and run the smoke test without publishing.
+The image runs as `bun`; `wget` (busybox) serves container healthchecks:
+`wget -q --spider http://localhost:8080/healthz`.
 
 ```bash
 docker build -f apps/plane-hooks/Dockerfile -t plane-hooks:local .
