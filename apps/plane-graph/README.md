@@ -18,7 +18,7 @@ What it does:
 - **A block for Plane.** `plane-block.html` is a small file to put into an HTML block of a Plane page (pasted, or uploaded on Plane Cloud); it loads
   the graph from this service.
 - **Agent endpoints.** `snapshot.json` is the whole copy, with `wave` and `inCycle` on each item and `cycles`
-  computed the same way as in the graph; `agent-runs` takes the list of relations and labels an
+  computed the same way as in the graph (an item outside every «blocks» relation has `"wave": null`); `agent-runs` takes the list of relations and labels an
   agent has just added. The service confirms each one once it sees it in Plane, and reports the ones that
   disappeared afterwards under `rejected`. A label renamed in Plane keeps its marks: the next sync moves them to the
   new name, so a rename is not reported as rejected.
@@ -39,6 +39,117 @@ has none, so plane-graph cannot run against it. Check a self-hosted instance wit
 Plane Cloud publishes no version number. The Cloud Free plan was not checked. The Cloud check ran the app's install and
 its minimal scenario with the 0.1.0 release candidates, whose code 0.1.0 ships unchanged. The Commercial Edition version is
 the one the maintainer's own installations run every day.
+
+## Install checklist
+
+Do the steps in this order. The Plane installation id exists only after the consent, so the first `tenants.json`
+carries a placeholder for it (and for the workspace UUID, which step 6 reads from the log); until the id is real,
+the first sync fails with `sync.failed`, which is expected. Below, `acme` is the tenant id, `example-ws` the Plane
+workspace slug.
+
+1. **Register the Plane App** ([Plane App](#plane-app) below) with the service's URLs and **Enable App Mentions**
+   off. In the form's Webhook Secret put a secret from `openssl rand -hex 32` and keep it for
+   `PLANE_GRAPH_ACME_WEBHOOK_SECRET`. Tick the scope grid, Read column only. Copy the **Client ID** and the
+   **Client Secret** at once: the Secret is shown only in the "App created" dialog.
+2. **Make the two keys**: the read key and the agent key, each from `openssl rand -hex 32`, and different (the
+   service refuses equal keys and does not start). The read key opens the graph page; the agent key opens
+   `snapshot.json` and `agent-runs`.
+3. **Write a first `tenants.json`** in `config/` (`mkdir config && $EDITOR config/tenants.json`). Replace every
+   value; `tenants.example.json` stays the full reference (it adds `locale` and `areaPrefix`). `workspaceId` and
+   `installationId` are placeholders until step 6:
+
+   ```json
+   {
+   	"tenants": [
+   		{
+   			"id": "acme",
+   			"workspaceSlug": "example-ws",
+   			"workspaceId": "00000000-0000-0000-0000-000000000000",
+   			"clientId": "<Client ID from step 1>",
+   			"installationId": "placeholder"
+   		}
+   	]
+   }
+   ```
+
+   Where each value comes from: `workspaceSlug` is the slug in the Plane URL
+   (`https://app.plane.so/<slug>/…`); `clientId` is from step 1; `workspaceId` and `installationId` are from step 6
+   (the placeholders stay until then). The client secret, the webhook secret and the two keys go to the
+   environment, not to this file.
+
+4. **Start the service** with the Plane Cloud API and web addresses, the public URL and the secrets of steps 1 and 2. The public URL must be reachable over HTTPS from Plane and from the browsers that open the graph (a TLS
+   reverse proxy in front of port 8080). The `tenants.json` is read only at start: any change to it, like a change
+   of env, needs `docker rm -f plane-graph` and the command again.
+
+   ```bash
+   docker run -d --name plane-graph --restart unless-stopped \
+     -p 8080:8080 \
+     -v plane-graph-data:/data \
+     -v "$PWD/config:/config:ro" \
+     -e PLANE_GRAPH_PLANE_URL=https://api.plane.so \
+     -e PLANE_GRAPH_PLANE_WEB_URL=https://app.plane.so \
+     -e PLANE_GRAPH_PUBLIC_URL=https://plane-graph.example.com \
+     -e PLANE_GRAPH_ACME_PLANE_SECRET='<Client Secret from step 1>' \
+     -e PLANE_GRAPH_ACME_WEBHOOK_SECRET='<the Webhook Secret from step 1>' \
+     -e PLANE_GRAPH_ACME_READ_KEY='<the read key from step 2>' \
+     -e PLANE_GRAPH_ACME_AGENT_KEY='<the agent key from step 2>' \
+     ghcr.io/alxwlw/plane-graph:0.1
+   ```
+
+   The same as a compose service (the secrets come from the shell or an `.env` file next to it):
+
+   ```yaml
+   services:
+     plane-graph:
+       image: ghcr.io/alxwlw/plane-graph:0.1
+       restart: unless-stopped
+       ports: ['8080:8080']
+       volumes:
+         - plane-graph-data:/data
+         - ./config:/config:ro
+       environment:
+         PLANE_GRAPH_PLANE_URL: https://api.plane.so
+         PLANE_GRAPH_PLANE_WEB_URL: https://app.plane.so
+         PLANE_GRAPH_PUBLIC_URL: https://plane-graph.example.com
+         PLANE_GRAPH_ACME_PLANE_SECRET: ${PLANE_GRAPH_ACME_PLANE_SECRET}
+         PLANE_GRAPH_ACME_WEBHOOK_SECRET: ${PLANE_GRAPH_ACME_WEBHOOK_SECRET}
+         PLANE_GRAPH_ACME_READ_KEY: ${PLANE_GRAPH_ACME_READ_KEY}
+         PLANE_GRAPH_ACME_AGENT_KEY: ${PLANE_GRAPH_ACME_AGENT_KEY}
+   volumes:
+     plane-graph-data:
+   ```
+
+   You see the `listening` line with `"id":"acme"` in `docker logs plane-graph`, and
+   `curl https://plane-graph.example.com/healthz` answers `ok`. One `sync.failed` line follows while the
+   installation id is a placeholder. All variables are in [Configuration](#configuration); a wrong value stops the
+   start with one message that names it.
+
+5. **Open `https://plane-graph.example.com/plane/setup?tenant=acme`** in a browser logged in to Plane as a
+   workspace admin. It redirects to the Plane consent screen. Plane's consent screen says the app "hasn't been
+   reviewed or approved by Plane"; every private app shows it, so approve it. You land on a plain-text page that
+   prints `app_installation_id=<uuid>`.
+6. **Find the workspace UUID and put both ids in.** Plane Cloud shows the workspace UUID nowhere in its pages, but the
+   service logs it: make any change in Plane (create a work item). On a new Plane Cloud workspace a product tour pops
+   up over the work-item dialog the first time: close it. The service does not know the workspace yet, so
+   `docker logs plane-graph` shows a line with `"event":"plane.rejected"`, `"reason":"unknown_workspace"` and
+   `"workspaceId":"<uuid>"`. (Plane's API gives it too: `GET https://api.plane.so/auth/o/app-installation/?id=<installation id>`
+   with the bot token answers `"workspace": "<uuid>"`; see
+   [Plane's token flow](https://developers.plane.so/dev-tools/build-plane-app/choose-token-flow).) Put that UUID in
+   `workspaceId` and the printed id in `installationId`, then **restart** the container (`docker rm -f plane-graph`
+   and the command of step 4). The service reads Plane at start: `docker logs plane-graph` shows `sync.done` with the
+   counts `projects`, `items` and `edges`. The sync itself needs only the installation id; the workspace UUID is
+   what the service matches Plane's webhook deliveries against.
+7. **Check.** The minimal scenario: the page shows the workspace's graph after the first sync, and `snapshot.json`
+   answers with the agent key.
+   - In Plane create two work items and set a «blocking» relation on the first one, so that it blocks the second
+     (close the product tour, as in step 6). A webhook delivery refreshes the copy; a restart of the container
+     reads everything again at once.
+   - Open `https://plane-graph.example.com/t/acme/graph?k=<read key>`: both items are there, in two waves, the
+     blocking one first.
+   - `curl -H "Authorization: Bearer <agent key>" https://plane-graph.example.com/t/acme/snapshot.json` answers
+     `200` with the items, the first with `"wave": 0`, the second with `"wave": 1`. Without the header, or with the
+     read key, it answers `401`.
+8. **Optional: put the graph into a Plane page** ([Putting the graph into Plane](#putting-the-graph-into-plane)).
 
 ## Routes
 
@@ -112,17 +223,47 @@ written in any case: they are read in lower case, as Plane sends them.
 
 ## Plane App
 
-Register one app per Plane instance (workspace-level) and install it in each workspace. Fields:
+Register one app per Plane instance and install it in each workspace
+([Plane docs: create an OAuth application](https://developers.plane.so/dev-tools/build-plane-app/create-oauth-application)).
+On Plane Cloud the form opens directly at `https://app.plane.so/<workspace-slug>/settings/integrations/create/`
+(`https://app.plane.so/example-ws/settings/integrations/create/` for the example workspace), titled "Build your own app".
+On the Commercial Edition click through the sidebar instead: in Plane open **Workspace settings** and click
+**Integrations** in the settings sidebar, then **Apps**, then the **Build your own** link. The form asks for these
+fields, in this order (`*` is required on Plane Cloud):
 
-- Setup URL `https://plane-graph.example.com/plane/setup?tenant=<id>`
-- Redirect URI `https://plane-graph.example.com/plane/oauth/callback`
-- Webhook URL `https://plane-graph.example.com/plane/webhook`
-- App mentions off
-- Scopes, all read-only: `projects:read`, `projects.work_items:read`, `projects.work_items.relations:read`,
-  `projects.states:read`, `projects.labels:read`, `projects.modules:read`
+| Field                              | Value                                                                                                                                                                                                                                 |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Upload Logo                        | optional                                                                                                                                                                                                                              |
+| App Name \*                        | anything, for example `plane-graph-acme`                                                                                                                                                                                              |
+| App slug \*                        | for example `plane-graph-acme`                                                                                                                                                                                                        |
+| App Maker \*                       | the person or organization creating the app, for example `acme`                                                                                                                                                                       |
+| Short Description \*               | for example `Draws the order of work items from their blocking relations`                                                                                                                                                             |
+| Long Description \*                | a rich-text paragraph, for example the first paragraph of this README                                                                                                                                                                 |
+| Website                            | optional                                                                                                                                                                                                                              |
+| Connection Type                    | choose **Workspace-Level Connection** (Plane Cloud's form starts on User-Level Connection): the app is installed once per workspace and acts as a bot, not as a person. On the Commercial Edition leave **User-Level Connection** off |
+| Enable App Mentions                | off                                                                                                                                                                                                                                   |
+| Setup URL                          | `https://plane-graph.example.com/plane/setup?tenant=<id>`                                                                                                                                                                             |
+| Webhook URL                        | `https://plane-graph.example.com/plane/webhook`                                                                                                                                                                                       |
+| Webhook Secret                     | the form issues none: a secret of your own (`openssl rand -hex 32`), kept for `PLANE_GRAPH_<ID>_WEBHOOK_SECRET`                                                                                                                       |
+| Redirect URIs (space separated) \* | `https://plane-graph.example.com/plane/oauth/callback`                                                                                                                                                                                |
+| Scopes (**Scopes & Permissions**)  | the grid below, Read column only                                                                                                                                                                                                      |
 
-The form does not issue a webhook secret: generate one (`openssl rand -hex 32`) and enter it there and in
-`PLANE_GRAPH_<ID>_WEBHOOK_SECRET`. Installing the app through the setup URL ends on the callback page, which
+The collapsed sections (Categorisation, Supported Plans, Compliance & Support, Additional resources) are all
+optional: leave them as they are (Supported Plans: leave empty, which allows all plans).
+
+The scopes are a grid with a Read and a Write column, not machine names: tick the Read cell of each row below and
+no Write cell. The rows are in the grid's **Projects** section.
+
+| Row in the grid     | Read | Write | Scope names                          |
+| ------------------- | ---- | ----- | ------------------------------------ |
+| Projects            | yes  | no    | `projects:read`                      |
+| Project States      | yes  | no    | `projects.states:read`               |
+| Project Labels      | yes  | no    | `projects.labels:read`               |
+| Modules             | yes  | no    | `projects.modules:read`              |
+| Work Items          | yes  | no    | `projects.work_items:read`           |
+| Work Item Relations | yes  | no    | `projects.work_items.relations:read` |
+
+Installing the app through the setup URL ends on the callback page, which
 prints `app_installation_id=<uuid>`; put it in `tenants.json`.
 
 The id exists only after that consent, but the service does not start without the key
@@ -130,10 +271,6 @@ The id exists only after that consent, but the service does not start without th
 tenant. So start with the real `clientId` and `"installationId": "placeholder"` (nothing checks the shape; the
 first sync then fails with `sync.failed`), run the setup URL, then replace the placeholder with the printed id and
 restart the container.
-
-On Plane Cloud the scopes are a grid, not machine names: open the collapsed **Projects** section and tick the
-**Read** column only on the rows Projects, Project States, Project Labels, Modules, Work Items and Work Item
-Relations.
 
 ## Putting the graph into Plane
 
