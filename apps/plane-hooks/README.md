@@ -44,8 +44,9 @@ has none, so plane-hooks cannot run against it. Check a self-hosted instance wit
 | Commercial Edition, self-hosted, Free plan included | yes | v4.1.0                                                      |
 | Community Edition                           | no        | —                                                             |
 
-Plane Cloud publishes no version number. The Cloud Free plan was not checked. Each check ran the app's install and its
-main flows with the 0.1.0 release candidates, whose code 0.1.0 ships unchanged.
+Plane Cloud publishes no version number. The Cloud Free plan was not checked. The Cloud check ran the app's install and
+its main flows with the 0.1.0 release candidates, whose code 0.1.0 ships unchanged. The Commercial Edition version is
+the one the maintainer's own installations run every day.
 
 ## Install checklist
 
@@ -169,7 +170,7 @@ Register one app per Plane instance and install it in each workspace. In Plane o
 ([Plane docs: create an OAuth application](https://developers.plane.so/dev-tools/build-plane-app/create-oauth-application)).
 Click through the sidebar: the direct URL `https://plane.example.com/example-ws/settings/integrations/` answered
 404 when typed into the address bar on Plane 2.6.5. The page exists in Plane Cloud and the Commercial Edition only
-(see [Requirements](#requirements)); a workspace admin sees it (per Plane docs; not verified on a live instance:
+(see [Compatibility](#compatibility)); a workspace admin sees it (per Plane docs; not verified on a live instance:
 only an admin was logged in on the test run). The form asks for these required fields:
 
 | Field                             | Value                                                                                         |
@@ -509,8 +510,8 @@ and `<commit sha>`, not releases) by `.github/workflows/plane-hooks-image.yml` o
 this app or a package it ships. Each platform is smoke-tested on its own runner by `.github/smoke/plane-hooks.sh`
 before publishing: `tenants.example.json` in `/config`, a fresh RSA key, the `listening` line with the tenant,
 `/healthz`, the SQLite file in `/data`. Pull requests build both platforms and run the smoke test without publishing.
-The image runs as `bun`; `wget` (busybox) serves container
-healthchecks: `wget -q --spider http://localhost:8080/healthz`.
+The image runs as `bun`; `wget` (busybox) serves container healthchecks:
+`wget -q --spider http://localhost:8080/healthz`.
 
 ```bash
 docker build -f apps/plane-hooks/Dockerfile -t plane-hooks:local .
