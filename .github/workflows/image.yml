@@ -155,8 +155,10 @@ jobs:
           VERSION: ${{ inputs.version }}
           SOURCE: ${{ github.server_url }}/${{ github.repository }}
           REVISION: ${{ github.sha }}
+          DOCKERFILE: apps/${{ inputs.app }}/Dockerfile
         run: |
           set -euo pipefail
+          description=$(.github/image/description.sh "$DOCKERFILE")
           digests=("$RUNNER_TEMP"/digests/*)
           if [ "${#digests[@]}" -ne 2 ] || [ ! -e "${digests[0]}" ]; then
             echo "expected exactly two digest files, got: ${digests[*]}" >&2
@@ -175,6 +177,7 @@ jobs:
             --annotation "index:org.opencontainers.image.source=$SOURCE" \
             --annotation "index:org.opencontainers.image.version=$VERSION" \
             --annotation "index:org.opencontainers.image.revision=$REVISION" \
+            --annotation "index:org.opencontainers.image.description=$description" \
             "${sources[@]}"
           first=$(head -n 1 <<<"$refs")
           index=$(.github/image/platforms.sh "$first")
