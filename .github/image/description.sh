@@ -14,7 +14,7 @@ if [ -z "$lines" ]; then
   echo "description.sh: $file: no org.opencontainers.image.description label" >&2
   exit 1
 fi
-if [ "$(printf '%s\n' "$lines" | wc -l)" -ne 1 ]; then
+if [ "$(printf '%s\n' "$lines" | grep -o 'org\.opencontainers\.image\.description="' | wc -l)" -ne 1 ]; then
   echo "description.sh: $file: more than one org.opencontainers.image.description label" >&2
   exit 1
 fi

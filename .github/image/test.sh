@@ -111,6 +111,7 @@ check 'description.sh plane-graph' 0 \
   "$description" "$root/apps/plane-graph/Dockerfile"
 printf 'FROM scratch\nLABEL org.opencontainers.image.title="x"\n' >"$work/none.Dockerfile"
 printf 'FROM scratch\nLABEL org.opencontainers.image.description="one" \\\n      org.opencontainers.image.description="two"\n' >"$work/two.Dockerfile"
+printf 'FROM scratch\nLABEL org.opencontainers.image.description="a" org.opencontainers.image.description="b"\n' >"$work/twoline.Dockerfile"
 printf 'FROM scratch\nLABEL org.opencontainers.image.description=""\n' >"$work/empty.Dockerfile"
 printf 'FROM scratch\nLABEL org.opencontainers.image.description="solo one-line"\n' >"$work/single.Dockerfile"
 check 'description.sh single-line LABEL' 0 'solo one-line' '' -- "$description" "$work/single.Dockerfile"
@@ -118,6 +119,8 @@ check 'description.sh no label' 1 '' "description.sh: $work/none.Dockerfile: no 
   "$description" "$work/none.Dockerfile"
 check 'description.sh two labels' 1 '' "description.sh: $work/two.Dockerfile: more than one org.opencontainers.image.description label" -- \
   "$description" "$work/two.Dockerfile"
+check 'description.sh two labels on one line' 1 '' "description.sh: $work/twoline.Dockerfile: more than one org.opencontainers.image.description label" -- \
+  "$description" "$work/twoline.Dockerfile"
 check 'description.sh empty value' 1 '' "description.sh: $work/empty.Dockerfile: empty org.opencontainers.image.description" -- \
   "$description" "$work/empty.Dockerfile"
 check 'description.sh no argument' 2 '' 'usage: description.sh <dockerfile>' -- "$description"
