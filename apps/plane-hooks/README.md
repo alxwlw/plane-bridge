@@ -62,7 +62,8 @@ and it does not check its shape). Below, `acme` is the tenant id, `example-ws` t
    and `"appInstallationId": "placeholder"`. Leave out `github`, `incidents`, `delivery`, `dokploy` and
    `silenceHours`.
 3. **Start the hub** ([`docker run`](#running-the-hub) below) with the real client secret in
-   `PLANE_HOOKS_ACME_PLANE_SECRET`. You should see the `listening` line with `"id":"acme"`, and
+   `PLANE_HOOKS_ACME_PLANE_SECRET`; on Plane Cloud set `PLANE_HOOKS_PLANE_URL=https://api.plane.so` (not the
+   `app.plane.so` address of the browser). You should see the `listening` line with `"id":"acme"`, and
    `curl https://hooks.example.com/healthz` answers `ok`.
 4. **Open `https://hooks.example.com/plane/setup?tenant=acme`** in a browser logged in to Plane as a workspace
    admin. It redirects to the Plane consent screen. Plane's consent screen says the app "hasn't been reviewed or
@@ -84,13 +85,25 @@ and it does not check its shape). Below, `acme` is the tenant id, `example-ws` t
    `delivery` and `incidents` to `tenants.json`, then set up [Grafana](#grafana), which step 8 uses.
    [Vercel](#vercel) and [Dokploy](#dokploy) are optional and not part of the check. A new Plane Cloud project
    has no `In Review` state (its states are Backlog, Todo, In Progress, Done and Cancelled): add one in the
-   project's settings, or set `delivery.states.review` to a state the project has, for example `In Progress`. The
-   `listening` line lists the inputs that are on (`github`, `grafana`, `vercel`, `dokploy`); `delivery` and
+   project's settings, or set `delivery.states.review` to a state the project has, for example `In Progress`.
+   The `delivery` that step 8 needs is this one (`done` is the project's `Done`):
+
+   ```json
+   "delivery": {
+     "states": { "review": "In Review", "done": "Done" },
+     "repos": [{ "repo": "acme/api", "environments": [] }]
+   }
+   ```
+
+   With `"environments": []` a merge is the end of the road: the work item moves to `done` at once. With
+   environments set (see [`tenants.json`](#tenantsjson)) a merge moves it only after a deploy of that environment
+   contains the merge commit, so step 8's merge alone leaves it in the review state. The `listening` line lists the inputs that are on (`github`, `grafana`, `vercel`, `dokploy`); `delivery` and
    `incidents` are not in it, so there is no marker that those rules loaded. `delivery` never moves the work items of
    the incident project, so `incidents.project` must name a second project in a single-project workspace (see
    [Inputs](#inputs)). State names in `delivery` must match the project's states by name (case-insensitive, otherwise exact: `In Review`, `Done`); a name the project lacks shows
    only later, as one `warn` line (`event: "warning"`, `reason: "state_missing:<project>:<name>"`) on the first PR
    that needs it.
+
 8. **Check.** The minimal scenario is the Plane App and the GitHub App: a merged PR moves a work item, and a
    Grafana test alert opens an incident.
    - Create a work item in a project that `delivery` covers. On a new Plane Cloud workspace a product tour pops up
@@ -159,6 +172,7 @@ state. The same as a compose service:
 services:
   plane-hooks:
     image: ghcr.io/alxwlw/plane-hooks:0.1
+    container_name: plane-hooks
     restart: unless-stopped
     ports: ['8080:8080']
     volumes:
@@ -171,6 +185,10 @@ services:
 volumes:
   plane-hooks-data:
 ```
+
+`container_name` keeps `docker logs plane-hooks` and `docker rm -f plane-hooks` the same for both ways. With
+compose, a change of `tenants.json` needs `docker compose restart plane-hooks`; a change of env needs
+`docker compose up -d --force-recreate plane-hooks`.
 
 All variables are in [Environment](#environment). Any error in the file or the env stops the
 start with one message that names every JSON path and variable at fault (never a value).
@@ -406,19 +424,19 @@ This one is a fuller tenant:
 
 ## Environment
 
-| Variable                              | Required | Meaning                                                                |
-| ------------------------------------- | -------- | ---------------------------------------------------------------------- |
-| `PLANE_HOOKS_PLANE_URL`               | yes      | Plane base URL, e.g. `https://plane.example.com`                       |
-| `PLANE_HOOKS_PUBLIC_URL`              | yes      | Public URL of this service, e.g. `https://hooks.example.com`           |
-| `PLANE_HOOKS_CONFIG`                  | no       | Tenants file, default `/config/tenants.json`                           |
-| `PLANE_HOOKS_DB`                      | no       | SQLite file, default `/data/plane-hooks.sqlite`                        |
-| `PORT`                                | no       | Listen port, default `8080`                                            |
-| `PLANE_HOOKS_<ID>_PLANE_SECRET`       | yes      | Per tenant: client secret of the Plane App                             |
-| `PLANE_HOOKS_<ID>_GRAFANA_TOKEN`      | no       | Per tenant: `ph_` + 48 lowercase hex; unset — the input is off         |
-| `PLANE_HOOKS_<ID>_VERCEL_SECRET`      | no       | Per tenant: Vercel webhook secret; unset — off                         |
-| `PLANE_HOOKS_<ID>_DOKPLOY_SECRET`     | no       | Per tenant: the Bearer secret of the Dokploy notification; unset — off |
-| `PLANE_HOOKS_GH_<APP>_PRIVATE_KEY`    | yes      | Per App: its private key, PEM in base64 on one line                    |
-| `PLANE_HOOKS_GH_<APP>_WEBHOOK_SECRET` | yes      | Per App: its webhook secret                                            |
+| Variable                              | Required | Meaning                                                                                 |
+| ------------------------------------- | -------- | --------------------------------------------------------------------------------------- |
+| `PLANE_HOOKS_PLANE_URL`               | yes      | Plane base URL, e.g. `https://plane.example.com`; on Plane Cloud `https://api.plane.so` |
+| `PLANE_HOOKS_PUBLIC_URL`              | yes      | Public URL of this service, e.g. `https://hooks.example.com`                            |
+| `PLANE_HOOKS_CONFIG`                  | no       | Tenants file, default `/config/tenants.json`                                            |
+| `PLANE_HOOKS_DB`                      | no       | SQLite file, default `/data/plane-hooks.sqlite`                                         |
+| `PORT`                                | no       | Listen port, default `8080`                                                             |
+| `PLANE_HOOKS_<ID>_PLANE_SECRET`       | yes      | Per tenant: client secret of the Plane App                                              |
+| `PLANE_HOOKS_<ID>_GRAFANA_TOKEN`      | no       | Per tenant: `ph_` + 48 lowercase hex; unset — the input is off                          |
+| `PLANE_HOOKS_<ID>_VERCEL_SECRET`      | no       | Per tenant: Vercel webhook secret; unset — off                                          |
+| `PLANE_HOOKS_<ID>_DOKPLOY_SECRET`     | no       | Per tenant: the Bearer secret of the Dokploy notification; unset — off                  |
+| `PLANE_HOOKS_GH_<APP>_PRIVATE_KEY`    | yes      | Per App: its private key, PEM in base64 on one line                                     |
+| `PLANE_HOOKS_GH_<APP>_WEBHOOK_SECRET` | yes      | Per App: its webhook secret                                                             |
 
 `<ID>` is the tenant id and `<APP>` the App `name` in upper case. An optional secret set but blank is a startup
 error: unset it to turn the input off. The `listening` line at startup lists each tenant with its inputs and Apps. It does not show `delivery` or `incidents`: their rules are loaded

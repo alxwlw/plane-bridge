@@ -111,6 +111,7 @@ Miro account is connected (step 9). Below, `acme` is the tenant id, `example-ws`
    services:
      plane-miro:
        image: ghcr.io/alxwlw/plane-miro:0.1
+       container_name: plane-miro
        restart: unless-stopped
        ports: ['8080:8080']
        volumes:
@@ -127,6 +128,10 @@ Miro account is connected (step 9). Below, `acme` is the tenant id, `example-ws`
    volumes:
      plane-miro-data:
    ```
+
+   `container_name` keeps the commands below (`docker logs`, `docker rm -f`) the same for both ways. With compose,
+   a change of `tenants.json` needs `docker compose restart plane-miro`; a change of env needs
+   `docker compose up -d --force-recreate plane-miro`.
 
    You see the `listening` line with `"id":"acme"` in `docker logs plane-miro`, and
    `curl https://plane-miro.example.com/healthz` answers `ok`. All variables are in
@@ -156,11 +161,10 @@ Miro account is connected (step 9). Below, `acme` is the tenant id, `example-ws`
    and `"team":"<id>"`, the id the token belongs to: put that id in `miro.teamId`, restart as in step 8 and open
    the link again.
 10. **Check.** The minimal scenario: a sticky becomes a work item, and its state shows on the card.
-
-- On a board of the team open the app from the apps panel, pick the Plane project and turn a sticky into a work
-  item with **To Plane**: the work item exists in Plane with the link to the board (and the embed).
-- Change its state in Plane (close the product tour, as in step 7): the card on the board shows the new state
-  within seconds, and the log shows `plane.accepted`.
+    - On a board of the team open the app from the apps panel, pick the Plane project and turn a sticky into a work
+      item with **To Plane**: the work item exists in Plane with the link to the board (and the embed).
+    - Change its state in Plane (close the product tour, as in step 7): the card on the board shows the new state
+      within seconds, and the log shows `plane.accepted`.
 
 ## Routes
 

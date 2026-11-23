@@ -67,15 +67,17 @@ that field waits until the service is up; and the Plane installation id exists o
 
 1. **Register the Plane App** ([Plane App](#plane-app) below) with the service's URLs and **Enable App Mentions** on.
    In the form's Webhook Secret put a secret from `openssl rand -hex 32` and keep it for
-   `PLANE_DISCORD_ACME_WEBHOOK_SECRET`: the service requires it, separate from the client secret
-   (`src/config.ts:293`). Tick the scope grid. Copy the **Client ID** and the **Client Secret** at once: the Secret
-   is shown only in the "App created" dialog.
+   `PLANE_DISCORD_ACME_WEBHOOK_SECRET`: the service requires it, separate from the client secret.
+   Tick the scope grid. Copy the **Client ID** and the **Client Secret** at once: the Secret is shown only in the
+   "App created" dialog.
 2. **Create the Discord application** ([Discord app](#discord-app) below) in the Discord Developer Portal, with a
    name without `discord` or `clyde`. On **General Information** copy the Application ID and the Public Key. On
    **Bot** press **Reset Token** and copy the bot token (Discord may ask for 2FA); turn on the `MESSAGE_CONTENT`
    intent. Leave the Interactions Endpoint URL empty for now: Discord checks it against the running service
    (step 6).
-3. **Invite the bot** to your server with the invite URL of [Discord app](#discord-app) below.
+3. **Invite the bot** to your server with the invite URL of [Discord app](#discord-app) below. In it `<APP_ID>` is
+   the Application ID of step 2 and `<GUILD>` is the id of your server: in Discord turn on **User Settings →
+   Advanced → Developer Mode**, then right-click the server → **Copy Server ID**.
 4. **Write a first `tenants.json`** in `config/` (`mkdir config && $EDITOR config/tenants.json`). Replace every
    value; `tenants.example.json` stays the full reference. `workspaceId` and `appInstallationId` are placeholders
    until step 9:
@@ -140,6 +142,7 @@ that field waits until the service is up; and the Plane installation id exists o
    services:
      plane-discord:
        image: ghcr.io/alxwlw/plane-discord:0.1
+       container_name: plane-discord
        restart: unless-stopped
        ports: ['8080:8080']
        volumes:
@@ -157,6 +160,10 @@ that field waits until the service is up; and the Plane installation id exists o
    volumes:
      plane-discord-data:
    ```
+
+   `container_name` keeps the commands below (`docker logs`, `docker exec`, `docker rm -f`) the same for both
+   ways. With compose, a change of `tenants.json` needs `docker compose restart plane-discord`; a change of env
+   needs `docker compose up -d --force-recreate plane-discord`.
 
    You see the `listening` line with `"id":"acme"` in `docker logs plane-discord`, and
    `curl https://plane-discord.example.com/healthz` answers `ok`. All variables are in

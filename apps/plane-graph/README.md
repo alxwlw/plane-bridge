@@ -102,6 +102,7 @@ workspace slug.
    services:
      plane-graph:
        image: ghcr.io/alxwlw/plane-graph:0.1
+       container_name: plane-graph
        restart: unless-stopped
        ports: ['8080:8080']
        volumes:
@@ -119,9 +120,13 @@ workspace slug.
      plane-graph-data:
    ```
 
+   `container_name` keeps the commands below (`docker logs`, `docker rm -f`) the same for both ways. With compose,
+   a change of `tenants.json` needs `docker compose restart plane-graph`; a change of env needs
+   `docker compose up -d --force-recreate plane-graph`.
+
    You see the `listening` line with `"id":"acme"` in `docker logs plane-graph`, and
-   `curl https://plane-graph.example.com/healthz` answers `ok`. One `sync.failed` line follows while the
-   installation id is a placeholder. All variables are in [Configuration](#configuration); a wrong value stops the
+   `curl https://plane-graph.example.com/healthz` answers `ok`. A `sync.failed` line follows while the
+   installation id is a placeholder, and repeats every 10 minutes until step 6. All variables are in [Configuration](#configuration); a wrong value stops the
    start with one message that names it.
 
 5. **Open `https://plane-graph.example.com/plane/setup?tenant=acme`** in a browser logged in to Plane as a
