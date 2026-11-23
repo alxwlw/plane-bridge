@@ -7,6 +7,10 @@ release is cut: [RELEASING.md](../../RELEASING.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- The ghcr package page shows the app's description: the image index carries `org.opencontainers.image.description`.
+
 ## [0.1.0] - 2026-11-23
 
 The first stable release. Before it the image was published as `:main`, `:<commit sha>` and the pre-releases

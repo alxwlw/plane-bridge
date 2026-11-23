@@ -94,4 +94,38 @@ platforms_case 'single manifest' \
   '{"digest":"sha256:abc","mediaType":"application/vnd.oci.image.manifest.v1+json"}' 1 '' \
   'platforms.sh: ref:x lacks linux/amd64'
 
+# description.sh against the real Dockerfiles and fixtures.
+description=$here/description.sh
+root=$(cd "$here/../.." && pwd)
+check 'description.sh plane-hooks' 0 \
+  'Plane App that moves Plane work items by their pull requests and deploys and opens incidents from alerts.' '' -- \
+  "$description" "$root/apps/plane-hooks/Dockerfile"
+check 'description.sh plane-discord' 0 \
+  'Plane App that bridges Plane and Discord: notifications, work items from messages, cards and synced threads.' '' -- \
+  "$description" "$root/apps/plane-discord/Dockerfile"
+check 'description.sh plane-miro' 0 \
+  'Plane App that links Plane and Miro: stickies become work items and their cards show the state.' '' -- \
+  "$description" "$root/apps/plane-miro/Dockerfile"
+check 'description.sh plane-graph' 0 \
+  'Plane App that draws the order of work in a Plane workspace and serves the same data to an agent.' '' -- \
+  "$description" "$root/apps/plane-graph/Dockerfile"
+printf 'FROM scratch\nLABEL org.opencontainers.image.title="x"\n' >"$work/none.Dockerfile"
+printf 'FROM scratch\nLABEL org.opencontainers.image.description="one" \\\n      org.opencontainers.image.description="two"\n' >"$work/two.Dockerfile"
+printf 'FROM scratch\nLABEL org.opencontainers.image.description="a" org.opencontainers.image.description="b"\n' >"$work/twoline.Dockerfile"
+printf 'FROM scratch\nLABEL org.opencontainers.image.description=""\n' >"$work/empty.Dockerfile"
+printf 'FROM scratch\nLABEL org.opencontainers.image.description="solo one-line"\n' >"$work/single.Dockerfile"
+check 'description.sh single-line LABEL' 0 'solo one-line' '' -- "$description" "$work/single.Dockerfile"
+check 'description.sh no label' 1 '' "description.sh: $work/none.Dockerfile: no org.opencontainers.image.description label" -- \
+  "$description" "$work/none.Dockerfile"
+check 'description.sh two labels' 1 '' "description.sh: $work/two.Dockerfile: more than one org.opencontainers.image.description label" -- \
+  "$description" "$work/two.Dockerfile"
+check 'description.sh two labels on one line' 1 '' "description.sh: $work/twoline.Dockerfile: more than one org.opencontainers.image.description label" -- \
+  "$description" "$work/twoline.Dockerfile"
+check 'description.sh empty value' 1 '' "description.sh: $work/empty.Dockerfile: empty org.opencontainers.image.description" -- \
+  "$description" "$work/empty.Dockerfile"
+check 'description.sh no argument' 2 '' 'usage: description.sh <dockerfile>' -- "$description"
+check 'description.sh missing file' 2 '' 'usage: description.sh <dockerfile>' -- "$description" "$work/absent.Dockerfile"
+check 'image.yml annotates the description' 0 'index:org.opencontainers.image.description=' '' -- \
+  grep -o -F 'index:org.opencontainers.image.description=' "$root/.github/workflows/image.yml"
+
 exit "$failed"

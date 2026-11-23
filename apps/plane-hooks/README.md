@@ -1,5 +1,7 @@
 # plane-hooks
 
+![A Plane work item WEB-29 whose activity shows the plane-hooks bot moving it to In Progress when the pull request alxwlw/acme-web#3 was marked ready for review and to Done when it was merged, with the comments "Status → In Progress: alxwlw/acme-web#3" and "Status → Done: alxwlw/acme-web#3"](../../docs/images/plane-hooks.png)
+
 A [Bun](https://bun.sh) service that keeps [Plane](https://plane.so) work items in step with the code: it moves
 a work item along by the facts of its pull requests and deploys (GitHub, Vercel, Dokploy) and opens incidents
 from Grafana alerts and failed deploys, builds and backups. It is a Plane App for one or more tenants (a Plane
