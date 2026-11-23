@@ -57,6 +57,146 @@ Plane Cloud publishes no version number. The Cloud Free plan was not checked. Th
 its minimal scenario with the 0.1.0 release candidates, whose code 0.1.0 ships unchanged. The Commercial Edition version is
 the one the maintainer's own installations run every day.
 
+## Install checklist
+
+Do the steps in this order. The service does not start without the Discord credentials, so the Discord application
+comes first; Discord saves the Interactions Endpoint URL only after the running service answers its signed PING, so
+that field waits until the service is up; and the Plane installation id exists only after the consent, so the first
+`tenants.json` carries a placeholder for it (and for the workspace UUID, which step 9 reads from the log). Below,
+`acme` is the tenant id, `example-ws` the Plane workspace slug.
+
+1. **Register the Plane App** ([Plane App](#plane-app) below) with the service's URLs and **Enable App Mentions** on.
+   In the form's Webhook Secret put a secret from `openssl rand -hex 32` and keep it for
+   `PLANE_DISCORD_ACME_WEBHOOK_SECRET`: the service requires it, separate from the client secret.
+   Tick the scope grid. Copy the **Client ID** and the **Client Secret** at once: the Secret is shown only in the
+   "App created" dialog.
+2. **Create the Discord application** ([Discord app](#discord-app) below) in the Discord Developer Portal, with a
+   name without `discord` or `clyde`. On **General Information** copy the Application ID and the Public Key. On
+   **Bot** press **Reset Token** and copy the bot token (Discord may ask for 2FA); turn on the `MESSAGE_CONTENT`
+   intent. Leave the Interactions Endpoint URL empty for now: Discord checks it against the running service
+   (step 6).
+3. **Invite the bot** to your server with the invite URL of [Discord app](#discord-app) below. In it `<APP_ID>` is
+   the Application ID of step 2 and `<GUILD>` is the id of your server: in Discord turn on **User Settings →
+   Advanced → Developer Mode**, then right-click the server → **Copy Server ID**.
+4. **Write a first `tenants.json`** in `config/` (`mkdir config && $EDITOR config/tenants.json`). Replace every
+   value; `tenants.example.json` stays the full reference. `workspaceId` and `appInstallationId` are placeholders
+   until step 9:
+
+   ```json
+   {
+   	"tenants": [
+   		{
+   			"id": "acme",
+   			"guildId": "111111111111111111",
+   			"workspace": "example-ws",
+   			"workspaceId": "00000000-0000-0000-0000-000000000000",
+   			"plane": { "clientId": "<Client ID from step 1>", "appInstallationId": "placeholder" },
+   			"serviceChannelId": "222222222222222222",
+   			"channels": [
+   				{
+   					"channelId": "333333333333333333",
+   					"projectId": "00000000-0000-4000-8000-000000000003",
+   					"moduleId": null
+   				}
+   			],
+   			"users": []
+   		}
+   	]
+   }
+   ```
+
+   Where each value comes from:
+   - `guildId`, `serviceChannelId`, `channels[].channelId`: in Discord, **User Settings → Advanced → Developer Mode**
+     on, then right-click the server or the channel → **Copy Server ID** / **Copy Channel ID**. Once the service
+     runs, `scripts/list-channels.ts` lists them too ([Scripts](#scripts)).
+   - `workspace`: the slug in the Plane URL (`https://app.plane.so/<slug>/…`).
+   - `channels[].projectId`: the project's UUID, in the project's URL
+     (`https://app.plane.so/<slug>/projects/<uuid>/issues/`). The project's settings page does not show it.
+   - `plane.clientId`: step 1. `workspaceId` and `appInstallationId`: step 9 (the placeholders stay until then).
+   - The Application ID, the Public Key and the bot token go to the environment, not to this file: step 2.
+
+5. **Start the service** with the Plane Cloud API address, the public URL and the secrets of steps 1 and 2. The
+   public URL must be reachable over HTTPS from Discord and from Plane (a TLS reverse proxy in front of port 8080).
+   The `tenants.json` is read only at start: any change to it, like a change of env, needs
+   `docker rm -f plane-discord` and the command again.
+
+   ```bash
+   docker run -d --name plane-discord --restart unless-stopped \
+     -p 8080:8080 \
+     -v plane-discord-data:/data \
+     -v "$PWD/config:/config:ro" \
+     -e PLANE_DISCORD_PLANE_URL=https://api.plane.so \
+     -e PLANE_DISCORD_PLANE_WEB_URL=https://app.plane.so \
+     -e PLANE_DISCORD_PUBLIC_URL=https://plane-discord.example.com \
+     -e PLANE_DISCORD_DISCORD_APPLICATION_ID='<Application ID from step 2>' \
+     -e PLANE_DISCORD_DISCORD_PUBLIC_KEY='<Public Key from step 2>' \
+     -e PLANE_DISCORD_DISCORD_BOT_TOKEN='<bot token from step 2>' \
+     -e PLANE_DISCORD_ACME_PLANE_SECRET='<Client Secret from step 1>' \
+     -e PLANE_DISCORD_ACME_WEBHOOK_SECRET='<the Webhook Secret from step 1>' \
+     ghcr.io/alxwlw/plane-discord:0.1
+   ```
+
+   The same as a compose service (the secrets come from the shell or an `.env` file next to it):
+
+   ```yaml
+   services:
+     plane-discord:
+       image: ghcr.io/alxwlw/plane-discord:0.1
+       container_name: plane-discord
+       restart: unless-stopped
+       ports: ['8080:8080']
+       volumes:
+         - plane-discord-data:/data
+         - ./config:/config:ro
+       environment:
+         PLANE_DISCORD_PLANE_URL: https://api.plane.so
+         PLANE_DISCORD_PLANE_WEB_URL: https://app.plane.so
+         PLANE_DISCORD_PUBLIC_URL: https://plane-discord.example.com
+         PLANE_DISCORD_DISCORD_APPLICATION_ID: ${PLANE_DISCORD_DISCORD_APPLICATION_ID}
+         PLANE_DISCORD_DISCORD_PUBLIC_KEY: ${PLANE_DISCORD_DISCORD_PUBLIC_KEY}
+         PLANE_DISCORD_DISCORD_BOT_TOKEN: ${PLANE_DISCORD_DISCORD_BOT_TOKEN}
+         PLANE_DISCORD_ACME_PLANE_SECRET: ${PLANE_DISCORD_ACME_PLANE_SECRET}
+         PLANE_DISCORD_ACME_WEBHOOK_SECRET: ${PLANE_DISCORD_ACME_WEBHOOK_SECRET}
+   volumes:
+     plane-discord-data:
+   ```
+
+   `container_name` keeps the commands below (`docker logs`, `docker exec`, `docker rm -f`) the same for both
+   ways. With compose, a change of `tenants.json` needs `docker compose restart plane-discord`; a change of env
+   needs `docker compose up -d --force-recreate plane-discord`.
+
+   You see the `listening` line with `"id":"acme"` in `docker logs plane-discord`, and
+   `curl https://plane-discord.example.com/healthz` answers `ok`. All variables are in
+   [Configuration](#configuration); a wrong value stops the start with one message that names it.
+
+6. **Set the Interactions Endpoint URL** in the Developer Portal (**General Information**) to
+   `https://plane-discord.example.com/discord/interactions` and save: Discord saves it only when the service
+   answers its signed PING, which is why this step comes after step 5.
+7. **Register the commands**: `docker exec plane-discord bun scripts/register-commands.ts` prints
+   `✓ acme en 4 commands` (the two message commands `Create Plane work item` and `Add to work item`, `/plane` and
+   `/plane-link`).
+8. **Open `https://plane-discord.example.com/plane/setup?tenant=acme`** in a browser logged in to Plane as a
+   workspace admin. It redirects to the Plane consent screen. Plane's consent screen says the app "hasn't been
+   reviewed or approved by Plane"; every private app shows it, so approve it. You land on a plain-text page that
+   prints `app_installation_id=<uuid>`.
+9. **Find the workspace UUID and put both ids in.** Plane Cloud shows the workspace UUID nowhere in its pages, but the
+   service logs it: make any change in Plane (create a work item). On a new Plane Cloud workspace a product tour pops
+   up over the work-item dialog the first time: close it. The service does not know the workspace yet, so
+   `docker logs plane-discord` shows a line with `"event":"plane.rejected"`, `"reason":"unknown_workspace"` and
+   `"workspaceId":"<uuid>"`. (Plane's API gives it too: `GET https://api.plane.so/auth/o/app-installation/?id=<installation id>`
+   with the bot token answers `"workspace": "<uuid>"`; see
+   [Plane's token flow](https://developers.plane.so/dev-tools/build-plane-app/choose-token-flow).) Put that UUID in
+   `workspaceId` and the printed id in `plane.appInstallationId`, then **restart** the container
+   (`docker rm -f plane-discord` and the command of step 5). The `listening` line appears again and `/healthz`
+   answers `ok`.
+10. **Check.** The minimal scenario: a Plane event reaches the channel, a message becomes a work item, and `/plane KEY`
+    shows the card.
+    - Create a work item in the mapped project (close the product tour, as in step 9): a post appears in the mapped
+      channel, and the log shows `plane.accepted`.
+    - On a Discord message open **Apps → Create Plane work item**, fill the form: the work item exists in Plane and
+      the bot replies with its link.
+    - Type `/plane <KEY>` with the key of that work item (for example `ENG-1`): the bot answers with the card.
+
 ## Routes
 
 | Path                         | Purpose                                                                |
@@ -111,16 +251,49 @@ map with optional module and event set, the user table, hidden projects, `locale
 
 ## Plane App
 
-Register one app per Plane instance (workspace-level) and install it in each workspace. Fields:
+Register one app per Plane instance and install it in each workspace
+([Plane docs: create an OAuth application](https://developers.plane.so/dev-tools/build-plane-app/create-oauth-application)).
+On Plane Cloud the form opens directly at `https://app.plane.so/<workspace-slug>/settings/integrations/create/`
+(`https://app.plane.so/example-ws/settings/integrations/create/` for the example workspace), titled "Build your own app".
+On the Commercial Edition click through the sidebar instead: in Plane open **Workspace settings** and click
+**Integrations** in the settings sidebar, then **Apps**, then the **Build your own** link. The form asks for these
+fields, in this order (`*` is required on Plane Cloud):
 
-- Setup URL `https://plane-discord.example.com/plane/setup?tenant=<id>`
-- Redirect URI `https://plane-discord.example.com/plane/oauth/callback`
-- Webhook URL `https://plane-discord.example.com/plane/webhook`
-- Enable App Mentions
-- Scopes: `projects:read`, `projects.work_items:read`, `projects.work_items:write`,
-  `projects.work_items.comments:read`, `projects.work_items.comments:write`, `projects.states:read`,
-  `projects.members:read`, `projects.modules:read`, `workspaces.members:read`, `agents.runs:read`,
-  `agents.runs:write`, `agents.run_activities:read`, `agents.run_activities:write`
+| Field                              | Value                                                                                                                                                                                                                                 |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Upload Logo                        | optional                                                                                                                                                                                                                              |
+| App Name \*                        | anything, for example `plane-discord-acme`                                                                                                                                                                                            |
+| App slug \*                        | for example `plane-discord-acme`                                                                                                                                                                                                      |
+| App Maker \*                       | the person or organization creating the app, for example `acme`                                                                                                                                                                       |
+| Short Description \*               | for example `Bridges Plane work items and Discord channels`                                                                                                                                                                           |
+| Long Description \*                | a rich-text paragraph, for example the first paragraph of this README                                                                                                                                                                 |
+| Website                            | optional                                                                                                                                                                                                                              |
+| Connection Type                    | choose **Workspace-Level Connection** (Plane Cloud's form starts on User-Level Connection): the app is installed once per workspace and acts as a bot, not as a person. On the Commercial Edition leave **User-Level Connection** off |
+| Enable App Mentions                | on                                                                                                                                                                                                                                    |
+| Setup URL                          | `https://plane-discord.example.com/plane/setup?tenant=<id>`                                                                                                                                                                           |
+| Webhook URL                        | `https://plane-discord.example.com/plane/webhook`                                                                                                                                                                                     |
+| Webhook Secret                     | the form issues none: a secret of your own (`openssl rand -hex 32`), kept for `PLANE_DISCORD_<ID>_WEBHOOK_SECRET`                                                                                                                     |
+| Redirect URIs (space separated) \* | `https://plane-discord.example.com/plane/oauth/callback`                                                                                                                                                                              |
+| Scopes (**Scopes & Permissions**)  | the grid below                                                                                                                                                                                                                        |
+
+The collapsed sections (Categorisation, Supported Plans, Compliance & Support, Additional resources) are all
+optional: leave them as they are (Supported Plans: leave empty, which allows all plans).
+
+The scopes are a grid with a Read and a Write column, not machine names: tick, per row, the cells below. The rows
+are in the grid's **Projects**, **Workspaces** and **Agents** sections. Each of the 13 scope names the service
+requests is one cell:
+
+| Row in the grid      | Read | Write | Scope names                                                 |
+| -------------------- | ---- | ----- | ----------------------------------------------------------- |
+| Projects             | yes  | no    | `projects:read`                                             |
+| Project Members      | yes  | no    | `projects.members:read`                                     |
+| Project States       | yes  | no    | `projects.states:read`                                      |
+| Modules              | yes  | no    | `projects.modules:read`                                     |
+| Work Items           | yes  | yes   | `projects.work_items:read`, `projects.work_items:write`     |
+| Work Item Comments   | yes  | yes   | `projects.work_items.comments:read`, `…comments:write`      |
+| Workspace Members    | yes  | no    | `workspaces.members:read`                                   |
+| Agent Runs           | yes  | yes   | `agents.runs:read`, `agents.runs:write`                     |
+| Agent Run Activities | yes  | yes   | `agents.run_activities:read`, `agents.run_activities:write` |
 
 Plane does not take the scopes from the registration, so the service sends them (space-separated) as the
 `scope` parameter of the consent URL and of every token request.
@@ -143,7 +316,8 @@ in threads):
 https://discord.com/oauth2/authorize?client_id=<APP_ID>&scope=bot+applications.commands&permissions=309774601216&guild_id=<GUILD>&disable_guild_select=true
 ```
 
-Set the interactions endpoint URL to `https://plane-discord.example.com/discord/interactions`. Enable the
+Set the interactions endpoint URL to `https://plane-discord.example.com/discord/interactions` only after the
+service is running (checklist step 6): Discord saves it only when the service answers its signed PING. Enable the
 privileged `MESSAGE_CONTENT` intent in the Developer Portal (Bot, Privileged Gateway Intents): thread sync
 (phase 3) needs it; without it only thread sync stops.
 

@@ -42,6 +42,130 @@ Plane Cloud publishes no version number. The Cloud Free plan was not checked. Th
 its minimal scenario with the 0.1.0 release candidates, whose code 0.1.0 ships unchanged. The Commercial Edition version is
 the one the maintainer's own installations run every day.
 
+## Install checklist
+
+Do the steps in this order. The service does not start without the Miro app's client id and secret, so the Miro app
+(and the developer team it lives in) comes first; the Plane installation id exists only after the consent, so the
+first `tenants.json` carries a placeholder for it (and for the workspace UUID, which step 7 reads from the log, and
+for the Miro team id, which step 6 reads from the log of the Miro app's install); and boards change only after one
+Miro account is connected (step 9). Below, `acme` is the tenant id, `example-ws` the Plane workspace slug.
+
+1. **Register the Plane App** ([Plane App](#plane-app) below) with the service's URLs and **Enable App Mentions** off.
+   In the form's Webhook Secret put a secret from `openssl rand -hex 32` and keep it for
+   `PLANE_MIRO_ACME_WEBHOOK_SECRET`: the service requires it, separate from the client secret. Tick the scope grid.
+   Copy the **Client ID** and the **Client Secret** at once: the Secret is shown only in the "App created" dialog.
+2. **Create a Miro developer team** if you have none (Miro asks you to accept the Developer Terms), then **the Miro
+   app** in it ([Miro app](#miro-app) below): App URL, redirect URI, scopes, «Expire user authorization token» off.
+   Upload both icons (an outline SVG and a colour SVG; any pair will do): Miro wants them before the app shows in
+   a board's apps panel. Copy the app's **Client ID** and **Client Secret**.
+3. **Write a first `tenants.json`** in `config/` (`mkdir config && $EDITOR config/tenants.json`). Replace every
+   value; `tenants.example.json` stays the full reference. `workspaceId`, `appInstallationId` and `miro.teamId` are
+   placeholders until steps 5 to 7:
+
+   ```json
+   {
+   	"tenants": [
+   		{
+   			"id": "acme",
+   			"workspace": "example-ws",
+   			"workspaceId": "00000000-0000-0000-0000-000000000000",
+   			"plane": { "clientId": "<Client ID from step 1>", "appInstallationId": "placeholder" },
+   			"miro": { "teamId": "1" },
+   			"embed": true
+   		}
+   	]
+   }
+   ```
+
+   Where each value comes from:
+   - `workspace`: the slug in the Plane URL (`https://app.plane.so/<slug>/…`).
+   - `plane.clientId`: step 1. `appInstallationId`: step 5, `workspaceId`: step 7 (the placeholders stay until then).
+   - `miro.teamId`: digits only. The Miro documentation names no page that shows a team's id, so start with the
+     placeholder `1`: step 6 logs the id of the team the app was installed in (`miro.installed`, its `team`
+     field).
+   - The Miro app's client id and secret go to the environment, not to this file: step 2.
+
+4. **Start the service** with the Plane Cloud API address, the public URL and the secrets of steps 1 and 2. The
+   public URL must be reachable over HTTPS from Miro and from Plane (a TLS reverse proxy in front of port 8080).
+   The `tenants.json` is read only at start: any change to it, like a change of env, needs
+   `docker rm -f plane-miro` and the command again.
+
+   ```bash
+   docker run -d --name plane-miro --restart unless-stopped \
+     -p 8080:8080 \
+     -v plane-miro-data:/data \
+     -v "$PWD/config:/config:ro" \
+     -e PLANE_MIRO_PLANE_URL=https://api.plane.so \
+     -e PLANE_MIRO_PLANE_WEB_URL=https://app.plane.so \
+     -e PLANE_MIRO_PUBLIC_URL=https://plane-miro.example.com \
+     -e PLANE_MIRO_MIRO_CLIENT_ID='<Client ID of the Miro app from step 2>' \
+     -e PLANE_MIRO_MIRO_CLIENT_SECRET='<Client Secret of the Miro app from step 2>' \
+     -e PLANE_MIRO_ACME_PLANE_SECRET='<Client Secret of the Plane App from step 1>' \
+     -e PLANE_MIRO_ACME_WEBHOOK_SECRET='<the Webhook Secret from step 1>' \
+     ghcr.io/alxwlw/plane-miro:0.1
+   ```
+
+   The same as a compose service (the secrets come from the shell or an `.env` file next to it):
+
+   ```yaml
+   services:
+     plane-miro:
+       image: ghcr.io/alxwlw/plane-miro:0.1
+       container_name: plane-miro
+       restart: unless-stopped
+       ports: ['8080:8080']
+       volumes:
+         - plane-miro-data:/data
+         - ./config:/config:ro
+       environment:
+         PLANE_MIRO_PLANE_URL: https://api.plane.so
+         PLANE_MIRO_PLANE_WEB_URL: https://app.plane.so
+         PLANE_MIRO_PUBLIC_URL: https://plane-miro.example.com
+         PLANE_MIRO_MIRO_CLIENT_ID: ${PLANE_MIRO_MIRO_CLIENT_ID}
+         PLANE_MIRO_MIRO_CLIENT_SECRET: ${PLANE_MIRO_MIRO_CLIENT_SECRET}
+         PLANE_MIRO_ACME_PLANE_SECRET: ${PLANE_MIRO_ACME_PLANE_SECRET}
+         PLANE_MIRO_ACME_WEBHOOK_SECRET: ${PLANE_MIRO_ACME_WEBHOOK_SECRET}
+   volumes:
+     plane-miro-data:
+   ```
+
+   `container_name` keeps the commands below (`docker logs`, `docker rm -f`) the same for both ways. With compose,
+   a change of `tenants.json` needs `docker compose restart plane-miro`; a change of env needs
+   `docker compose up -d --force-recreate plane-miro`.
+
+   You see the `listening` line with `"id":"acme"` in `docker logs plane-miro`, and
+   `curl https://plane-miro.example.com/healthz` answers `ok`. All variables are in
+   [Configuration](#configuration); a wrong value stops the start with one message that names it.
+
+5. **Open `https://plane-miro.example.com/plane/setup?tenant=acme`** in a browser logged in to Plane as a workspace
+   admin. It redirects to the Plane consent screen. Plane's consent screen says the app "hasn't been reviewed or
+   approved by Plane"; every private app shows it, so approve it. You land on a plain-text page that prints
+   `app_installation_id=<uuid>`.
+6. **Install the Miro app** in the team with the install link of the app settings: Miro asks you to **Select an
+   organization** (and the team), then to install. The install carries no tenant, so the service only logs it:
+   `docker logs plane-miro` shows a line with `"event":"miro.installed"` and `"team":"<id>"`, the Miro team id.
+7. **Find the workspace UUID.** Plane Cloud shows the workspace UUID nowhere in its pages, but the service logs it:
+   make any change in Plane (create a work item). On a new Plane Cloud workspace a product tour pops up over the
+   work-item dialog the first time: close it. The service does not know the workspace yet, so
+   `docker logs plane-miro` shows a line with `"event":"plane.rejected"`, `"reason":"unknown_workspace"` and
+   `"workspaceId":"<uuid>"`. (Plane's API gives it too: `GET https://api.plane.so/auth/o/app-installation/?id=<installation id>`
+   with the bot token answers `"workspace": "<uuid>"`; see
+   [Plane's token flow](https://developers.plane.so/dev-tools/build-plane-app/choose-token-flow).)
+8. **Put the ids in and restart once.** Put the team id of step 6 in `miro.teamId`, the UUID of step 7 in
+   `workspaceId` and the id printed in step 5 in `plane.appInstallationId`, then **restart** the container
+   (`docker rm -f plane-miro` and the command of step 4). The `listening` line appears again and `/healthz`
+   answers `ok`.
+9. **Connect the service account** ([Connecting the service account](#connecting-the-service-account)): one Miro
+   account of the team opens `https://plane-miro.example.com/miro/setup?tenant=acme` and grants access. The log
+   shows `miro.service_connected`. A token of another team than `miro.teamId` is refused with `miro.wrong_team`
+   and `"team":"<id>"`, the id the token belongs to: put that id in `miro.teamId`, restart as in step 8 and open
+   the link again.
+10. **Check.** The minimal scenario: a sticky becomes a work item, and its state shows on the card.
+    - On a board of the team open the app from the apps panel, pick the Plane project and turn a sticky into a work
+      item with **To Plane**: the work item exists in Plane with the link to the board (and the embed).
+    - Change its state in Plane (close the product tour, as in step 7): the card on the board shows the new state
+      within seconds, and the log shows `plane.accepted`.
+
 ## Routes
 
 | Path                                                                | Purpose                                                                                     |
@@ -105,20 +229,53 @@ must differ. UUIDs may be written in any case: they are read in lower case, as P
 
 ## Plane App
 
-Register one app per Plane instance (workspace-level) and install it in each workspace. Fields:
+Register one app per Plane instance and install it in each workspace
+([Plane docs: create an OAuth application](https://developers.plane.so/dev-tools/build-plane-app/create-oauth-application)).
+On Plane Cloud the form opens directly at `https://app.plane.so/<workspace-slug>/settings/integrations/create/`
+(`https://app.plane.so/example-ws/settings/integrations/create/` for the example workspace), titled "Build your own app".
+On the Commercial Edition click through the sidebar instead: in Plane open **Workspace settings** and click
+**Integrations** in the settings sidebar, then **Apps**, then the **Build your own** link. The form asks for these
+fields, in this order (`*` is required on Plane Cloud):
 
-- Setup URL `https://plane-miro.example.com/plane/setup?tenant=<id>`
-- Redirect URI `https://plane-miro.example.com/plane/oauth/callback`
-- Webhook URL `https://plane-miro.example.com/plane/webhook`
-- App mentions off
-- Scopes: `projects:read`, `projects.work_items:read`, `projects.work_items:write`,
-  `projects.work_items.comments:read`, `projects.work_items.comments:write`, `projects.work_items.links:read`,
-  `projects.work_items.links:write`, `projects.states:read`, `projects.members:read`, `workspaces.members:read`
+| Field                              | Value                                                                                                                                                                                                                                 |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Upload Logo                        | optional                                                                                                                                                                                                                              |
+| App Name \*                        | anything, for example `plane-miro-acme`                                                                                                                                                                                               |
+| App slug \*                        | for example `plane-miro-acme`                                                                                                                                                                                                         |
+| App Maker \*                       | the person or organization creating the app, for example `acme`                                                                                                                                                                       |
+| Short Description \*               | for example `Turns Miro stickers into Plane work items`                                                                                                                                                                               |
+| Long Description \*                | a rich-text paragraph, for example the first paragraph of this README                                                                                                                                                                 |
+| Website                            | optional                                                                                                                                                                                                                              |
+| Connection Type                    | choose **Workspace-Level Connection** (Plane Cloud's form starts on User-Level Connection): the app is installed once per workspace and acts as a bot, not as a person. On the Commercial Edition leave **User-Level Connection** off |
+| Enable App Mentions                | off                                                                                                                                                                                                                                   |
+| Setup URL                          | `https://plane-miro.example.com/plane/setup?tenant=<id>`                                                                                                                                                                              |
+| Webhook URL                        | `https://plane-miro.example.com/plane/webhook`                                                                                                                                                                                        |
+| Webhook Secret                     | the form issues none: a secret of your own (`openssl rand -hex 32`), kept for `PLANE_MIRO_<ID>_WEBHOOK_SECRET`                                                                                                                        |
+| Redirect URIs (space separated) \* | `https://plane-miro.example.com/plane/oauth/callback`                                                                                                                                                                                 |
+| Scopes (**Scopes & Permissions**)  | the grid below                                                                                                                                                                                                                        |
 
-The form does not issue a webhook secret: generate one (`openssl rand -hex 32`) and enter it there and in
-`PLANE_MIRO_<ID>_WEBHOOK_SECRET`. The service sends the scopes (space-separated) as the `scope` parameter of the
-consent URL and of every token request. Installing the app through the setup URL ends on the callback page, which
-prints `app_installation_id=<uuid>`; put it in `tenants.json`.
+The collapsed sections (Categorisation, Supported Plans, Compliance & Support, Additional resources) are all
+optional: leave them as they are (Supported Plans: leave empty, which allows all plans).
+
+The scopes are a grid with a Read and a Write column, not machine names: tick, per row, the cells below. The rows
+are in the grid's **Projects** and **Workspaces** sections. Each of the 10 scope names the service requests is one
+cell:
+
+| Row in the grid    | Read | Write | Scope names                                             |
+| ------------------ | ---- | ----- | ------------------------------------------------------- |
+| Projects           | yes  | no    | `projects:read`                                         |
+| Project Members    | yes  | no    | `projects.members:read`                                 |
+| Project States     | yes  | no    | `projects.states:read`                                  |
+| Work Items         | yes  | yes   | `projects.work_items:read`, `projects.work_items:write` |
+| Work Item Comments | yes  | yes   | `projects.work_items.comments:read`, `…comments:write`  |
+| Work Item Links    | yes  | yes   | `projects.work_items.links:read`, `…links:write`        |
+| Workspace Members  | yes  | no    | `workspaces.members:read`                               |
+
+Plane does not take the scopes from the registration, so the service sends them (space-separated) as the
+`scope` parameter of the consent URL and of every token request.
+
+Installing the app through the setup URL ends on the callback page, which prints
+`app_installation_id=<uuid>`; put it in `tenants.json`.
 
 The id exists only after that consent, but the service does not start without the key
 (`plane.appInstallationId must be a non-empty string`), and `/plane/setup` uses only `plane.clientId`. So start with the
@@ -127,7 +284,8 @@ placeholder with the printed id and restart the container.
 
 ## Miro app
 
-Create it in a developer team:
+Miro lets you create an app only in a developer team, so make that team first if you have none (Miro asks you to
+accept the Developer Terms). Create the app in it:
 
 - App URL (`sdkUri`) `https://plane-miro.example.com/miro/app`
 - Redirect URI for OAuth2.0 `https://plane-miro.example.com/miro/oauth/callback`
@@ -135,8 +293,11 @@ Create it in a developer team:
 - Scopes `boards:read`, `boards:write`, `identity:read`
 - «Expire user authorization token» **off**: the service keeps one token with no refresh, and the setting cannot
   be changed afterwards
+- Upload both icons, an outline SVG and a colour SVG (any pair will do): Miro asks for them before the app shows in
+  a board's apps panel
 
-Install it in the team with the install link of the app settings; Marketplace is not needed.
+Install it in the team with the install link of the app settings; Marketplace is not needed. Miro asks you to
+**Select an organization** (and the team) before it installs the app.
 
 ### Connecting the service account
 
