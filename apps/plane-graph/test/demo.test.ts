@@ -17,6 +17,7 @@ test('English by default, Russian behind --locale ru', () => {
 	});
 	expect(() => demoOptions(['--locale', 'de'])).toThrow();
 	expect(() => demoOptions(['--lang', 'ru'])).toThrow();
+	expect(() => demoOptions(['--locale', 'ru', 'extra'])).toThrow();
 });
 
 test('the area prefix comes from the fixture', async () => {
