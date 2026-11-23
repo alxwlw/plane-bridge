@@ -48,7 +48,9 @@ if (import.meta.main) {
 	await serve(options);
 }
 
-async function serve({ locale, fixture }: ReturnType<typeof demoOptions>): Promise<void> {
+/** The fetch handler of the demo tenant for one locale, over an in-memory store and the fixture's data. */
+export async function demoHandler(locale: Locale): Promise<(req: Request) => Promise<Response>> {
+	const fixture = FIXTURES[locale];
 	const copy = (await Bun.file(join(ROOT, fixture)).json()) as CopyData;
 	const areaPrefix = areaPrefixOf(copy);
 	const config: Config = {
@@ -96,7 +98,7 @@ async function serve({ locale, fixture }: ReturnType<typeof demoOptions>): Promi
 		now.toISOString(),
 	);
 
-	const handler = createHandler({
+	return createHandler({
 		config,
 		store,
 		log: () => {},
@@ -105,7 +107,9 @@ async function serve({ locale, fixture }: ReturnType<typeof demoOptions>): Promi
 		assets: await buildWeb(join(ROOT, 'web')),
 		acceptRun: () => Promise.resolve(true),
 	});
+}
 
-	Bun.serve({ port: PORT, fetch: handler });
+async function serve({ locale }: ReturnType<typeof demoOptions>): Promise<void> {
+	Bun.serve({ port: PORT, fetch: await demoHandler(locale) });
 	console.log(`demo: http://localhost:${PORT}/t/demo/graph?k=demo`);
 }
