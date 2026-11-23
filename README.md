@@ -40,7 +40,7 @@ plane-bridge is a community project. It is not affiliated with, endorsed by or s
 
 ![plane-graph's demo page: the work order in waves with blocking edges, the filter bar, the agent-run note and the Can start now list](docs/images/plane-graph.png)
 
-- Draws the order the work can be done in: work items joined by "blocks" in waves, where wave 0 can start now.
+- Draws the order the work can be done in: work items joined by "blocks" in waves, the first of them ("Can start now") ready to start.
 - Reports cycles, and flags tasks of one wave that share an area label as not parallel.
 - Gives your own agent the data and a place to report back: `GET /t/<tenant>/snapshot.json` reads the graph, `POST /t/<tenant>/agent-runs` reports the relations and labels the agent added.
 
