@@ -18,4 +18,8 @@ RUN mkdir -p /data && chown bun:bun /data
 
 USER bun
 EXPOSE 8080
+LABEL org.opencontainers.image.title="plane-graph" \
+      org.opencontainers.image.description="Plane App that draws the order of work in a Plane workspace and serves the same data to an agent." \
+      org.opencontainers.image.url="https://github.com/alxwlw/plane-bridge/tree/main/apps/plane-graph" \
+      org.opencontainers.image.licenses="MIT"
 CMD ["bun", "src/index.ts"]

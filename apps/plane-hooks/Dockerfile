@@ -17,4 +17,8 @@ RUN mkdir -p /data && chown bun:bun /data
 
 USER bun
 EXPOSE 8080
+LABEL org.opencontainers.image.title="plane-hooks" \
+      org.opencontainers.image.description="Plane App that moves Plane work items by their pull requests and deploys and opens incidents from alerts." \
+      org.opencontainers.image.url="https://github.com/alxwlw/plane-bridge/tree/main/apps/plane-hooks" \
+      org.opencontainers.image.licenses="MIT"
 CMD ["bun", "src/index.ts"]

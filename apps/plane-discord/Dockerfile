@@ -16,4 +16,8 @@ RUN mkdir -p /data && chown bun:bun /data
 
 USER bun
 EXPOSE 8080
+LABEL org.opencontainers.image.title="plane-discord" \
+      org.opencontainers.image.description="Plane App that bridges Plane and Discord: notifications, work items from messages, cards and synced threads." \
+      org.opencontainers.image.url="https://github.com/alxwlw/plane-bridge/tree/main/apps/plane-discord" \
+      org.opencontainers.image.licenses="MIT"
 CMD ["bun", "src/index.ts"]

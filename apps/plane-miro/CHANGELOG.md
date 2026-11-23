@@ -20,3 +20,7 @@ The first versioned release; until now the image was published only as `:main` a
 ### Changed
 
 - **Breaking:** a tenant without `locale` now gets English, where every text was Russian before. To stay Russian, add `"locale": "ru"` to each such tenant in `tenants.json` before updating.
+
+### Fixed
+
+- The image labels `org.opencontainers.image.title`, `description`, `url` and `licenses` describe this app; they were inherited from the `oven/bun` base image.

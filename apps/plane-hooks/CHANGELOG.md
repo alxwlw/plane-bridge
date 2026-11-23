@@ -22,3 +22,4 @@ The first versioned release; until now the image was published only as `:main` a
 ### Fixed
 
 - `scripts/probe-plane.ts` no longer exits 1 when `POST /releases/` answers 403 (an App bot token has no releases scope, as on Plane Cloud): the release section is skipped with the reason, as it already was for 402.
+- The image labels `org.opencontainers.image.title`, `description`, `url` and `licenses` describe this app; they were inherited from the `oven/bun` base image.
