@@ -15,7 +15,7 @@ What it does:
 - **An order graph.** Work items joined by «blocks» are laid out in waves: wave 0 can start now, wave 1 waits for
   wave 0, and so on. Cycles are reported, not hidden; tasks of one wave that share an area label (`area:<name>`)
   are flagged as not parallel.
-- **A block for Plane.** `plane-block.html` is a small file to paste into an HTML block of a Plane page; it loads
+- **A block for Plane.** `plane-block.html` is a small file to put into an HTML block of a Plane page (pasted, or uploaded on Plane Cloud); it loads
   the graph from this service.
 - **Agent endpoints.** `snapshot.json` is the whole copy, with `wave` and `inCycle` on each item and `cycles`
   computed the same way as in the graph; `agent-runs` takes the list of relations and labels an
@@ -108,10 +108,21 @@ The form does not issue a webhook secret: generate one (`openssl rand -hex 32`) 
 `PLANE_GRAPH_<ID>_WEBHOOK_SECRET`. Installing the app through the setup URL ends on the callback page, which
 prints `app_installation_id=<uuid>`; put it in `tenants.json`.
 
+The id exists only after that consent, but the service does not start without the key
+(`tenants[0].installationId must be a non-empty string`), and `/plane/setup` uses only the app's client id from the
+tenant. So start with the real `clientId` and `"installationId": "placeholder"` (nothing checks the shape; the
+first sync then fails with `sync.failed`), run the setup URL, then replace the placeholder with the printed id and
+restart the container.
+
+On Plane Cloud the scopes are a grid, not machine names: open the collapsed **Projects** section and tick the
+**Read** column only on the rows Projects, Project States, Project Labels, Modules, Work Items and Work Item
+Relations.
+
 ## Putting the graph into Plane
 
 Open `https://plane-graph.example.com/t/<tenant>/plane-block.html?k=<read key>`: the browser saves
-`plane-graph.html`. Paste its content into an HTML block of a Plane page. The block loads
+`plane-graph.html`. Put it into a Plane page: in an editor with an HTML block paste its content there; on Plane
+Cloud the slash command **HTML artifact** takes the saved file as an upload (there is nothing to paste). The block loads
 `/assets/graph.js` and the graph data from this service, so the page must be able to reach it. The page of the
 graph itself is `https://plane-graph.example.com/t/<tenant>/graph?k=<read key>`; a work item shows as its key,
 for instance `ABC-1`, and opens in Plane.
