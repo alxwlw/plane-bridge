@@ -17,8 +17,8 @@ raises the patch.
 
 `:<version>` always. For a stable version also `:X.Y` and `:latest`, unless a newer release of the app already
 has them. A pre-release (`X.Y.Z-rc.N`) gets only its own tag. Every push to `main` that changes an app or a package it
-ships also publishes that app's `:main` and `:<commit sha>`. From the first stable release (`0.1.0`) on, users
-are pointed at `:X.Y`; until then the READMEs still name `:main`.
+ships also publishes that app's `:main` and `:<commit sha>`. Users are pointed at `:X.Y`: each app's
+README names it in its `## Image` section.
 
 The GitHub Release is marked "Latest" only when it moves the app's `:latest` image tag: a pre-release, a
 backport or an older version never takes the badge.
@@ -27,6 +27,7 @@ backport or an older version never takes the badge.
 
 1. A PR sets `version` and the notes. A pre-release keeps them under `## [Unreleased]`; a stable version
    renames `## [Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` and opens a new empty `## [Unreleased]` above it.
+   When the release was checked on another Plane version, the PR also updates the app's `## Compatibility` table.
 2. On the PR, `ci` runs `bun packages/release/src/cli.ts check`, and the `release` workflow does a dry run: it
    builds and smoke-tests the images without pushing and shows the notes it would publish in each `publish`
    job's summary.

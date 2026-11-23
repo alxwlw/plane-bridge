@@ -40,6 +40,22 @@ Phases 1 to 3 (this version; a bound thread and its work item are synced both wa
 Hidden projects (`hiddenProjects`) are hidden completely: no channel topics, no DMs, no modal, no
 forwarded mentions.
 
+## Compatibility
+
+plane-discord is a Plane App (OAuth, a bot token per workspace, signed webhooks). Plane Apps exist in Plane Cloud and in
+the self-hosted Commercial Edition, its Free plan included. The open-source Community Edition (`makeplane/plane`)
+has none, so plane-discord cannot run against it. Check a self-hosted instance with
+`curl https://plane.example.com/api/instances/`: its `edition` must be `PLANE_COMMERCIAL`.
+
+| Plane                                       | Supported | Checked on                                                    |
+| ------------------------------------------- | --------- | ------------------------------------------------------------- |
+| Plane Cloud                                 | yes       | 2026-11-23, a workspace on a Business-plan trial              |
+| Commercial Edition, self-hosted, Free plan included | yes | v4.1.0                                                      |
+| Community Edition                           | no        | —                                                             |
+
+Plane Cloud publishes no version number. The Cloud Free plan was not checked. Each check ran the app's install and its
+main flows with the 0.1.0 release candidates, whose code 0.1.0 ships unchanged.
+
 ## Routes
 
 | Path                         | Purpose                                                                |
@@ -156,10 +172,13 @@ docker exec <container> bun scripts/list-channels.ts       # id, type, parent an
 
 ## Image
 
-`ghcr.io/alxwlw/plane-discord` for `linux/amd64` and `linux/arm64`, built by `.github/workflows/plane-discord-image.yml`
-(through `.github/workflows/image.yml`) on every push to `main` that touches this directory or a package it ships; deploy by
-digest. Each platform is smoke-tested on its own runner by `.github/smoke/plane-discord.sh` before publishing
-(`/healthz`, the `listening` line, the SQLite file in `/data`).
+Releases are published as `:<version>` (for example `:0.1.0`), `:0.1` and `:latest`, each for `linux/amd64` and
+`linux/arm64`; the notes are in [CHANGELOG.md](CHANGELOG.md) and on the GitHub Release `plane-discord-v<version>`. Use
+`:0.1`: it takes patch releases only, because a breaking configuration change raises the minor version and its
+changelog entry says how to upgrade. Pin `:0.1.0` (or its digest) to stay on one release. `:latest` follows every
+release, breaking ones included: do not use it for unattended updates.
+
+`ghcr.io/alxwlw/plane-discord` for `linux/amd64` and `linux/arm64`, built through `.github/workflows/image.yml`: releases by `.github/workflows/release.yml`, and `:main` plus `:<commit sha>` by `.github/workflows/plane-discord-image.yml` on every push to `main` that touches this directory or a package it ships (development builds, not releases). Each platform is smoke-tested on its own runner by `.github/smoke/plane-discord.sh` before publishing (`/healthz`, the `listening` line, the SQLite file in `/data`).
 
 ```bash
 docker build -f apps/plane-discord/Dockerfile -t plane-discord:local .
