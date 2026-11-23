@@ -6,11 +6,6 @@ const ROOT = new URL('..', import.meta.url).pathname;
 const CATALOG = 'src/i18n.ts';
 const ALLOWED: readonly { path: string; line: number; reason: string }[] = [
 	{
-		path: 'scripts/demo.ts',
-		line: 13,
-		reason: 'the demo labels come from the Russian test/fixtures/demo-copy.json',
-	},
-	{
 		path: 'scripts/sanitize-fixture.ts',
 		line: 105,
 		reason:

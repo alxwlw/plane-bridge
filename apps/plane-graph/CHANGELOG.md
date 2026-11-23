@@ -7,6 +7,10 @@ release is cut: [RELEASING.md](../../RELEASING.md).
 
 ## [Unreleased]
 
+### Changed
+
+- `scripts/demo.ts` shows an English demo by default; `--locale ru` shows the Russian one.
+
 ## [0.1.0] - 2026-11-23
 
 The first stable release. Before it the image was published as `:main`, `:<commit sha>` and the pre-releases
