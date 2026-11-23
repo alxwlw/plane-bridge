@@ -59,7 +59,7 @@ example [plane-hooks](apps/plane-hooks/README.md#compatibility).
 
 ## Install
 
-1. Register the app in Plane. On Plane Cloud: Workspace settings → Integrations → Build your own.
+1. Register the app in Plane. On Plane Cloud: Workspace settings → Integrations → Apps → Build your own.
 2. Write `tenants.json`.
 3. Set the environment variables.
 4. Run the image `ghcr.io/alxwlw/plane-<app>:0.1`.
